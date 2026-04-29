@@ -41,6 +41,8 @@ import {
   BulletinsSkeleton,
   Spinner
 } from './components/Skeleton';
+import ParentPortal from './components/ParentPortal';
+import ParentAssignModal from './components/ParentAssignModal';
 
 // ─── Items de navigation (source unique) ─────────────────────────────────────
 const NAV_ITEMS = [
@@ -56,6 +58,8 @@ const NAV_ITEMS = [
   { view: 'statistics', label: 'Statistiques', icon: '📊', roles: ['admin', 'professeur'] },
   { view: 'importexport', label: 'Import/Export', icon: '📂', roles: ['admin', 'secretaire'] },
   { view: 'settings', label: 'Paramètres', icon: '⚙️', roles: ['admin'] },
+  { view: 'parents', label: 'Espace Parents', icon: '👨‍👩‍👧', roles: ['parent'] },
+  { view: 'gestion-parents', label: 'Gestion parents', icon: '👥', roles: ['admin'] },
 ];
 
 // ─── Composant principal ──────────────────────────────────────────────────────
@@ -68,6 +72,7 @@ const BulletinApp = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+  const [parentModalOpen, setParentModalOpen] = useState(false);
 
   // ── Données Supabase via hooks ───────────────────────────────────────────────
   const [currentYear, setCurrentYear] = useState('2024-2025'); // déclaré avant useGrades
@@ -1119,6 +1124,67 @@ const BulletinApp = () => {
             loading={authLoading}
           />
         )}
+        {currentView === 'parents' && (
+          <ParentPortal currentUser={currentUser} schoolInfo={schoolInfo} />
+        )}
+        {currentView === 'gestion-parents' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">Gestion des parents</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Créez des comptes parents et associez-les à leurs enfants</p>
+              </div>
+              <button
+                onClick={() => setParentModalOpen(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Ajouter un parent
+              </button>
+            </div>
+
+            {/* Guide d'utilisation */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
+              <h3 className="font-bold text-blue-800 mb-3">📋 Comment ça marche ?</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+                  <div>
+                    <p className="font-semibold text-blue-800 text-sm">Créer un compte</p>
+                    <p className="text-blue-600 text-xs mt-0.5">Cliquez "Ajouter un parent" → onglet "Créer un parent" → renseignez email et mot de passe</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+                  <div>
+                    <p className="font-semibold text-blue-800 text-sm">Lier à un élève</p>
+                    <p className="text-blue-600 text-xs mt-0.5">Cliquez "Ajouter un parent" → onglet "Lier un élève" → associez le parent à son enfant</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+                  <div>
+                    <p className="font-semibold text-blue-800 text-sm">Le parent se connecte</p>
+                    <p className="text-blue-600 text-xs mt-0.5">Le parent accède à l'appli avec son email/mot de passe et voit les notes de son enfant</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Lien direct vers l'appli */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-gray-800">🔗 Lien à partager aux parents</p>
+                <p className="text-sm text-gray-500 mt-0.5">https://gestion-bulletins-rho.vercel.app</p>
+              </div>
+              <button
+                onClick={() => { navigator.clipboard.writeText('https://gestion-bulletins-rho.vercel.app'); showNotification('Lien copié !'); }}
+                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors font-medium"
+              >
+                📋 Copier le lien
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Modals CRUD ─────────────────────────────────────────────────────── */}
@@ -1148,6 +1214,14 @@ const BulletinApp = () => {
         onConfirm={confirmModal.onConfirm}
         title={confirmModal.title}
         message={confirmModal.message}
+      />
+
+      <ParentAssignModal
+        isOpen={parentModalOpen}
+        onClose={() => setParentModalOpen(false)}
+        students={students}
+        classes={classes}
+        showNotification={showNotification}
       />
     </div>
   );
