@@ -43,6 +43,7 @@ import {
 } from './components/Skeleton';
 import ParentPortal from './components/ParentPortal';
 import ParentAssignModal from './components/ParentAssignModal';
+import PaymentManager from './components/PaymentManager';
 
 // ─── Items de navigation (source unique) ─────────────────────────────────────
 const NAV_ITEMS = [
@@ -60,6 +61,7 @@ const NAV_ITEMS = [
   { view: 'settings', label: 'Paramètres', icon: '⚙️', roles: ['admin'] },
   { view: 'parents', label: 'Espace Parents', icon: '👨‍👩‍👧', roles: ['parent'] },
   { view: 'gestion-parents', label: 'Gestion parents', icon: '👥', roles: ['admin'] },
+  { view: 'paiements', label: 'Paiements', icon: '💰', roles: ['admin', 'secretaire'] },
 ];
 
 // ─── Composant principal ──────────────────────────────────────────────────────
@@ -1184,6 +1186,15 @@ const BulletinApp = () => {
               </button>
             </div>
           </div>
+        )}
+        {currentView === 'paiements' && (
+          <PaymentManager
+            students={students}
+            classes={classes}
+            currentUser={currentUser}
+            schoolInfo={schoolInfo}
+            currentYear={currentYear}
+          />
         )}
       </div>
 
