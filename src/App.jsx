@@ -44,6 +44,7 @@ import {
 import ParentPortal from './components/ParentPortal';
 import ParentAssignModal from './components/ParentAssignModal';
 import PaymentManager from './components/PaymentManager';
+import AIAppreciations from './components/AIAppreciations';
 
 // ─── Items de navigation (source unique) ─────────────────────────────────────
 const NAV_ITEMS = [
@@ -62,6 +63,7 @@ const NAV_ITEMS = [
   { view: 'parents', label: 'Espace Parents', icon: '👨‍👩‍👧', roles: ['parent'] },
   { view: 'gestion-parents', label: 'Gestion parents', icon: '👥', roles: ['admin'] },
   { view: 'paiements', label: 'Paiements', icon: '💰', roles: ['admin', 'secretaire'] },
+  { view: 'ia-appreciations', label: 'IA Appréciations', icon: '🤖', roles: ['admin', 'professeur'] },
 ];
 
 // ─── Composant principal ──────────────────────────────────────────────────────
@@ -1194,6 +1196,19 @@ const BulletinApp = () => {
             currentUser={currentUser}
             schoolInfo={schoolInfo}
             currentYear={currentYear}
+          />
+        )}
+        {currentView === 'ia-appreciations' && (
+          <AIAppreciations
+            students={students}
+            classes={classes}
+            grades={grades}
+            subjects={subjects}
+            selectedClass={selectedClass}
+            selectedTrimester={selectedTrimester}
+            calculateAverage={calculateAverage}
+            showNotification={showNotification}
+            updateGrade={updateGrade}
           />
         )}
       </div>
