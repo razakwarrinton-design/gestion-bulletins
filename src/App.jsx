@@ -45,6 +45,7 @@ import ParentPortal from './components/ParentPortal';
 import ParentAssignModal from './components/ParentAssignModal';
 import PaymentManager from './components/PaymentManager';
 import AIAppreciations from './components/AIAppreciations';
+import DashboardKPIs from './components/DashboardKPIs';
 
 // ─── Items de navigation (source unique) ─────────────────────────────────────
 const NAV_ITEMS = [
@@ -1036,7 +1037,19 @@ const BulletinApp = () => {
 
       {/* Contenu principal */}
       <div className="bg-white rounded-lg shadow-lg p-6">
-        {currentView === 'dashboard' && (isLoadingClasses || isLoadingStudents || isLoadingSubjects ? <DashboardSkeleton /> : renderDashboard())}
+        {currentView === 'dashboard' && (isLoadingClasses || isLoadingStudents || isLoadingSubjects ? <DashboardSkeleton /> : (
+          <DashboardKPIs
+            classes={classes}
+            students={students}
+            subjects={subjects}
+            grades={grades}
+            calculateAverage={calculateAverage}
+            currentUser={currentUser}
+            currentYear={currentYear}
+            setCurrentView={setCurrentView}
+            activities={activities}
+          />
+        ))}
         {currentView === 'classes' && (isLoadingClasses ? <ClassesSkeleton /> : renderClasses())}
         {currentView === 'students' && (isLoadingStudents ? <TableSkeleton rows={6} cols={4} /> : (
           <StudentsList

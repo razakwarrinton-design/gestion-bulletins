@@ -60,15 +60,14 @@ INSTRUCTIONS :
 - Écris directement l'appréciation, sans introduction ni explication
 - Utilise le prénom de l'élève`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 1000,
-            messages: [{ role: 'user', content: prompt }]
-        })
+    // Remplace tout le bloc fetch dans generateAppreciation par :
+    const { supabase } = await import('../lib/supabaseClient');
+    const { data, error } = await supabase.functions.invoke('generate-appreciation', {
+        body: { student, grades, subjects, trimester, classAverage }
     });
+    if (error) throw new Error(error.message);
+    if (data?.error) throw new Error(data.error);
+    return data.appreciation;
 
     const data = await response.json();
     const text = data.content?.map(b => b.text || '').join('') || '';
