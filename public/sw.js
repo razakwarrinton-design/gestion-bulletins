@@ -1,4 +1,4 @@
-const CACHE_NAME = "bulletins-v1";
+const CACHE_NAME = "bulletins-v2";
 const STATIC_ASSETS = ["/", "/index.html"];
 
 // ── Installation ──────────────────────────────────────────────────────────────
