@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Image, Users, Plus, Trash2, Activity, Download } from 'lucide-react';
+import MFAManager from './MFAManager';
 
 export default function Settings({
     schoolLogo,
@@ -58,9 +59,9 @@ export default function Settings({
                         <p className="text-sm text-blue-800">
                             <strong>Note :</strong> Avec l'authentification Supabase, les utilisateurs sont maintenant gérés dans Authentication → Users dans votre dashboard Supabase.
                             <br />
-                            <a 
-                                href="https://supabase.com/dashboard" 
-                                target="_blank" 
+                            <a
+                                href="https://supabase.com/dashboard"
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-600 underline hover:text-blue-800 mt-2 inline-block"
                             >
@@ -288,14 +289,14 @@ export default function Settings({
                                             </td>
                                             <td className="px-4 py-2 text-sm">{activity.user}</td>
                                             <td className="px-4 py-2">
-                                                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${activity.userRole === 'admin' ? 'bg-red-100 text-red-800' :
-                                                                                                        activity.userRole === 'professeur' ? 'bg-blue-100 text-blue-800' :
-                                                                                                            'bg-green-100 text-green-800'
-                                                                                                    }`}>
-                                                                                                    {activity.userRole === 'admin' ? '👨‍💼 Admin' :
-                                                                                                        activity.userRole === 'professeur' ? '👨‍🏫 Professeur' :
-                                                                                                            '💼 Secrétaire'}
-                                                                                                </span>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${activity.userRole === 'admin' ? 'bg-red-100 text-red-800' :
+                                                    activity.userRole === 'professeur' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-green-100 text-green-800'
+                                                    }`}>
+                                                    {activity.userRole === 'admin' ? '👨‍💼 Admin' :
+                                                        activity.userRole === 'professeur' ? '👨‍🏫 Professeur' :
+                                                            '💼 Secrétaire'}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-2 text-sm font-medium">{activity.action}</td>
                                             <td className="px-4 py-2 text-sm text-gray-600">{activity.details}</td>
@@ -317,6 +318,11 @@ export default function Settings({
                     </div>
                 </div>
             )}
+            {/* ── Section Sécurité 2FA ─────────────────────────────────── */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+                <MFAManager showNotification={showNotification} />
+            </div>
+
         </div>
     );
 }
