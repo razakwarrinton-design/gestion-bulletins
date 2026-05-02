@@ -46,6 +46,9 @@ import ParentAssignModal from './components/ParentAssignModal';
 import PaymentManager from './components/PaymentManager';
 import AIAppreciations from './components/AIAppreciations';
 import DashboardKPIs from './components/DashboardKPIs';
+import MFAChallenge from './components/MFAChallenge';
+import MFAManager from './components/MFAManager';
+import { useMFA } from './hooks/useMFA';
 
 // ─── Items de navigation (source unique) ─────────────────────────────────────
 const NAV_ITEMS = [
@@ -126,6 +129,10 @@ const BulletinApp = () => {
   // ── Auth Modal ───────────────────────────────────────────────────────────────
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
+
+  // ── 2FA MFA ──────────────────────────────────────────────────────────────────
+  const { checkMFAStatus, getAssuranceLevel } = useMFA();
+  const [mfaChallenge, setMfaChallenge] = useState({ open: false, factorId: '' });
 
   // ── Modals CRUD ──────────────────────────────────────────────────────────────
   const [classModalOpen, setClassModalOpen] = useState(false);
@@ -263,6 +270,16 @@ const BulletinApp = () => {
   const handleLogin = async (email, password) => {
     const result = await signIn(email, password);
     if (result.success) {
+      // Vérifier si le 2FA est requis
+      const level = await getAssuranceLevel();
+      if (level?.nextLevel === 'aal2' && level?.currentLevel === 'aal1') {
+        const { enabled, factors } = await checkMFAStatus();
+        if (enabled && factors.length > 0) {
+          setShowLoginModal(false);
+          setMfaChallenge({ open: true, factorId: factors[0].id });
+          return result;
+        }
+      }
       logActivity('Connexion', 'Connexion réussie');
       showNotification('Bienvenue !');
     }
@@ -1262,6 +1279,22 @@ const BulletinApp = () => {
         classes={classes}
         showNotification={showNotification}
       />
+
+      {/* ── 2FA Challenge ────────────────────────────────────────────────── */}
+      {mfaChallenge.open && (
+        <MFAChallenge
+          factorId={mfaChallenge.factorId}
+          onSuccess={() => {
+            setMfaChallenge({ open: false, factorId: '' });
+            showNotification('Bienvenue ! 🔐');
+            logActivity('Connexion 2FA', 'Connexion sécurisée réussie');
+          }}
+          onCancel={async () => {
+            await signOut();
+            setMfaChallenge({ open: false, factorId: '' });
+          }}
+        />
+      )}
     </div>
   );
 };
