@@ -1,7 +1,168 @@
 @import "tailwindcss";
 
+/* ── Variables Dark Mode ───────────────────────────────────────────────────── */
+:root {
+  --bg-primary: #f0f4ff;
+  --bg-card: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+  --nav-bg: #ffffff;
+  --input-bg: #ffffff;
+}
+
+.dark {
+  --bg-primary: #0f172a;
+  --bg-card: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+  --nav-bg: #1e293b;
+  --input-bg: #334155;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
 body {
   margin: 0;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* ── Dark mode overrides ───────────────────────────────────────────────────── */
+.dark .bg-white {
+  background-color: var(--bg-card) !important;
+}
+.dark .bg-gray-50 {
+  background-color: #1e293b !important;
+}
+.dark .bg-gray-100 {
+  background-color: #334155 !important;
+}
+.dark .bg-gradient-to-br {
+  background: linear-gradient(135deg, #0f172a, #1e293b) !important;
+}
+
+.dark .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+.dark .text-gray-800 {
+  color: #e2e8f0 !important;
+}
+.dark .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+.dark .text-gray-600 {
+  color: #94a3b8 !important;
+}
+.dark .text-gray-500 {
+  color: #64748b !important;
+}
+.dark .text-gray-400 {
+  color: #475569 !important;
+}
+
+.dark .border-gray-100 {
+  border-color: #334155 !important;
+}
+.dark .border-gray-200 {
+  border-color: #334155 !important;
+}
+.dark .border-gray-300 {
+  border-color: #475569 !important;
+}
+
+.dark .shadow-md {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+.dark .shadow-lg {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+.dark .shadow-sm {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .rounded-lg {
+}
+.dark .hover\:bg-gray-50:hover {
+  background-color: #334155 !important;
+}
+.dark .hover\:bg-gray-100:hover {
+  background-color: #475569 !important;
+}
+.dark .hover\:bg-gray-200:hover {
+  background-color: #475569 !important;
+}
+
+/* ── Inputs & Selects ──────────────────────────────────────────────────────── */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #334155 !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* ── Tables ────────────────────────────────────────────────────────────────── */
+.dark table {
+  color: #e2e8f0;
+}
+.dark thead .bg-gray-100 {
+  background-color: #334155 !important;
+}
+.dark .divide-gray-200 > * {
+  border-color: #334155 !important;
+}
+.dark .divide-y > * {
+  border-color: #334155 !important;
+}
+.dark tr:hover td {
+  background-color: #334155 !important;
+}
+
+/* ── Navigation ────────────────────────────────────────────────────────────── */
+.dark .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+.dark .bg-gray-100.rounded-lg {
+  background-color: #334155 !important;
+}
+
+/* ── Cards & Panels ────────────────────────────────────────────────────────── */
+.dark .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.1) !important;
+}
+.dark .bg-green-50 {
+  background-color: rgba(5, 150, 105, 0.1) !important;
+}
+.dark .bg-red-50 {
+  background-color: rgba(220, 38, 38, 0.1) !important;
+}
+.dark .bg-purple-50 {
+  background-color: rgba(124, 58, 237, 0.1) !important;
+}
+.dark .bg-amber-50 {
+  background-color: rgba(217, 119, 6, 0.1) !important;
+}
+.dark .bg-orange-50 {
+  background-color: rgba(234, 88, 12, 0.1) !important;
+}
+.dark .bg-indigo-50 {
+  background-color: rgba(79, 70, 229, 0.1) !important;
+}
+
+/* ── Transitions ───────────────────────────────────────────────────────────── */
+* {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
 }

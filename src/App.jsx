@@ -49,6 +49,8 @@ import DashboardKPIs from './components/DashboardKPIs';
 import MFAChallenge from './components/MFAChallenge';
 import MFAManager from './components/MFAManager';
 import { useMFA } from './hooks/useMFA';
+import DarkModeToggle from './components/DarkModeToggle';
+import { useDarkMode } from './hooks/useDarkMode';
 
 // ─── Items de navigation (source unique) ─────────────────────────────────────
 const NAV_ITEMS = [
@@ -129,6 +131,9 @@ const BulletinApp = () => {
   // ── Auth Modal ───────────────────────────────────────────────────────────────
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
+
+  // ── Dark Mode ────────────────────────────────────────────────────────────────
+  const { isDark, toggle: toggleDark } = useDarkMode();
 
   // ── 2FA MFA ──────────────────────────────────────────────────────────────────
   const { checkMFAStatus, getAssuranceLevel } = useMFA();
@@ -270,7 +275,6 @@ const BulletinApp = () => {
   const handleLogin = async (email, password) => {
     const result = await signIn(email, password);
     if (result.success) {
-      // Vérifier si le 2FA est requis
       const level = await getAssuranceLevel();
       if (level?.nextLevel === 'aal2' && level?.currentLevel === 'aal1') {
         const { enabled, factors } = await checkMFAStatus();
@@ -998,7 +1002,8 @@ const BulletinApp = () => {
         <div className="flex justify-between items-center mb-2">
           <div className="flex-1"></div>
           <h1 className="text-4xl font-bold text-center text-blue-600">📚 Gestion de Bulletins Scolaires</h1>
-          <div className="flex-1 flex justify-end items-center space-x-4">
+          <div className="flex-1 flex justify-end items-center space-x-3">
+            <DarkModeToggle isDark={isDark} toggle={toggleDark} />
             <SyncStatus />
             {renderUserMenu()}
           </div>
@@ -1280,7 +1285,7 @@ const BulletinApp = () => {
         showNotification={showNotification}
       />
 
-      {/* ── 2FA Challenge ────────────────────────────────────────────────── */}
+      {/* ── 2FA Challenge ──────────────────────────────────────────────── */}
       {mfaChallenge.open && (
         <MFAChallenge
           factorId={mfaChallenge.factorId}
