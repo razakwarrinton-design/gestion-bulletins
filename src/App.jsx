@@ -46,11 +46,6 @@ import ParentAssignModal from './components/ParentAssignModal';
 import PaymentManager from './components/PaymentManager';
 import AIAppreciations from './components/AIAppreciations';
 import DashboardKPIs from './components/DashboardKPIs';
-import MFAChallenge from './components/MFAChallenge';
-import MFAManager from './components/MFAManager';
-import { useMFA } from './hooks/useMFA';
-import DarkModeToggle from './components/DarkModeToggle';
-import { useDarkMode } from './hooks/useDarkMode';
 
 // ─── Items de navigation (source unique) ─────────────────────────────────────
 const NAV_ITEMS = [
@@ -131,13 +126,6 @@ const BulletinApp = () => {
   // ── Auth Modal ───────────────────────────────────────────────────────────────
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
-
-  // ── Dark Mode ────────────────────────────────────────────────────────────────
-  const { isDark, toggle: toggleDark } = useDarkMode();
-
-  // ── 2FA MFA ──────────────────────────────────────────────────────────────────
-  const { checkMFAStatus, getAssuranceLevel } = useMFA();
-  const [mfaChallenge, setMfaChallenge] = useState({ open: false, factorId: '' });
 
   // ── Modals CRUD ──────────────────────────────────────────────────────────────
   const [classModalOpen, setClassModalOpen] = useState(false);
@@ -275,15 +263,6 @@ const BulletinApp = () => {
   const handleLogin = async (email, password) => {
     const result = await signIn(email, password);
     if (result.success) {
-      const level = await getAssuranceLevel();
-      if (level?.nextLevel === 'aal2' && level?.currentLevel === 'aal1') {
-        const { enabled, factors } = await checkMFAStatus();
-        if (enabled && factors.length > 0) {
-          setShowLoginModal(false);
-          setMfaChallenge({ open: true, factorId: factors[0].id });
-          return result;
-        }
-      }
       logActivity('Connexion', 'Connexion réussie');
       showNotification('Bienvenue !');
     }
@@ -1001,14 +980,13 @@ const BulletinApp = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <div className="flex justify-between items-center mb-2">
           <div className="flex-1"></div>
-          <h1 className="text-4xl font-bold text-center text-blue-600">📚 Gestion de Bulletins Scolaires</h1>
-          <div className="flex-1 flex justify-end items-center space-x-3">
-            <DarkModeToggle isDark={isDark} toggle={toggleDark} />
+          <h1 className="text-4xl font-bold text-center text-blue-600">📚 EduPulse</h1>
+          <div className="flex-1 flex justify-end items-center space-x-4">
             <SyncStatus />
             {renderUserMenu()}
           </div>
         </div>
-        <p className="text-center text-gray-600">Système complet de gestion des notes et bulletins PDF</p>
+        <p className="text-center text-gray-600">Plateforme intelligente de gestion scolaire</p>
       </div>
 
       {/* Navigation */}
@@ -1284,22 +1262,6 @@ const BulletinApp = () => {
         classes={classes}
         showNotification={showNotification}
       />
-
-      {/* ── 2FA Challenge ──────────────────────────────────────────────── */}
-      {mfaChallenge.open && (
-        <MFAChallenge
-          factorId={mfaChallenge.factorId}
-          onSuccess={() => {
-            setMfaChallenge({ open: false, factorId: '' });
-            showNotification('Bienvenue ! 🔐');
-            logActivity('Connexion 2FA', 'Connexion sécurisée réussie');
-          }}
-          onCancel={async () => {
-            await signOut();
-            setMfaChallenge({ open: false, factorId: '' });
-          }}
-        />
-      )}
     </div>
   );
 };

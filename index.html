@@ -12,30 +12,43 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Bulletins" />
-    <meta name="application-name" content="Bulletins" />
+    <meta name="apple-mobile-web-app-title" content="EduPulse" />
+    <meta name="application-name" content="EduPulse" />
     <meta name="msapplication-TileColor" content="#2563eb" />
 
     <!-- SEO -->
     <meta
       name="description"
-      content="Système complet de gestion des notes et bulletins scolaires"
+      content="EduPulse — Plateforme intelligente de gestion des notes et bulletins scolaires"
     />
     <meta
       name="keywords"
-      content="bulletins, scolaire, notes, école, gestion"
+      content="EduPulse, bulletins, scolaire, notes, école, gestion, EdTech"
     />
+    <meta name="author" content="EduPulse" />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="Gestion Bulletins Scolaires" />
+    <meta
+      property="og:title"
+      content="EduPulse — Gestion Scolaire Intelligente"
+    />
     <meta
       property="og:description"
-      content="Système complet de gestion des notes et bulletins PDF"
+      content="Plateforme complète de gestion des notes, bulletins PDF et suivi des élèves"
     />
     <meta property="og:type" content="website" />
     <meta
       property="og:url"
       content="https://gestion-bulletins-rho.vercel.app"
+    />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="EduPulse" />
+    <meta
+      name="twitter:description"
+      content="Plateforme intelligente de gestion scolaire"
     />
 
     <!-- Manifest PWA -->
@@ -68,7 +81,7 @@
       href="/icons/icon-72x72.png"
     />
 
-    <title>Gestion Bulletins Scolaires</title>
+    <title>EduPulse — Gestion Scolaire</title>
   </head>
   <body>
     <div id="root"></div>
@@ -81,9 +94,7 @@
           navigator.serviceWorker
             .register("/sw.js")
             .then((reg) => {
-              console.log("✅ Service Worker enregistré:", reg.scope);
-
-              // Vérifier les mises à jour
+              console.log("✅ EduPulse SW enregistré:", reg.scope);
               reg.addEventListener("updatefound", () => {
                 const newWorker = reg.installing;
                 newWorker.addEventListener("statechange", () => {
@@ -91,10 +102,9 @@
                     newWorker.state === "installed" &&
                     navigator.serviceWorker.controller
                   ) {
-                    // Nouvelle version disponible
                     if (
                       confirm(
-                        "🔄 Nouvelle version disponible ! Voulez-vous mettre à jour ?",
+                        "🔄 Nouvelle version d'EduPulse disponible ! Mettre à jour ?",
                       )
                     ) {
                       newWorker.postMessage({ type: "SKIP_WAITING" });
@@ -104,7 +114,7 @@
                 });
               });
             })
-            .catch((err) => console.log("❌ Service Worker erreur:", err));
+            .catch((err) => console.log("❌ SW erreur:", err));
         });
       }
     </script>

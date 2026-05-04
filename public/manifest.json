@@ -1,7 +1,7 @@
 {
-    "name": "Gestion Bulletins Scolaires",
-    "short_name": "Bulletins",
-    "description": "Système complet de gestion des notes et bulletins scolaires",
+    "name": "EduPulse — Gestion Scolaire",
+    "short_name": "EduPulse",
+    "description": "Plateforme intelligente de gestion des notes et bulletins scolaires",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
@@ -90,6 +90,17 @@
             "name": "Bulletins",
             "short_name": "Bulletins",
             "url": "/?view=bulletins",
+            "icons": [
+                {
+                    "src": "/icons/icon-96x96.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Paiements",
+            "short_name": "Paiements",
+            "url": "/?view=paiements",
             "icons": [
                 {
                     "src": "/icons/icon-96x96.png",
