@@ -901,6 +901,78 @@ const BulletinApp = () => {
     !currentUser || item.roles.includes(currentUser.role)
   );
 
+  // ── Écran de chargement ───────────────────────────────────────────────────
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-blue-600 font-semibold text-lg">Chargement d'EduPulse...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Écran de connexion si non authentifié ─────────────────────────────────
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
+        {showAlert && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className="bg-green-100 border-2 border-green-600 rounded-lg p-4 shadow-lg">
+              <p className="text-green-800 font-medium">{alertMessage}</p>
+            </div>
+          </div>
+        )}
+        <div className="w-full max-w-md">
+          {/* Logo + Nom */}
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+              <span className="text-4xl">📚</span>
+            </div>
+            <h1 className="text-4xl font-black text-white mb-2">EduPulse</h1>
+            <p className="text-blue-200 text-sm">Plateforme intelligente de gestion scolaire</p>
+          </div>
+
+          {/* Carte connexion */}
+          <div className="bg-white rounded-3xl shadow-2xl p-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Connexion</h2>
+            <LoginModalSupabase
+              isRegister={isRegister}
+              setIsRegister={setIsRegister}
+              setShowLoginModal={() => { }}
+              onSignIn={handleLogin}
+              onSignUp={handleRegister}
+              loading={authLoading}
+              inline={true}
+            />
+          </div>
+
+          {/* Footer */}
+          <p className="text-center text-blue-200 text-xs mt-6">
+            EduPulse © {new Date().getFullYear()} — Tous droits réservés
+          </p>
+        </div>
+
+        {/* 2FA Challenge */}
+        {mfaChallenge.open && (
+          <MFAChallenge
+            factorId={mfaChallenge.factorId}
+            onSuccess={() => {
+              setMfaChallenge({ open: false, factorId: '' });
+              showNotification('Bienvenue ! 🔐');
+              logActivity('Connexion 2FA', 'Connexion sécurisée réussie');
+            }}
+            onCancel={async () => {
+              await signOut();
+              setMfaChallenge({ open: false, factorId: '' });
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div id="app-main" className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
 
@@ -980,13 +1052,13 @@ const BulletinApp = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <div className="flex justify-between items-center mb-2">
           <div className="flex-1"></div>
-          <h1 className="text-4xl font-bold text-center text-blue-600">📚 EduPulse</h1>
+          <h1 className="text-4xl font-bold text-center text-blue-600">📚 Gestion de Bulletins Scolaires</h1>
           <div className="flex-1 flex justify-end items-center space-x-4">
             <SyncStatus />
             {renderUserMenu()}
           </div>
         </div>
-        <p className="text-center text-gray-600">Plateforme intelligente de gestion scolaire</p>
+        <p className="text-center text-gray-600">Système complet de gestion des notes et bulletins PDF</p>
       </div>
 
       {/* Navigation */}
