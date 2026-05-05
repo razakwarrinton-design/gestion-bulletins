@@ -45,6 +45,9 @@ import ParentAssignModal from './components/ParentAssignModal';
 import PaymentManager from './components/PaymentManager';
 import AIAppreciations from './components/AIAppreciations';
 import DashboardKPIs from './components/DashboardKPIs';
+import LoginPage from './components/LoginPage';
+import { useDarkMode } from './hooks/useDarkMode';
+import DarkModeToggle from './components/DarkModeToggle';
 
 // ─── Items de navigation (source unique) ─────────────────────────────────────
 const NAV_ITEMS = [
@@ -70,6 +73,7 @@ const NAV_ITEMS = [
 const BulletinApp = () => {
   // ── Authentification ────────────────────────────────────────────────────────
   const { currentUser, loading: authLoading, signIn, signUp, signOut, hasPermission, isAuthenticated } = useSupabaseAuth();
+  const { isDark, toggle: toggleDark } = useDarkMode();
 
   // ── Navigation & UI ──────────────────────────────────────────────────────────
   const [currentView, setCurrentView] = useState('dashboard');
@@ -916,45 +920,16 @@ const BulletinApp = () => {
   // ── Écran de connexion si non authentifié ─────────────────────────────────
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
-        {showAlert && (
-          <div className="fixed top-4 right-4 z-50">
-            <div className="bg-green-100 border-2 border-green-600 rounded-lg p-4 shadow-lg">
-              <p className="text-green-800 font-medium">{alertMessage}</p>
-            </div>
-          </div>
-        )}
-        <div className="w-full max-w-md">
-          {/* Logo + Nom */}
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-              <span className="text-4xl">📚</span>
-            </div>
-            <h1 className="text-4xl font-black text-white mb-2">EduPulse</h1>
-            <p className="text-blue-200 text-sm">Plateforme intelligente de gestion scolaire</p>
-          </div>
-
-          {/* Carte connexion */}
-          <div className="bg-white rounded-3xl shadow-2xl p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Connexion</h2>
-            <LoginModalSupabase
-              isRegister={isRegister}
-              setIsRegister={setIsRegister}
-              setShowLoginModal={() => { }}
-              onSignIn={handleLogin}
-              onSignUp={handleRegister}
-              loading={authLoading}
-              inline={true}
-            />
-          </div>
-
-          {/* Footer */}
-          <p className="text-center text-blue-200 text-xs mt-6">
-            EduPulse © {new Date().getFullYear()} — Tous droits réservés
-          </p>
-        </div>
-
-        {/* 2FA Challenge */}
+      <>
+        <LoginPage
+          isRegister={isRegister}
+          setIsRegister={setIsRegister}
+          onSignIn={handleLogin}
+          onSignUp={handleRegister}
+          loading={authLoading}
+          showAlert={showAlert}
+          alertMessage={alertMessage}
+        />
         {mfaChallenge.open && (
           <MFAChallenge
             factorId={mfaChallenge.factorId}
@@ -969,7 +944,7 @@ const BulletinApp = () => {
             }}
           />
         )}
-      </div>
+      </>
     );
   }
 
@@ -1052,13 +1027,14 @@ const BulletinApp = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <div className="flex justify-between items-center mb-2">
           <div className="flex-1"></div>
-          <h1 className="text-4xl font-bold text-center text-blue-600">📚 Gestion de Bulletins Scolaires</h1>
-          <div className="flex-1 flex justify-end items-center space-x-4">
+          <h1 className="text-4xl font-bold text-center text-blue-600">📚 EduPulse</h1>
+          <div className="flex-1 flex justify-end items-center space-x-3">
+            <DarkModeToggle isDark={isDark} toggle={toggleDark} />
             <SyncStatus />
             {renderUserMenu()}
           </div>
         </div>
-        <p className="text-center text-gray-600">Système complet de gestion des notes et bulletins PDF</p>
+        <p className="text-center text-gray-600">Plateforme intelligente de gestion scolaire</p>
       </div>
 
       {/* Navigation */}
