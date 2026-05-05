@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../config/supabase';
+import { supabase, supabaseConfigured } from '../config/supabase';
 
 /**
  * Hook personnalisé pour gérer l'authentification Supabase
@@ -13,6 +13,12 @@ export function useSupabaseAuth() {
 
   // Charger la session au montage du composant
   useEffect(() => {
+    if (!supabaseConfigured) {
+      setError('Supabase non configuré. Vérifiez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.');
+      setLoading(false);
+      return;
+    }
+
     // Récupérer la session actuelle
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -60,6 +66,12 @@ export function useSupabaseAuth() {
 
   // Connexion avec email/mot de passe
   const signIn = async (email, password) => {
+    if (!supabaseConfigured) {
+      const message = 'Supabase non configuré. Impossible de se connecter.';
+      setError(message);
+      return { success: false, error: message };
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -83,6 +95,12 @@ export function useSupabaseAuth() {
 
   // Inscription avec email/mot de passe
   const signUp = async (email, password, firstName, lastName, role = 'secretaire') => {
+    if (!supabaseConfigured) {
+      const message = 'Supabase non configuré. Impossible de créer un compte.';
+      setError(message);
+      return { success: false, error: message };
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -113,6 +131,12 @@ export function useSupabaseAuth() {
 
   // Déconnexion
   const signOut = async () => {
+    if (!supabaseConfigured) {
+      const message = 'Supabase non configuré. Impossible de se déconnecter.';
+      setError(message);
+      return { success: false, error: message };
+    }
+
     try {
       setLoading(true);
       const { error } = await supabase.auth.signOut();
@@ -129,6 +153,12 @@ export function useSupabaseAuth() {
 
   // Réinitialiser le mot de passe
   const resetPassword = async (email) => {
+    if (!supabaseConfigured) {
+      const message = 'Supabase non configuré. Impossible de réinitialiser le mot de passe.';
+      setError(message);
+      return { success: false, error: message };
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -150,6 +180,12 @@ export function useSupabaseAuth() {
 
   // Mettre à jour le profil
   const updateProfile = async (updates) => {
+    if (!supabaseConfigured) {
+      const message = 'Supabase non configuré. Impossible de mettre à jour le profil.';
+      setError(message);
+      return { success: false, error: message };
+    }
+
     try {
       setLoading(true);
       setError(null);

@@ -1,5 +1,4 @@
 import * as XLSX from 'xlsx';
-import { supabase } from './lib/supabaseClient';
 import React, { useState, useEffect } from 'react';
 import { useSupabaseState } from './hooks/useSupabaseState';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
@@ -126,6 +125,7 @@ const BulletinApp = () => {
   // ── Auth Modal ───────────────────────────────────────────────────────────────
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
+  const [mfaChallenge, setMfaChallenge] = useState({ open: false, factorId: '' });
 
   // ── Modals CRUD ──────────────────────────────────────────────────────────────
   const [classModalOpen, setClassModalOpen] = useState(false);

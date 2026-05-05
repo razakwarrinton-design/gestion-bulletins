@@ -2,11 +2,19 @@ import { createClient } from '@supabase/supabase-js';
 
 // Configuration Supabase
 // IMPORTANT: À CONFIGURER AVEC VOS DONNÉES SUPABASE
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-// Créer l'instance Supabase
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+if (!isSupabaseConfigured) {
+  console.warn('Supabase env vars are missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+}
+
+// Créer l'instance Supabase seulement si la configuration est présente
+export const supabase = isSupabaseConfigured
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+export const supabaseConfigured = isSupabaseConfigured;
 
 // Fonctions utilitaires pour la gestion des données
 export const getAppData = async (key) => {

@@ -19,6 +19,16 @@ export function useSupabaseState(key, defaultValue) {
     const loadData = async () => {
       try {
         setIsLoading(true);
+        if (!supabase) {
+          const localData = localStorage.getItem(key);
+          if (localData) {
+            setData(JSON.parse(localData));
+          } else {
+            setData(defaultValue);
+          }
+          return;
+        }
+
         const { data: result, error: err } = await supabase
           .from('app_data')
           .select('value')
@@ -46,6 +56,10 @@ export function useSupabaseState(key, defaultValue) {
     };
 
     loadData();
+
+    if (!supabase) {
+      return;
+    }
 
     // S'abonner aux changements en temps réel (nouvelle API Supabase v2)
     const channel = supabase
@@ -77,6 +91,11 @@ export function useSupabaseState(key, defaultValue) {
     try {
       // Mise à jour immédiate de l'état local (optimistic update)
       setData(newValue);
+
+      if (!supabase) {
+        localStorage.setItem(key, JSON.stringify(newValue));
+        return;
+      }
 
       // Sauvegarde dans Supabase
       const { error } = await supabase
