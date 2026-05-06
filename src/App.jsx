@@ -10,9 +10,9 @@ import {
 import {
     BookOpen, Users, FileText, GraduationCap, Plus, Trash2, Edit2,
     Printer, BarChart3, Upload, FileDown, Settings, Image, Menu, X,
-    LogOut, UserCircle, Shield,
-    LayoutDashboard, PenLine, Calendar, Star, TrendingUp, ArrowLeftRight,
-    UserRound, CreditCard, Bot, ChevronRight, Bell, Search, UsersRound
+    LogOut, UserCircle, Shield, LayoutDashboard, Pencil, Calendar,
+    Star, TrendingUp, FolderUp, UserCheck, UsersRound, CreditCard,
+    Bot, CheckCircle, BarChart2, ChevronRight
 } from 'lucide-react';
 import LoginModalSupabase from './components/LoginModalSupabase';
 import PrintPreview from './components/PrintPreview';
@@ -51,24 +51,32 @@ import LoginPage from './components/LoginPage';
 import { useDarkMode } from './hooks/useDarkMode';
 import DarkModeToggle from './components/DarkModeToggle';
 
-// ─── Items de navigation (source unique) ─────────────────────────────────────
+// ─── Sections de navigation ───────────────────────────────────────────────────
+const NAV_SECTIONS = [
+    { key: 'principal', label: 'Principal' },
+    { key: 'notes', label: 'Notes & Bulletins' },
+    { key: 'avance', label: 'Avancé' },
+    { key: 'gestion', label: 'Gestion' },
+];
+
+// ─── Items de navigation ──────────────────────────────────────────────────────
 const NAV_ITEMS = [
-    { view: 'dashboard', label: 'Tableau de bord', Icon: LayoutDashboard, group: 'Principal', roles: ['admin', 'professeur', 'secretaire'] },
-    { view: 'classes', label: 'Classes', Icon: GraduationCap, group: 'Principal', roles: ['admin', 'secretaire'] },
-    { view: 'students', label: 'Élèves', Icon: Users, group: 'Principal', roles: ['admin', 'professeur', 'secretaire'] },
-    { view: 'subjects', label: 'Matières', Icon: BookOpen, group: 'Principal', roles: ['admin'] },
-    { view: 'grades', label: 'Saisir notes', Icon: PenLine, group: 'Notes', roles: ['admin', 'professeur'] },
-    { view: 'bulletins', label: 'Bulletins', Icon: FileText, group: 'Notes', roles: ['admin', 'professeur', 'secretaire'] },
-    { view: 'academicyears', label: 'Années scolaires', Icon: Calendar, group: 'Notes', roles: ['admin'] },
-    { view: 'appreciations', label: 'Appréciations', Icon: Star, group: 'Notes', roles: ['admin', 'professeur'] },
-    { view: 'analytics', label: 'Analyse avancée', Icon: TrendingUp, group: 'Avancé', roles: ['admin', 'professeur'] },
-    { view: 'statistics', label: 'Statistiques', Icon: BarChart3, group: 'Avancé', roles: ['admin', 'professeur'] },
-    { view: 'ia-appreciations', label: 'IA Appréciations', Icon: Bot, group: 'Avancé', roles: ['admin', 'professeur'] },
-    { view: 'importexport', label: 'Import/Export', Icon: ArrowLeftRight, group: 'Gestion', roles: ['admin', 'secretaire'] },
-    { view: 'gestion-parents', label: 'Gestion parents', Icon: UsersRound, group: 'Gestion', roles: ['admin'] },
-    { view: 'paiements', label: 'Paiements', Icon: CreditCard, group: 'Gestion', roles: ['admin', 'secretaire'] },
-    { view: 'settings', label: 'Paramètres', Icon: Settings, group: 'Gestion', roles: ['admin'] },
-    { view: 'parents', label: 'Espace Parents', Icon: UserRound, group: 'Gestion', roles: ['parent'] },
+    { view: 'dashboard', label: 'Tableau de bord', Icon: LayoutDashboard, section: 'principal', roles: ['admin', 'professeur', 'secretaire'] },
+    { view: 'classes', label: 'Classes', Icon: GraduationCap, section: 'principal', roles: ['admin', 'secretaire'] },
+    { view: 'students', label: 'Élèves', Icon: Users, section: 'principal', roles: ['admin', 'professeur', 'secretaire'] },
+    { view: 'subjects', label: 'Matières', Icon: BookOpen, section: 'principal', roles: ['admin'] },
+    { view: 'grades', label: 'Saisir notes', Icon: Pencil, section: 'notes', roles: ['admin', 'professeur'] },
+    { view: 'bulletins', label: 'Bulletins', Icon: FileText, section: 'notes', roles: ['admin', 'professeur', 'secretaire'] },
+    { view: 'academicyears', label: 'Années scolaires', Icon: Calendar, section: 'notes', roles: ['admin'] },
+    { view: 'appreciations', label: 'Appréciations', Icon: Star, section: 'notes', roles: ['admin', 'professeur'] },
+    { view: 'analytics', label: 'Analyse avancée', Icon: TrendingUp, section: 'avance', roles: ['admin', 'professeur'] },
+    { view: 'statistics', label: 'Statistiques', Icon: BarChart2, section: 'avance', roles: ['admin', 'professeur'] },
+    { view: 'ia-appreciations', label: 'IA Appréciations', Icon: Bot, section: 'avance', roles: ['admin', 'professeur'] },
+    { view: 'importexport', label: 'Import/Export', Icon: FolderUp, section: 'gestion', roles: ['admin', 'secretaire'] },
+    { view: 'gestion-parents', label: 'Gestion parents', Icon: UsersRound, section: 'gestion', roles: ['admin'] },
+    { view: 'paiements', label: 'Paiements', Icon: CreditCard, section: 'gestion', roles: ['admin', 'secretaire'] },
+    { view: 'settings', label: 'Paramètres', Icon: Settings, section: 'gestion', roles: ['admin'] },
+    { view: 'parents', label: 'Espace Parents', Icon: UserCheck, section: 'gestion', roles: ['parent'] },
 ];
 
 // ─── Composant principal ──────────────────────────────────────────────────────
@@ -950,202 +958,210 @@ const BulletinApp = () => {
         );
     }
 
-    // ── grouped nav items ──────────────────────────────────────────────────────
-    const navGroups = ['Principal', 'Notes', 'Avancé', 'Gestion'];
-    const currentPageLabel = visibleNavItems.find(i => i.view === currentView)?.label || 'EduPulse';
-
-    const initials = currentUser
-        ? `${(currentUser.firstName || '?')[0]}${(currentUser.lastName || '?')[0]}`.toUpperCase()
-        : '?';
-
     return (
-        <div id="app-main" className="flex h-screen overflow-hidden bg-[#EFF6FF]">
+        <div className="flex h-screen overflow-hidden" style={{ background: '#F0F5FF' }}>
 
-            {/* ── SIDEBAR ────────────────────────────────────────────────────────── */}
-            <aside className={`
-        fixed inset-y-0 left-0 z-40 flex flex-col bg-[#1E3A5F] transition-transform duration-200
-        w-[210px]
-        md:relative md:translate-x-0
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+            {/* ── Toast notification ─────────────────────────────────────────────── */}
+            {showAlert && (
+                <div className="fixed top-4 right-4 z-[100]">
+                    <div className="bg-white border border-green-200 rounded-xl px-4 py-3 shadow-lg flex items-center gap-3">
+                        <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-800">{alertMessage}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Sidebar ────────────────────────────────────────────────────────── */}
+            <aside
+                className={`w-[210px] flex-shrink-0 flex flex-col h-full z-50 transition-transform duration-300
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          fixed md:relative`}
+                style={{ background: '#0D1B2A' }}
+            >
                 {/* Brand */}
-                <div className="px-4 py-4 border-b border-white/10 flex-shrink-0">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="px-4 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                             <BarChart3 className="w-4 h-4 text-white" />
                         </div>
                         <div>
                             <div className="text-white font-bold text-sm leading-tight">EduPulse</div>
-                            <div className="text-white/35 text-[10px]">Gestion scolaire</div>
+                            <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Gestion scolaire</div>
                         </div>
                     </div>
                 </div>
 
                 {/* Nav */}
-                <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-                    {navGroups.map(group => {
-                        const items = visibleNavItems.filter(i => i.group === group);
-                        if (!items.length) return null;
+                <nav className="flex-1 overflow-y-auto px-2 py-2">
+                    {NAV_SECTIONS.map(section => {
+                        const sectionItems = visibleNavItems.filter(i => i.section === section.key);
+                        if (sectionItems.length === 0) return null;
                         return (
-                            <div key={group}>
-                                <div className="text-white/30 text-[9px] font-semibold tracking-widest uppercase px-2 py-2 mt-2">
-                                    {group}
+                            <div key={section.key}>
+                                <div className="text-[9.5px] font-bold uppercase tracking-widest px-2 py-2 mt-2"
+                                    style={{ color: 'rgba(255,255,255,0.3)' }}>
+                                    {section.label}
                                 </div>
-                                {items.map(({ view, label, Icon }) => {
-                                    const active = currentView === view;
-                                    return (
-                                        <button
-                                            key={view}
-                                            onClick={() => handleViewChange(view)}
-                                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150 text-left
-                        ${active
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'text-white/55 hover:bg-white/7 hover:text-white/90'}`}
-                                        >
-                                            <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                                            <span>{label}</span>
-                                        </button>
-                                    );
-                                })}
+                                {sectionItems.map(({ view, label, Icon }) => (
+                                    <button
+                                        key={view}
+                                        onClick={() => handleViewChange(view)}
+                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium mb-0.5 transition-all duration-150 text-left
+                      ${currentView === view
+                                                ? 'bg-blue-600 text-white'
+                                                : 'hover:text-white'}`}
+                                        style={{
+                                            color: currentView === view ? 'white' : 'rgba(255,255,255,0.55)',
+                                            background: currentView === view ? undefined : 'transparent',
+                                        }}
+                                        onMouseEnter={e => { if (currentView !== view) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                        onMouseLeave={e => { if (currentView !== view) e.currentTarget.style.background = 'transparent'; }}
+                                    >
+                                        <Icon className="w-[15px] h-[15px] flex-shrink-0" />
+                                        <span className="flex-1 truncate">{label}</span>
+                                    </button>
+                                ))}
                             </div>
                         );
                     })}
                 </nav>
 
                 {/* User footer */}
-                <div className="px-2 py-3 border-t border-white/10 flex-shrink-0">
-                    <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/7 cursor-pointer transition-colors">
-                        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0">
-                            {initials}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="text-white text-xs font-medium truncate">
-                                {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : ''}
+                <div className="px-2 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                    {currentUser && (
+                        <div className="flex items-center gap-2 px-2 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-white text-[11px]">
+                                {currentUser.firstName?.[0]}{currentUser.lastName?.[0]}
                             </div>
-                            <div className="text-white/35 text-[10px] capitalize">{currentUser?.role}</div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-white text-[12px] font-medium truncate">
+                                    {currentUser.firstName} {currentUser.lastName}
+                                </div>
+                                <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                                    {currentUser.role === 'admin' ? 'Administrateur' :
+                                        currentUser.role === 'professeur' ? 'Professeur' : 'Secrétaire'}
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </aside>
 
             {/* Mobile overlay */}
             {mobileMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-black/40 z-30 md:hidden"
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
                     onClick={() => setMobileMenuOpen(false)}
                 />
             )}
 
-            {/* ── MAIN ─────────────────────────────────────────────────────────── */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            {/* ── Main ───────────────────────────────────────────────────────────── */}
+            <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
 
-                {/* TOPBAR */}
-                <header className="bg-white border-b border-blue-50 px-4 py-2.5 flex items-center gap-3 flex-shrink-0 shadow-sm">
+                {/* Topbar */}
+                <header className="bg-white flex items-center gap-3 px-5 py-2.5 flex-shrink-0"
+                    style={{ borderBottom: '1px solid #EFF6FF' }}>
+
                     {/* Mobile burger */}
                     <button
-                        className="md:hidden p-1.5 rounded-lg hover:bg-blue-50 text-gray-500"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="md:hidden p-1.5 rounded-lg text-gray-500 hover:bg-blue-50 transition-colors"
                     >
                         {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
 
                     {/* Page title */}
-                    <h1 className="font-bold text-gray-800 text-sm flex-1 flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-2">
                         {(() => {
                             const item = visibleNavItems.find(i => i.view === currentView);
-                            if (item) return <><item.Icon className="w-4 h-4 text-blue-600" />{item.label}</>;
-                            return 'EduPulse';
+                            if (!item) return null;
+                            const { Icon } = item;
+                            return (
+                                <>
+                                    <Icon className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                    <span className="text-[15px] font-bold text-gray-900">{item.label}</span>
+                                </>
+                            );
                         })()}
-                    </h1>
+                    </div>
 
                     {/* Search */}
-                    <div className="hidden sm:flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5 text-xs text-gray-400 min-w-[140px]">
-                        <Search className="w-3.5 h-3.5" />
+                    <div className="hidden md:flex items-center gap-2 rounded-lg px-3 py-1.5 text-gray-400 text-[12px] min-w-[150px]"
+                        style={{ background: '#F0F5FF', border: '1px solid #DBEAFE' }}>
+                        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
                         Rechercher...
                     </div>
 
                     {/* Year badge */}
-                    <div className="hidden sm:flex items-center gap-1.5 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-blue-600">
-                        <Calendar className="w-3 h-3" />
+                    <div className="hidden md:flex items-center text-[11px] font-semibold text-blue-600 rounded-lg px-2.5 py-1.5"
+                        style={{ background: '#EFF6FF', border: '1px solid #DBEAFE' }}>
                         {currentYear}
                     </div>
 
                     {/* SyncStatus */}
                     <SyncStatus />
 
-                    {/* Notifications */}
-                    <button className="relative w-8 h-8 rounded-lg border border-blue-100 bg-white flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                        <Bell className="w-4 h-4" />
-                    </button>
-
                     {/* Dark mode */}
                     <DarkModeToggle isDark={isDark} toggle={toggleDark} />
 
                     {/* Logout */}
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-1.5 bg-red-50 border border-red-100 text-red-500 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-100 transition-colors"
-                    >
-                        <LogOut className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Déconnexion</span>
-                    </button>
+                    {currentUser && (
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors"
+                            style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#FECACA'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#FEE2E2'}
+                        >
+                            <LogOut className="w-3.5 h-3.5" />
+                            <span className="hidden md:inline">Déconnexion</span>
+                        </button>
+                    )}
                 </header>
 
-                {/* CONTENT */}
-                <main className="flex-1 overflow-y-auto p-4">
-
-                    {/* Notification toast */}
-                    {showAlert && (
-                        <div className="fixed top-4 right-4 z-50">
-                            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 shadow-lg flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <p className="text-green-800 font-medium text-sm">{alertMessage}</p>
-                            </div>
-                        </div>
-                    )}
+                {/* ── Scrollable content ──────────────────────────────────────────── */}
+                <main className="flex-1 overflow-y-auto p-5">
 
                     {/* Sélecteur de modèle de bulletin */}
                     {showPrintPreview && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
-                                <div className="bg-blue-600 text-white px-5 py-4">
-                                    <h2 className="font-bold text-base">Choisir le modèle de bulletin</h2>
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full m-4 overflow-hidden">
+                                <div className="bg-blue-600 text-white px-6 py-4">
+                                    <h2 className="text-lg font-bold">Choisir le modèle de bulletin</h2>
                                 </div>
-                                <div className="p-5 space-y-3">
+                                <div className="p-6 space-y-3">
                                     {[
                                         { id: 'model1', label: '📋 Modèle Classique', desc: 'Format traditionnel avec tableau détaillé' },
                                         { id: 'model2', label: '📊 Modèle Moderne', desc: 'Design visuel avec graphiques et barres de progression' },
                                         { id: 'model3', label: '🔍 Modèle Complet', desc: 'Analyse avancée avec alertes et détection automatique' },
                                     ].map(({ id, label, desc }) => (
-                                        <button
-                                            key={id}
-                                            onClick={() => setSelectedBulletinTemplate(id)}
-                                            className={`w-full p-3.5 rounded-xl border-2 transition text-left ${selectedBulletinTemplate === id ? 'border-blue-600 bg-blue-50' : 'border-gray-100 bg-white hover:border-blue-200'}`}
-                                        >
-                                            <div className="font-semibold text-sm text-gray-800">{label}</div>
-                                            <div className="text-xs text-gray-400 mt-0.5">{desc}</div>
+                                        <button key={id} onClick={() => setSelectedBulletinTemplate(id)}
+                                            className={`w-full p-4 rounded-xl border-2 text-left transition-all ${selectedBulletinTemplate === id ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
+                                            <div className="font-semibold">{label}</div>
+                                            <div className="text-sm text-gray-500 mt-0.5">{desc}</div>
                                         </button>
                                     ))}
-                                    <div className="flex gap-2 pt-2 justify-end">
-                                        <button onClick={() => setShowPrintPreview(false)} className="px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 font-medium">
-                                            Annuler
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                window.dispatchEvent(new CustomEvent('print-bulletin', { detail: { template: selectedBulletinTemplate } }));
-                                                setTimeout(() => setShowPrintPreview(false), 300);
-                                            }}
-                                            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                                        >
-                                            Imprimer
-                                        </button>
-                                    </div>
+                                </div>
+                                <div className="px-6 pb-5 flex gap-3 justify-end">
+                                    <button onClick={() => setShowPrintPreview(false)}
+                                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors text-sm">
+                                        Annuler
+                                    </button>
+                                    <button onClick={() => {
+                                        window.dispatchEvent(new CustomEvent('print-bulletin', { detail: { template: selectedBulletinTemplate } }));
+                                        setTimeout(() => setShowPrintPreview(false), 300);
+                                    }} className="px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors text-sm">
+                                        Imprimer
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* PrintPreview */}
                     {showPrintPreview && (
                         <PrintPreview
                             printStudent={printStudent}
@@ -1165,110 +1181,82 @@ const BulletinApp = () => {
                         />
                     )}
 
-                    {/* ── Contenu des vues ── */}
-                    <div className="bg-white rounded-2xl border border-blue-50 shadow-sm p-5">
-                        {currentView === 'dashboard' && (isLoadingClasses || isLoadingStudents || isLoadingSubjects ? <DashboardSkeleton /> : (
-                            <DashboardKPIs
-                                classes={classes}
-                                students={students}
-                                subjects={subjects}
-                                grades={grades}
-                                calculateAverage={calculateAverage}
-                                currentUser={currentUser}
-                                currentYear={currentYear}
-                                setCurrentView={setCurrentView}
-                                activities={activities}
+                    {/* ── Views ─────────────────────────────────────────────────────── */}
+                    <div className="bg-white rounded-2xl shadow-sm p-6 min-h-full" style={{ border: '1px solid #EFF6FF' }}>
+
+                        {currentView === 'dashboard' && (isLoadingClasses || isLoadingStudents || isLoadingSubjects
+                            ? <DashboardSkeleton />
+                            : <DashboardKPIs
+                                classes={classes} students={students} subjects={subjects} grades={grades}
+                                calculateAverage={calculateAverage} currentUser={currentUser}
+                                currentYear={currentYear} setCurrentView={setCurrentView} activities={activities}
                             />
-                        ))}
+                        )}
                         {currentView === 'classes' && (isLoadingClasses ? <ClassesSkeleton /> : renderClasses())}
-                        {currentView === 'students' && (isLoadingStudents ? <TableSkeleton rows={6} cols={4} /> : (
-                            <StudentsList
-                                classes={classes}
-                                students={students}
-                                selectedClass={selectedClass}
-                                setSelectedClass={setSelectedClass}
-                                addStudent={handleAddStudent}
-                                editStudent={handleEditStudent}
-                                deleteStudent={handleDeleteStudent}
-                                currentUser={currentUser}
+                        {currentView === 'students' && (isLoadingStudents
+                            ? <TableSkeleton rows={6} cols={4} />
+                            : <StudentsList
+                                classes={classes} students={students}
+                                selectedClass={selectedClass} setSelectedClass={setSelectedClass}
+                                addStudent={handleAddStudent} editStudent={handleEditStudent}
+                                deleteStudent={handleDeleteStudent} currentUser={currentUser}
                             />
-                        ))}
+                        )}
                         {currentView === 'subjects' && (isLoadingSubjects ? <TableSkeleton rows={5} cols={3} /> : renderSubjects())}
-                        {currentView === 'grades' && (isLoadingClasses || isLoadingStudents || isLoadingSubjects || isLoadingGrades ? <GradesSkeleton /> : (
-                            <GradesForm
-                                classes={classes}
-                                students={students}
-                                subjects={subjects}
-                                selectedClass={selectedClass}
-                                setSelectedClass={setSelectedClass}
-                                selectedTrimester={selectedTrimester}
-                                setSelectedTrimester={setSelectedTrimester}
-                                getGrade={getGrade}
-                                updateGrade={updateGrade}
-                                calculateAverage={calculateAverage}
-                                getMention={getMention}
+                        {currentView === 'grades' && (isLoadingClasses || isLoadingStudents || isLoadingSubjects || isLoadingGrades
+                            ? <GradesSkeleton />
+                            : <GradesForm
+                                classes={classes} students={students} subjects={subjects}
+                                selectedClass={selectedClass} setSelectedClass={setSelectedClass}
+                                selectedTrimester={selectedTrimester} setSelectedTrimester={setSelectedTrimester}
+                                getGrade={getGrade} updateGrade={updateGrade}
+                                calculateAverage={calculateAverage} getMention={getMention}
                             />
-                        ))}
+                        )}
                         {currentView === 'bulletins' && (isLoadingStudents || isLoadingGrades ? <BulletinsSkeleton /> : renderBulletins())}
                         {currentView === 'academicyears' && (
                             <AcademicYearManager
-                                academicYears={academicYears}
-                                setAcademicYears={setAcademicYears}
-                                currentYear={currentYear}
-                                setCurrentYear={setCurrentYear}
+                                academicYears={academicYears} setAcademicYears={setAcademicYears}
+                                currentYear={currentYear} setCurrentYear={setCurrentYear}
                                 showNotification={showNotification}
                             />
                         )}
-                        {currentView === 'appreciations' && (isLoadingStudents || isLoadingGrades ? <Spinner text="Chargement des appréciations..." /> : (
-                            <AppreciationManager
-                                grades={grades}
-                                students={students}
-                                subjects={subjects}
-                                classes={classes}
-                                selectedClass={selectedClass}
-                                selectedTrimester={selectedTrimester}
-                                showNotification={showNotification}
-                                currentUser={currentUser}
-                                appreciations={appreciations}
-                                setAppreciations={setAppreciations}
+                        {currentView === 'appreciations' && (isLoadingStudents || isLoadingGrades
+                            ? <Spinner text="Chargement des appréciations..." />
+                            : <AppreciationManager
+                                grades={grades} students={students} subjects={subjects} classes={classes}
+                                selectedClass={selectedClass} selectedTrimester={selectedTrimester}
+                                showNotification={showNotification} currentUser={currentUser}
+                                appreciations={appreciations} setAppreciations={setAppreciations}
                             />
-                        ))}
-                        {currentView === 'analytics' && (isLoadingStudents || isLoadingGrades ? <Spinner text="Chargement de l'analyse..." /> : (
-                            <AdvancedAnalytics
-                                students={students}
-                                classes={classes}
-                                grades={grades}
-                                subjects={subjects}
-                                selectedClass={selectedClass}
-                                selectedTrimester={selectedTrimester}
-                                calculateTrimesterAverage={calculateTrimesterAverage}
-                                getMention={getMention}
+                        )}
+                        {currentView === 'analytics' && (isLoadingStudents || isLoadingGrades
+                            ? <Spinner text="Chargement de l'analyse..." />
+                            : <AdvancedAnalytics
+                                students={students} classes={classes} grades={grades} subjects={subjects}
+                                selectedClass={selectedClass} selectedTrimester={selectedTrimester}
+                                calculateTrimesterAverage={calculateTrimesterAverage} getMention={getMention}
                             />
-                        ))}
-                        {currentView === 'statistics' && (isLoadingStudents || isLoadingGrades ? <Spinner text="Chargement des statistiques..." /> : renderStatistics())}
+                        )}
+                        {currentView === 'statistics' && (isLoadingStudents || isLoadingGrades
+                            ? <Spinner text="Chargement des statistiques..." />
+                            : renderStatistics()
+                        )}
                         {currentView === 'importexport' && renderImportExport()}
                         {currentView === 'settings' && (
                             <SettingsPanel
-                                schoolLogo={schoolLogo}
-                                handleLogoUpload={handleLogoUpload}
-                                schoolInfo={schoolInfo}
-                                updateSchoolInfo={updateSchoolInfo}
-                                appColors={appColors}
-                                updateColor={updateColor}
-                                currentUser={currentUser}
-                                handleRegister={handleRegister}
-                                showNotification={showNotification}
-                                activities={activities}
+                                schoolLogo={schoolLogo} handleLogoUpload={handleLogoUpload}
+                                schoolInfo={schoolInfo} updateSchoolInfo={updateSchoolInfo}
+                                appColors={appColors} updateColor={updateColor}
+                                currentUser={currentUser} handleRegister={handleRegister}
+                                showNotification={showNotification} activities={activities}
                             />
                         )}
                         {showLoginModal && (
                             <LoginModalSupabase
-                                isRegister={isRegister}
-                                setIsRegister={setIsRegister}
+                                isRegister={isRegister} setIsRegister={setIsRegister}
                                 setShowLoginModal={setShowLoginModal}
-                                onSignIn={handleLogin}
-                                onSignUp={handleRegister}
-                                loading={authLoading}
+                                onSignIn={handleLogin} onSignUp={handleRegister} loading={authLoading}
                             />
                         )}
                         {currentView === 'parents' && (
@@ -1278,55 +1266,36 @@ const BulletinApp = () => {
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <h2 className="text-2xl font-bold">Gestion des parents</h2>
-                                        <p className="text-sm text-gray-500 mt-0.5">Créez des comptes parents et associez-les à leurs enfants</p>
+                                        <h2 className="text-xl font-bold text-gray-900">Gestion des parents</h2>
+                                        <p className="text-sm text-gray-400 mt-0.5">Créez des comptes parents et associez-les à leurs enfants</p>
                                     </div>
-                                    <button
-                                        onClick={() => setParentModalOpen(true)}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
-                                    >
+                                    <button onClick={() => setParentModalOpen(true)}
+                                        className="bg-blue-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors text-sm font-medium">
                                         <Plus className="w-4 h-4" /> Ajouter un parent
                                     </button>
                                 </div>
-
-                                {/* Guide d'utilisation */}
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-                                    <h3 className="font-bold text-blue-800 mb-3">📋 Comment ça marche ?</h3>
+                                <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+                                    <h3 className="font-bold text-blue-800 mb-3 text-sm">📋 Comment ça marche ?</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
-                                            <div>
-                                                <p className="font-semibold text-blue-800 text-sm">Créer un compte</p>
-                                                <p className="text-blue-600 text-xs mt-0.5">Cliquez "Ajouter un parent" → onglet "Créer un parent" → renseignez email et mot de passe</p>
+                                        {[
+                                            { n: 1, title: 'Créer un compte', desc: 'Cliquez "Ajouter un parent" → onglet "Créer un parent" → renseignez email et mot de passe' },
+                                            { n: 2, title: 'Lier à un élève', desc: 'Cliquez "Ajouter un parent" → onglet "Lier un élève" → associez le parent à son enfant' },
+                                            { n: 3, title: 'Le parent se connecte', desc: 'Le parent accède à l\'appli avec son email/mot de passe et voit les notes de son enfant' },
+                                        ].map(({ n, title, desc }) => (
+                                            <div key={n} className="flex items-start gap-3">
+                                                <div className="w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">{n}</div>
+                                                <div><p className="font-semibold text-blue-800 text-sm">{title}</p><p className="text-blue-600 text-xs mt-0.5">{desc}</p></div>
                                             </div>
-                                        </div>
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
-                                            <div>
-                                                <p className="font-semibold text-blue-800 text-sm">Lier à un élève</p>
-                                                <p className="text-blue-600 text-xs mt-0.5">Cliquez "Ajouter un parent" → onglet "Lier un élève" → associez le parent à son enfant</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
-                                            <div>
-                                                <p className="font-semibold text-blue-800 text-sm">Le parent se connecte</p>
-                                                <p className="text-blue-600 text-xs mt-0.5">Le parent accède à l'appli avec son email/mot de passe et voit les notes de son enfant</p>
-                                            </div>
-                                        </div>
+                                        ))}
                                     </div>
                                 </div>
-
-                                {/* Lien direct vers l'appli */}
-                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+                                <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between">
                                     <div>
-                                        <p className="font-semibold text-gray-800">🔗 Lien à partager aux parents</p>
-                                        <p className="text-sm text-gray-500 mt-0.5">https://gestion-bulletins-rho.vercel.app</p>
+                                        <p className="font-semibold text-gray-800 text-sm">🔗 Lien à partager aux parents</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">https://gestion-bulletins-rho.vercel.app</p>
                                     </div>
-                                    <button
-                                        onClick={() => { navigator.clipboard.writeText('https://gestion-bulletins-rho.vercel.app'); showNotification('Lien copié !'); }}
-                                        className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors font-medium"
-                                    >
+                                    <button onClick={() => { navigator.clipboard.writeText('https://gestion-bulletins-rho.vercel.app'); showNotification('Lien copié !'); }}
+                                        className="bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs hover:bg-gray-100 transition-colors font-medium">
                                         📋 Copier le lien
                                     </button>
                                 </div>
@@ -1334,69 +1303,40 @@ const BulletinApp = () => {
                         )}
                         {currentView === 'paiements' && (
                             <PaymentManager
-                                students={students}
-                                classes={classes}
-                                currentUser={currentUser}
-                                schoolInfo={schoolInfo}
-                                currentYear={currentYear}
+                                students={students} classes={classes}
+                                currentUser={currentUser} schoolInfo={schoolInfo} currentYear={currentYear}
                             />
                         )}
                         {currentView === 'ia-appreciations' && (
                             <AIAppreciations
-                                students={students}
-                                classes={classes}
-                                grades={grades}
-                                subjects={subjects}
-                                selectedClass={selectedClass}
-                                selectedTrimester={selectedTrimester}
-                                calculateAverage={calculateAverage}
-                                showNotification={showNotification}
+                                students={students} classes={classes} grades={grades} subjects={subjects}
+                                selectedClass={selectedClass} selectedTrimester={selectedTrimester}
+                                calculateAverage={calculateAverage} showNotification={showNotification}
                                 updateGrade={updateGrade}
                             />
                         )}
                     </div>
+                </main>
+            </div>
 
-                    {/* ── Modals CRUD ─────────────────────────────────────────────────────── */}
-                    <ClassModal
-                        isOpen={classModalOpen}
-                        onClose={() => setClassModalOpen(false)}
-                        onSave={handleSaveClass}
-                    />
-
-                    <StudentModal
-                        isOpen={studentModalOpen}
-                        onClose={() => { setStudentModalOpen(false); setEditingStudent(null); }}
-                        onSave={handleSaveStudent}
-                        classes={classes}
-                        student={editingStudent}
-                    />
-
-                    <SubjectModal
-                        isOpen={subjectModalOpen}
-                        onClose={() => setSubjectModalOpen(false)}
-                        onSave={handleSaveSubject}
-                    />
-
-                    <ConfirmModal
-                        isOpen={confirmModal.open}
-                        onClose={closeConfirm}
-                        onConfirm={confirmModal.onConfirm}
-                        title={confirmModal.title}
-                        message={confirmModal.message}
-                    />
-
-                    <ParentAssignModal
-                        isOpen={parentModalOpen}
-                        onClose={() => setParentModalOpen(false)}
-                        students={students}
-                        classes={classes}
-                        showNotification={showNotification}
-                    />
-            </div>{/* end content card */}
-        </main>
-      </div > {/* end main */ }
-    </div > {/* end app */ }
-  );
+            {/* ── Modals CRUD ──────────────────────────────────────────────────────── */}
+            <ClassModal isOpen={classModalOpen} onClose={() => setClassModalOpen(false)} onSave={handleSaveClass} />
+            <StudentModal
+                isOpen={studentModalOpen}
+                onClose={() => { setStudentModalOpen(false); setEditingStudent(null); }}
+                onSave={handleSaveStudent} classes={classes} student={editingStudent}
+            />
+            <SubjectModal isOpen={subjectModalOpen} onClose={() => setSubjectModalOpen(false)} onSave={handleSaveSubject} />
+            <ConfirmModal
+                isOpen={confirmModal.open} onClose={closeConfirm}
+                onConfirm={confirmModal.onConfirm} title={confirmModal.title} message={confirmModal.message}
+            />
+            <ParentAssignModal
+                isOpen={parentModalOpen} onClose={() => setParentModalOpen(false)}
+                students={students} classes={classes} showNotification={showNotification}
+            />
+        </div>
+    );
 };
 
 export default BulletinApp;
