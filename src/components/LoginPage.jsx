@@ -75,15 +75,16 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
         }}>
             {/* Decorative circles */}
             {[
-                { w: 400, h: 400, top: -100, left: -80, opacity: .6 },
-                { w: 300, h: 300, bottom: -60, right: -40, opacity: .4 },
-                { w: 150, h: 150, top: '45%', left: 20, opacity: .3 },
+                { w: 500, h: 500, top: -150, left: -100, color: 'rgba(147,197,253,0.45)' },
+                { w: 350, h: 350, bottom: -80, right: -60, color: 'rgba(147,197,253,0.35)' },
+                { w: 200, h: 200, top: '40%', left: 30, color: 'rgba(96,165,250,0.25)' },
+                { w: 120, h: 120, top: '18%', right: 80, color: 'rgba(147,197,253,0.3)' },
             ].map((c, i) => (
                 <div key={i} style={{
                     position: 'absolute', borderRadius: '50%',
                     width: c.w, height: c.h,
                     top: c.top, left: c.left, bottom: c.bottom, right: c.right,
-                    background: `rgba(219,234,254,${c.opacity})`,
+                    background: c.color,        // ← remplace l'ancien opacity
                     pointerEvents: 'none',
                 }} />
             ))}
