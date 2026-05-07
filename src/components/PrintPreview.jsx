@@ -74,22 +74,63 @@ export default function PrintPreview({
     setTimeout(() => { win.print(); setTimeout(() => win.close(), 500); }, 400);
   };
 
+  // ── Signature numérique HTML ───────────────────────────────────────────────
+  const digitalSigBox = (title, name, role = '') => `
+    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:10px 12px;background:#f8fafc;min-height:90px;display:flex;flex-direction:column;justify-content:space-between;">
+      <div style="font-size:7.5pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${title}</div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+        <div style="text-align:center;">
+          ${name
+      ? `<div style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:15pt;color:#1e3a5f;line-height:1.1;border-bottom:1.5px solid #94a3b8;padding-bottom:4px;min-width:120px;">${name}</div>
+               <div style="font-size:7.5pt;color:#64748b;margin-top:4px;font-weight:600;">${role ? role + ' — ' : ''}${new Date().toLocaleDateString('fr-FR')}</div>
+               <div style="margin-top:5px;display:inline-block;background:#dbeafe;color:#1d4ed8;font-size:6.5pt;font-weight:700;padding:2px 7px;border-radius:20px;border:1px solid #bfdbfe;">✓ Signé numériquement</div>`
+      : `<div style="font-size:8pt;color:#cbd5e1;font-style:italic;">En attente de signature</div>`
+    }
+        </div>
+      </div>
+    </div>`;
+
+  // ── Calcul note finale depuis interro/devoir/compo si pas de note globale ─
+  const computeFinal = (g) => {
+    if (g.value != null) return g.value;
+    const parts = [g.interro, g.devoir, g.composition].filter(v => v != null);
+    if (!parts.length) return null;
+    return parts.reduce((a, b) => a + b, 0) / parts.length;
+  };
+
   // ════════════════════════════════════════════════════════════════════════════
   // MODÈLE 1 — OFFICIEL (style ministère)
   // ════════════════════════════════════════════════════════════════════════════
   const generateModel1Html = () => {
+    const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
+    const principalTeacher = schoolInfo?.principalTeacher || '';
+
     const rows = studentGrades.map(g => {
       const subj = subjects.find(s => s.id === (g.subjectId || g.subject_id));
       const coef = subj?.coefficient || 1;
-      const val = g.value != null ? g.value : null;
-      const color = val != null ? gradeColor(val) : '#374151';
+      const finalVal = computeFinal(g);
+      const color = finalVal != null ? gradeColor(finalVal) : '#374151';
+      const interro = g.interro != null ? g.interro.toFixed(2) : '-';
+      const devoir = g.devoir != null ? g.devoir.toFixed(2) : '-';
+      const compo = g.composition != null ? g.composition.toFixed(2) : '-';
+      const teacherName = g.teacherName || subj?.teacher || '';
+      const sigCell = teacherName
+        ? `<span style="font-family:'Brush Script MT',cursive;font-size:10pt;color:#1e3a5f;">${teacherName}</span>
+           <div style="font-size:6pt;color:#2563eb;margin-top:1px;">✓ Signé</div>`
+        : `<span style="color:#d1d5db;font-size:8pt;">—</span>`;
       return `
         <tr>
-          <td class="subj-name">${subj?.name || 'N/A'}</td>
+          <td class="subj-name">${subj?.name || 'N/A'}<br>
+            <span style="font-size:7pt;color:#94a3b8;font-weight:400;">${teacherName}</span>
+          </td>
           <td class="center">${coef}</td>
-          <td class="center" style="color:${color}; font-weight:700;">${val != null ? val.toFixed(2) : '-'}</td>
-          <td class="center">${val != null ? (val * coef).toFixed(2) : '-'}</td>
+          <td class="center sub-note">${interro}</td>
+          <td class="center sub-note">${devoir}</td>
+          <td class="center sub-note">${compo}</td>
+          <td class="center" style="color:${color};font-weight:800;font-size:11pt;">${finalVal != null ? finalVal.toFixed(2) : '-'}</td>
+          <td class="center" style="color:${color};">${finalVal != null ? (finalVal * coef).toFixed(2) : '-'}</td>
           <td class="appreciate">${g.appreciation || ''}</td>
+          <td class="center" style="font-size:8pt;">${sigCell}</td>
         </tr>`;
     }).join('');
 
@@ -127,7 +168,8 @@ export default function PrintPreview({
   tr:nth-child(even) td { background: #f8fafc; }
   .subj-name { font-weight: 600; }
   .center { text-align: center; }
-  .appreciate { font-style: italic; font-size: 9pt; color: #4b5563; }
+  .sub-note { font-size: 9pt; color: #6b7280; background: #f9fafb; }
+  .appreciate { font-style: italic; font-size: 8.5pt; color: #4b5563; max-width: 120px; }
 
   /* Bande résultats */
   .results-band { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid #1e40af; margin-bottom: 10px; }
@@ -181,20 +223,25 @@ export default function PrintPreview({
   <table>
     <thead>
       <tr>
-        <th class="left">Matière</th>
-        <th>Coef.</th>
-        <th>Note /20</th>
-        <th>Total pts</th>
-        <th class="left">Appréciation du professeur</th>
+        <th class="left" style="min-width:110px;">Matière / Professeur</th>
+        <th style="width:36px;">Coef.</th>
+        <th style="width:46px;">Interro</th>
+        <th style="width:46px;">Devoir</th>
+        <th style="width:46px;">Compo</th>
+        <th style="width:52px;">Note /20</th>
+        <th style="width:52px;">Total pts</th>
+        <th class="left">Appréciation</th>
+        <th style="width:80px;">Signature prof</th>
       </tr>
     </thead>
     <tbody>
       ${rows}
       <tr style="background:#1e3a5f !important;">
-        <td colspan="2" style="font-weight:bold; color:white; font-size:10pt;">TOTAL</td>
-        <td class="center" style="font-weight:bold; color:white; font-size:11pt;">${fmtAvg(average)}/20</td>
+        <td colspan="5" style="font-weight:bold;color:white;font-size:10pt;">TOTAL GÉNÉRAL</td>
+        <td class="center" style="font-weight:bold;color:white;font-size:12pt;">${fmtAvg(average)}/20</td>
         <td class="center" style="color:white;">${totalPoints.toFixed(2)}</td>
-        <td style="color:white; font-size:9pt;">Coeff. total: ${totalCoef}</td>
+        <td style="color:rgba(255,255,255,0.7);font-size:8pt;">Coeff. total: ${totalCoef}</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -223,17 +270,20 @@ export default function PrintPreview({
     </div>
   </div>
 
-  <!-- Signatures -->
+  <!-- Appréciation conseil de classe -->
+  <div style="border:1.5px solid #1e40af;border-radius:8px;padding:10px 14px;margin-bottom:12px;background:#f8faff;">
+    <div style="font-size:8pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:6px;">Appréciation du conseil de classe / Prof. principal</div>
+    <div style="font-family:'Brush Script MT',cursive;font-size:13pt;color:#1e3a5f;min-height:28px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;">
+      ${principalTeacher || ''}
+    </div>
+    ${principalTeacher ? `<div style="font-size:7pt;color:#2563eb;margin-top:4px;">✓ Signé numériquement — ${new Date().toLocaleDateString('fr-FR')}</div>` : ''}
+  </div>
+
+  <!-- Signatures numériques -->
   <div class="signatures">
-    <div class="sig-box">
-      <div class="sig-label">Appréciation du conseil de classe</div>
-    </div>
-    <div class="sig-box">
-      <div class="sig-label">Signature du directeur</div>
-    </div>
-    <div class="sig-box">
-      <div class="sig-label">Signature des parents</div>
-    </div>
+    ${digitalSigBox('Signature du Directeur', directorName, 'Directeur')}
+    ${digitalSigBox('Visa du Prof. Principal', principalTeacher, 'Prof. Principal')}
+    ${digitalSigBox('Signature des Parents / Tuteur', '', '')}
   </div>
 
   <div class="footer">${schoolName} &mdash; Bulletin officiel &mdash; ${yearLabel} &mdash; ${trimLabel}</div>
@@ -245,33 +295,53 @@ export default function PrintPreview({
   // MODÈLE 2 — MODERNE (barres + SVG radar)
   // ════════════════════════════════════════════════════════════════════════════
   const generateModel2Html = () => {
+    const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
+    const principalTeacher = schoolInfo?.principalTeacher || '';
+
     const rows = studentGrades.map(g => {
       const subj = subjects.find(s => s.id === (g.subjectId || g.subject_id));
       const coef = subj?.coefficient || 1;
-      const val = g.value != null ? g.value : null;
-      const pct = val != null ? (val / 20) * 100 : 0;
-      const color = val != null ? gradeColor(val) : '#9ca3af';
-      const lbl = val != null ? gradeLabel(val) : '';
+      const finalVal = computeFinal(g);
+      const pct = finalVal != null ? (finalVal / 20) * 100 : 0;
+      const color = finalVal != null ? gradeColor(finalVal) : '#9ca3af';
+      const lbl = finalVal != null ? gradeLabel(finalVal) : '';
+      const teacherName = g.teacherName || subj?.teacher || '';
+      const interro = g.interro != null ? g.interro.toFixed(2) : '—';
+      const devoir = g.devoir != null ? g.devoir.toFixed(2) : '—';
+      const compo = g.composition != null ? g.composition.toFixed(2) : '—';
       return `
         <div class="grade-row">
           <div class="grade-left">
-            <span class="grade-subject">${subj?.name || 'N/A'}</span>
-            <span class="grade-coef">×${coef}</span>
+            <div>
+              <span class="grade-subject">${subj?.name || 'N/A'}</span>
+              <span class="grade-coef">×${coef}</span>
+              ${teacherName ? `<div style="font-size:7pt;color:#94a3b8;margin-top:1px;">${teacherName}</div>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:7.5pt;color:#64748b;width:130px;flex-shrink:0;">
+            <span style="background:#f1f5f9;border-radius:4px;padding:2px 5px;">I:${interro}</span>
+            <span style="background:#f1f5f9;border-radius:4px;padding:2px 5px;">D:${devoir}</span>
+            <span style="background:#f1f5f9;border-radius:4px;padding:2px 5px;">C:${compo}</span>
           </div>
           <div class="grade-bar-wrap">
             <div class="grade-bar" style="width:${pct}%; background:${color};"></div>
           </div>
           <div class="grade-right">
-            <span class="grade-value" style="color:${color};">${val != null ? val.toFixed(2) : '-'}</span>
+            <span class="grade-value" style="color:${color};">${finalVal != null ? finalVal.toFixed(2) : '-'}</span>
             <span class="grade-lbl" style="color:${color};">${lbl}</span>
+          </div>
+          <div style="width:90px;text-align:center;flex-shrink:0;">
+            ${teacherName
+          ? `<div style="font-family:'Brush Script MT',cursive;font-size:10pt;color:#1e3a5f;">${teacherName}</div>
+                 <div style="font-size:6pt;color:#2563eb;">✓ Signé</div>`
+          : `<span style="font-size:7pt;color:#d1d5db;">—</span>`}
           </div>
         </div>`;
     }).join('');
 
-    // SVG graphique camembert de répartition simple
     const svgBars = studentGrades.slice(0, 8).map((g, i) => {
       const subj = subjects.find(s => s.id === (g.subjectId || g.subject_id));
-      const val = g.value != null ? g.value : 0;
+      const val = computeFinal(g) ?? 0;
       const h = (val / 20) * 120;
       const x = 20 + i * 38;
       const y = 140 - h;
@@ -421,11 +491,11 @@ export default function PrintPreview({
     <p style="font-size:7pt; color:#94a3b8; margin-top:4px;">— Ligne pointillée = moyenne de classe (${fmtAvg(classAverage)})</p>
   </div>` : ''}
 
-  <!-- Signatures -->
+  <!-- Signatures numériques -->
   <div class="sigs">
-    <div class="sig-box"><div class="sig-label">Appréciation du conseil de classe</div></div>
-    <div class="sig-box"><div class="sig-label">Signature du directeur</div></div>
-    <div class="sig-box"><div class="sig-label">Signature des parents</div></div>
+    ${digitalSigBox('Signature du Directeur', directorName, 'Directeur')}
+    ${digitalSigBox('Visa du Prof. Principal', principalTeacher, 'Prof. Principal')}
+    ${digitalSigBox('Signature des Parents / Tuteur', '', '')}
   </div>
 
   <div class="footer">
@@ -441,33 +511,55 @@ export default function PrintPreview({
   // MODÈLE 3 — PREMIUM (analyse complète + évolution)
   // ════════════════════════════════════════════════════════════════════════════
   const generateModel3Html = () => {
+    const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
+    const principalTeacher = schoolInfo?.principalTeacher || '';
+
     const rows = studentGrades.map(g => {
       const subj = subjects.find(s => s.id === (g.subjectId || g.subject_id));
       const coef = subj?.coefficient || 1;
-      const val = g.value != null ? g.value : null;
-      const color = val != null ? gradeColor(val) : '#9ca3af';
-      const lbl = val != null ? gradeLabel(val) : '-';
-      const pct = val != null ? (val / 20) * 100 : 0;
+      const finalVal = computeFinal(g);
+      const color = finalVal != null ? gradeColor(finalVal) : '#9ca3af';
+      const lbl = finalVal != null ? gradeLabel(finalVal) : '-';
+      const pct = finalVal != null ? (finalVal / 20) * 100 : 0;
+      const interro = g.interro != null ? g.interro.toFixed(2) : '—';
+      const devoir = g.devoir != null ? g.devoir.toFixed(2) : '—';
+      const compo = g.composition != null ? g.composition.toFixed(2) : '—';
+      const teacherName = g.teacherName || subj?.teacher || '';
       const cAvgs = classStudents.map(s => {
         const sg = grades.find(gg => (gg.studentId || gg.student_id) === s.id && (gg.subjectId || gg.subject_id) === (g.subjectId || g.subject_id) && gg.trimester === selectedTrimester);
-        return sg?.value || 0;
+        return computeFinal(sg) || 0;
       }).filter(v => v > 0);
       const subjClassAvg = cAvgs.length ? (cAvgs.reduce((a, b) => a + b, 0) / cAvgs.length) : 0;
       return `
         <tr>
-          <td class="subj-name">${subj?.name || 'N/A'}</td>
+          <td class="subj-name">${subj?.name || 'N/A'}<br>
+            <span style="font-size:7pt;color:#94a3b8;font-weight:400;">${teacherName}</span>
+          </td>
           <td class="center"><span class="coef-badge">${coef}</span></td>
+          <td class="center" style="font-size:8pt;color:#64748b;">
+            <div style="display:flex;gap:3px;justify-content:center;">
+              <span style="background:#f1f5f9;border-radius:4px;padding:1px 5px;">I:${interro}</span>
+              <span style="background:#f1f5f9;border-radius:4px;padding:1px 5px;">D:${devoir}</span>
+              <span style="background:#f1f5f9;border-radius:4px;padding:1px 5px;">C:${compo}</span>
+            </div>
+          </td>
           <td class="center">
             <div style="display:flex;align-items:center;gap:6px;">
               <div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
                 <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;"></div>
               </div>
-              <span style="color:${color};font-weight:800;font-size:11pt;min-width:38px;">${val != null ? val.toFixed(2) : '-'}</span>
+              <span style="color:${color};font-weight:800;font-size:11pt;min-width:38px;">${finalVal != null ? finalVal.toFixed(2) : '-'}</span>
             </div>
           </td>
-          <td class="center" style="font-size:8.5pt; color:#64748b;">${subjClassAvg > 0 ? subjClassAvg.toFixed(2) : '-'}</td>
+          <td class="center" style="font-size:8.5pt;color:#64748b;">${subjClassAvg > 0 ? subjClassAvg.toFixed(2) : '-'}</td>
           <td><span style="color:${color};font-size:8.5pt;font-style:italic;">${lbl}</span></td>
-          <td style="font-size:8.5pt;color:#475569;font-style:italic;">${g.appreciation || ''}</td>
+          <td style="font-size:8pt;color:#475569;font-style:italic;">${g.appreciation || ''}</td>
+          <td class="center" style="font-size:8pt;">
+            ${teacherName
+          ? `<div style="font-family:'Brush Script MT',cursive;font-size:9pt;color:#1e3a5f;">${teacherName}</div>
+                 <div style="font-size:6pt;color:#2563eb;">✓ Signé</div>`
+          : `<span style="color:#d1d5db;">—</span>`}
+          </td>
         </tr>`;
     }).join('');
 
@@ -608,12 +700,14 @@ export default function PrintPreview({
       <table>
         <thead>
           <tr>
-            <th>Matière</th>
-            <th class="center">Coef.</th>
-            <th>Note /20</th>
-            <th class="center">Moy.cl.</th>
-            <th>Niveau</th>
+            <th>Matière / Prof.</th>
+            <th class="center" style="width:36px;">Coef.</th>
+            <th class="center" style="width:120px;">Interro / Devoir / Compo</th>
+            <th style="width:130px;">Note /20</th>
+            <th class="center" style="width:50px;">Moy.cl.</th>
+            <th style="width:55px;">Niveau</th>
             <th>Appréciation</th>
+            <th class="center" style="width:75px;">Signature</th>
           </tr>
         </thead>
         <tbody>
@@ -621,9 +715,11 @@ export default function PrintPreview({
           <tr class="total-row">
             <td>MOYENNE GÉNÉRALE</td>
             <td class="center">${totalCoef}</td>
+            <td></td>
             <td><strong style="font-size:12pt;">${fmtAvg(average)}/20</strong></td>
             <td class="center">${fmtAvg(classAverage)}</td>
             <td>${mention.text || ''}</td>
+            <td></td>
             <td></td>
           </tr>
         </tbody>
@@ -671,11 +767,11 @@ export default function PrintPreview({
     </div>
   </div>
 
-  <!-- Signatures -->
+  <!-- Signatures numériques -->
   <div class="sigs">
-    <div class="sig-box"><div class="sig-label">Appréciation du conseil de classe</div></div>
-    <div class="sig-box"><div class="sig-label">Signature du directeur</div></div>
-    <div class="sig-box"><div class="sig-label">Signature des parents</div></div>
+    ${digitalSigBox('Signature du Directeur', directorName, 'Directeur')}
+    ${digitalSigBox('Visa du Prof. Principal', principalTeacher, 'Prof. Principal')}
+    ${digitalSigBox('Signature des Parents / Tuteur', '', '')}
   </div>
 
   <!-- Footer -->

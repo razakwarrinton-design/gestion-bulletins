@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "../lib/supabaseClient";
 
-export function useGrades(academicYear = '2024-2025') {
+export function useGrades(academicYear = "2024-2025") {
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,59 +12,97 @@ export function useGrades(academicYear = '2024-2025') {
   const fetchGrades = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('grades')
-      .select('*')
-      .eq('academic_year', academicYear);
+      .from("grades")
+      .select("*")
+      .eq("academic_year", academicYear);
     if (!error) {
-      // Mapper pour compatibilité avec le code existant
-      setGrades(data.map(g => ({
-        ...g,
-        studentId: g.student_id,
-        subjectId: g.subject_id,
-      })));
+      setGrades(data.map(mapGrade));
     }
     setLoading(false);
   };
 
-  const updateGrade = useCallback(async (studentId, subjectId, trimester, value, appreciation) => {
-    // Upsert : crée ou met à jour la note
-    const { data, error } = await supabase
-      .from('grades')
-      .upsert({
-        student_id: studentId,
-        subject_id: subjectId,
-        trimester,
-        academic_year: academicYear,
-        value: value !== '' ? parseFloat(value) : null,
-        appreciation: appreciation || null,
-      }, {
-        onConflict: 'student_id,subject_id,trimester,academic_year'
-      })
-      .select()
-      .single();
+  // ── Mapper Supabase → état local ──────────────────────────────────────────
+  const mapGrade = (g) => ({
+    ...g,
+    studentId: g.student_id,
+    subjectId: g.subject_id,
+    // nouveaux champs sous-notes
+    interro: g.interro ?? null,
+    devoir: g.devoir ?? null,
+    composition: g.composition ?? null,
+    teacherName: g.teacher_name ?? "",
+  });
 
-    if (error) { console.error(error); return; }
+  // ── updateGrade — accepte maintenant un 6ème paramètre `extra` ────────────
+  const updateGrade = useCallback(
+    async (
+      studentId,
+      subjectId,
+      trimester,
+      value,
+      appreciation,
+      extra = {}, // { interro, devoir, composition, teacherName }
+    ) => {
+      const { data, error } = await supabase
+        .from("grades")
+        .upsert(
+          {
+            student_id: studentId,
+            subject_id: subjectId,
+            trimester,
+            academic_year: academicYear,
+            // note globale
+            value: value !== "" && value != null ? parseFloat(value) : null,
+            appreciation: appreciation || null,
+            // sous-notes
+            interro: extra.interro != null ? parseFloat(extra.interro) : null,
+            devoir: extra.devoir != null ? parseFloat(extra.devoir) : null,
+            composition:
+              extra.composition != null ? parseFloat(extra.composition) : null,
+            teacher_name: extra.teacherName || null,
+          },
+          {
+            onConflict: "student_id,subject_id,trimester,academic_year",
+          },
+        )
+        .select()
+        .single();
 
-    const mapped = { ...data, studentId: data.student_id, subjectId: data.subject_id };
-    setGrades(prev => {
-      const exists = prev.find(g =>
-        g.student_id === studentId &&
-        g.subject_id === subjectId &&
-        g.trimester === trimester
+      if (error) {
+        console.error("updateGrade error:", error);
+        return;
+      }
+
+      const mapped = mapGrade(data);
+      setGrades((prev) => {
+        const exists = prev.find(
+          (g) =>
+            g.student_id === studentId &&
+            g.subject_id === subjectId &&
+            g.trimester === trimester,
+        );
+        return exists
+          ? prev.map((g) => (g.id === mapped.id ? mapped : g))
+          : [...prev, mapped];
+      });
+    },
+    [academicYear],
+  );
+
+  // ── getGrade — retourne maintenant aussi interro/devoir/composition ────────
+  const getGrade = useCallback(
+    (studentId, subjectId, trimester) => {
+      return (
+        grades.find(
+          (g) =>
+            g.student_id === studentId &&
+            g.subject_id === subjectId &&
+            g.trimester === trimester,
+        ) || null
       );
-      return exists
-        ? prev.map(g => g.id === mapped.id ? mapped : g)
-        : [...prev, mapped];
-    });
-  }, [academicYear]);
-
-  const getGrade = useCallback((studentId, subjectId, trimester) => {
-    return grades.find(g =>
-      g.student_id === studentId &&
-      g.subject_id === subjectId &&
-      g.trimester === trimester
-    ) || null;
-  }, [grades]);
+    },
+    [grades],
+  );
 
   return { grades, loading, updateGrade, getGrade, refetch: fetchGrades };
 }
