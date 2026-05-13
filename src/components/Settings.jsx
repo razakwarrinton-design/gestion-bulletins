@@ -146,6 +146,96 @@ export default function Settings({
                     </div>
                 </div>
             </div>
+            {/* ── Section pays / ministère ── */}
+            <div className="mt-6 pt-4 border-t border-gray-100">
+                <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    🌍 En-tête officiel (affiché sur les bulletins)
+                </h4>
+                <div className="grid grid-cols-1 gap-3">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                            République / Pays
+                        </label>
+                        <input
+                            type="text"
+                            value={schoolInfo.republic || ''}
+                            onChange={e => updateSchoolInfo('republic', e.target.value)}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                            placeholder="ex: REPUBLIQUE TOGOLAISE"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                            Devise nationale
+                        </label>
+                        <input
+                            type="text"
+                            value={schoolInfo.countryMotto || ''}
+                            onChange={e => updateSchoolInfo('countryMotto', e.target.value)}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                            placeholder="ex: Travail · Liberté · Patrie"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                            Ministère de tutelle
+                        </label>
+                        <input
+                            type="text"
+                            value={schoolInfo.ministry || ''}
+                            onChange={e => updateSchoolInfo('ministry', e.target.value)}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                            placeholder="ex: Ministère des Enseignements Primaire et Secondaire"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                            Devise de l'école
+                        </label>
+                        <input
+                            type="text"
+                            value={schoolInfo.devise || ''}
+                            onChange={e => updateSchoolInfo('devise', e.target.value)}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                            placeholder="ex: L'excellence avant tout"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Signatures des bulletins ── */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+                <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    ✍️ Signatures numériques des bulletins
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                            Nom du Directeur
+                        </label>
+                        <input
+                            type="text"
+                            value={schoolInfo.directorName || ''}
+                            onChange={e => updateSchoolInfo('directorName', e.target.value)}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                            placeholder="M. / Mme ..."
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                            Professeur Principal
+                        </label>
+                        <input
+                            type="text"
+                            value={schoolInfo.principalTeacher || ''}
+                            onChange={e => updateSchoolInfo('principalTeacher', e.target.value)}
+                            className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                            placeholder="M. / Mme ..."
+                        />
+                    </div>
+                </div>
+            </div>
+
 
             <div className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-xl font-bold mb-4">🎨 Thème de couleurs</h3>

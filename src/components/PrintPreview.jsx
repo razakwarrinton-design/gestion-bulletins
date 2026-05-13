@@ -1,489 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, X, Users, ChevronDown } from 'lucide-react';
 
-// ════════════════════════════════════════════════════════════════════
-// HELPERS
-// ════════════════════════════════════════════════════════════════════
-const fmtAvg = (v) => { const n = parseFloat(v); return isNaN(n) || n === 0 ? '-' : n.toFixed(2); };
-const gradeColor = (v) => v >= 15 ? '#059669' : v >= 12 ? '#2563eb' : v >= 10 ? '#0891b2' : v >= 8 ? '#d97706' : '#dc2626';
-const gradeBg = (v) => v >= 15 ? '#d1fae5' : v >= 12 ? '#dbeafe' : v >= 10 ? '#cffafe' : v >= 8 ? '#fef3c7' : '#fee2e2';
-const gradeLabel = (v) => v >= 16 ? 'Très Bien' : v >= 14 ? 'Bien' : v >= 12 ? 'Assez Bien' : v >= 10 ? 'Passable' : v >= 8 ? 'Insuffisant' : 'Très Insuff.';
-
-const computeFinal = (g, bonus = 0) => {
-  if (!g) return null;
-  let val = null;
-  if (g.value != null) val = g.value;
-  else {
-    const parts = [g.interro, g.devoir, g.composition].filter(v => v != null);
-    if (!parts.length) return null;
-    val = parts.reduce((a, b) => a + b, 0) / parts.length;
-  }
-  return Math.min(20, val + (bonus || 0));
-};
-
-// QR code via API gratuite (fonctionne sans internet local)
-const qrUrl = (data) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(data)}&color=1e3a5f&bgcolor=ffffff`;
-
-// ════════════════════════════════════════════════════════════════════
-// GÉNÉRATEUR D'EN-TÊTE OFFICIEL (commun aux 3 modèles)
-// ════════════════════════════════════════════════════════════════════
-const officialHeader = (schoolName, schoolAddr, schoolPhone, schoolEmail, schoolLogo, yearLabel, trimLabel, devise) => `
-  <div class="official-header">
-    <div class="republic-bar">
-      <div class="republic-col left-col">
-        <div class="republic-name">REPUBLIQUE TOGOLAISE</div>
-        <div class="republic-motto">Travail &nbsp;·&nbsp; Liberté &nbsp;·&nbsp; Patrie</div>
-        <div class="ministry-name">Ministère des Enseignements<br>Primaire et Secondaire</div>
-      </div>
-      <div class="republic-col center-col">
-        ${schoolLogo
-    ? `<img src="${schoolLogo}" class="school-logo" alt="Logo">`
-    : `<div class="school-logo-placeholder">LOGO</div>`}
-        <div class="school-main-name">${schoolName}</div>
-        <div class="school-contact">${schoolAddr}</div>
-        ${schoolPhone || schoolEmail ? `<div class="school-contact">${schoolPhone}${schoolEmail ? ' | ' + schoolEmail : ''}</div>` : ''}
-        ${devise ? `<div class="school-devise">"${devise}"</div>` : ''}
-      </div>
-      <div class="republic-col right-col">
-        <div class="year-badge">${yearLabel}</div>
-        <div class="trim-badge">${trimLabel}</div>
-      </div>
-    </div>
-    <div class="bulletin-title-bar">BULLETIN SCOLAIRE — ${trimLabel.toUpperCase()} — ANNÉE ${yearLabel}</div>
-  </div>`;
-
-// ════════════════════════════════════════════════════════════════════
-// BLOC INFOS ÉLÈVE + QR CODE (commun aux 3 modèles)
-// ════════════════════════════════════════════════════════════════════
-const studentInfoBlock = (student, classInfo, classStudents, studentRank, trimLabel, yearLabel) => {
-  const qrData = `Élève: ${student.firstName} ${student.lastName} | Classe: ${classInfo?.name || ''} | Rang: ${studentRank}/${classStudents.length} | ${trimLabel} | ${yearLabel}`;
-  return `
-  <div class="student-info-block">
-    <div class="student-fields">
-      <div class="field-row"><span class="field-label">NOM</span><span class="field-value">${student.lastName?.toUpperCase()}</span></div>
-      <div class="field-row"><span class="field-label">PRÉNOM</span><span class="field-value">${student.firstName}</span></div>
-      <div class="field-row"><span class="field-label">CLASSE</span><span class="field-value">${classInfo?.name || 'N/A'}</span></div>
-      <div class="field-row"><span class="field-label">EFFECTIF</span><span class="field-value">${classStudents.length} élèves</span></div>
-      <div class="field-row"><span class="field-label">RANG</span><span class="field-value bold-blue">${studentRank} / ${classStudents.length}</span></div>
-      <div class="field-row"><span class="field-label">N° MATRICULE</span><span class="field-value">${student.matricule || student.id?.slice(0, 8)?.toUpperCase() || '—'}</span></div>
-    </div>
-    <div class="qr-block">
-      <img src="${qrUrl(qrData)}" alt="QR Code élève" class="qr-img">
-      <div class="qr-label">Code QR Élève</div>
-    </div>
-  </div>`;
-};
-
-// ════════════════════════════════════════════════════════════════════
-// TABLEAU DES NOTES (commun aux 3 modèles, avec colonnes enrichies)
-// ════════════════════════════════════════════════════════════════════
-const gradesTable = (studentGrades, subjects, classStudents, grades, selectedTrimester, average, totalCoef, totalPoints, classAverage, studentStatus, mention, studentRank, classStudents_len, trend, trendColor) => {
-  const rows = studentGrades.map(g => {
-    const subj = subjects.find(s => s.id === (g.subjectId || g.subject_id));
-    const coef = subj?.coefficient || 1;
-    const bonus = g.bonus || 0;
-    const finalVal = computeFinal(g, bonus);
-    const color = finalVal != null ? gradeColor(finalVal) : '#374151';
-    const bg = finalVal != null ? gradeBg(finalVal) : '#f9fafb';
-    const lbl = finalVal != null ? gradeLabel(finalVal) : '';
-    const interro = g.interro != null ? g.interro.toFixed(2) : '—';
-    const devoir = g.devoir != null ? g.devoir.toFixed(2) : '—';
-    const compo = g.composition != null ? g.composition.toFixed(2) : '—';
-    const bonusDisp = bonus > 0 ? `+${bonus.toFixed(2)}` : '—';
-    const teacherName = g.teacherName || subj?.teacher || '';
-    const sigCell = teacherName
-      ? `<div style="font-family:'Brush Script MT',cursive;font-size:10pt;color:#1e3a5f;line-height:1;">${teacherName}</div>
-         <div style="font-size:6pt;color:#2563eb;margin-top:1px;">✓ Signé</div>`
-      : `<span style="color:#d1d5db;font-size:7pt;">—</span>`;
-
-    // Moyenne classe pour cette matière
-    const cAvgs = classStudents.map(s => {
-      const sg = grades.find(gg => (gg.studentId || gg.student_id) === s.id && (gg.subjectId || gg.subject_id) === (g.subjectId || g.subject_id) && gg.trimester === selectedTrimester);
-      return computeFinal(sg, sg?.bonus || 0) || 0;
-    }).filter(v => v > 0);
-    const subjClsAvg = cAvgs.length ? (cAvgs.reduce((a, b) => a + b, 0) / cAvgs.length) : null;
-    const diff = finalVal != null && subjClsAvg ? (finalVal - subjClsAvg) : null;
-    const diffDisp = diff != null ? (diff >= 0 ? `<span style="color:#059669;">+${diff.toFixed(2)}</span>` : `<span style="color:#dc2626;">${diff.toFixed(2)}</span>`) : '—';
-
-    return `
-      <tr>
-        <td class="subj-cell">
-          <div class="subj-name">${subj?.name || 'N/A'}</div>
-          ${teacherName ? `<div class="subj-teacher">${teacherName}</div>` : ''}
-        </td>
-        <td class="center coef-cell">${coef}</td>
-        <td class="center note-sub">${interro}</td>
-        <td class="center note-sub">${devoir}</td>
-        <td class="center note-sub">${compo}</td>
-        <td class="center note-sub bonus-cell">${bonusDisp}</td>
-        <td class="center note-final" style="color:${color};background:${bg};">${finalVal != null ? finalVal.toFixed(2) : '—'}</td>
-        <td class="center total-pts">${finalVal != null ? (finalVal * coef).toFixed(2) : '—'}</td>
-        <td class="center moy-cls">${subjClsAvg ? subjClsAvg.toFixed(2) : '—'}<br>${diff != null ? diffDisp : ''}</td>
-        <td class="apprec-cell">${g.appreciation || ''}</td>
-        <td class="sig-cell">${sigCell}</td>
-      </tr>`;
-  }).join('');
-
-  return `
-  <table class="notes-table">
-    <thead>
-      <tr class="th-main">
-        <th class="left" rowspan="2" style="min-width:100px;">Matière<br><span style="font-weight:400;font-size:7pt;opacity:.8;">Professeur</span></th>
-        <th rowspan="2" style="width:30px;">Coef.</th>
-        <th colspan="4" style="background:#1e3a5f;">Notes de contrôle</th>
-        <th rowspan="2" style="width:50px;">Note<br>/20</th>
-        <th rowspan="2" style="width:50px;">Total<br>pts</th>
-        <th rowspan="2" style="width:55px;">Moy.<br>classe</th>
-        <th class="left" rowspan="2">Appréciation<br>du professeur</th>
-        <th rowspan="2" style="width:75px;">Signature<br>du prof</th>
-      </tr>
-      <tr class="th-sub">
-        <th style="width:40px;">Interro</th>
-        <th style="width:40px;">Devoir</th>
-        <th style="width:40px;">Compo</th>
-        <th style="width:40px;">Bonus</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rows}
-      <tr class="total-row">
-        <td colspan="6" style="font-weight:800;letter-spacing:.5px;">TOTAL GÉNÉRAL</td>
-        <td class="center" style="font-size:13pt;font-weight:900;">${fmtAvg(average)}/20</td>
-        <td class="center">${totalPoints.toFixed(2)}</td>
-        <td class="center">${fmtAvg(classAverage)}</td>
-        <td style="font-size:8pt;opacity:.7;">Coeff. total : ${totalCoef}</td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>`;
-};
-
-// ════════════════════════════════════════════════════════════════════
-// BILAN DE PERFORMANCE (remplace graphiques — 100% CSS, sans SVG)
-// ════════════════════════════════════════════════════════════════════
-const performanceBoard = (studentGrades, subjects, computeFinalFn) => {
-  if (!studentGrades.length) return '';
-  const cards = studentGrades.map(g => {
-    const subj = subjects.find(s => s.id === (g.subjectId || g.subject_id));
-    const bonus = g.bonus || 0;
-    const val = computeFinalFn(g, bonus);
-    if (val == null) return '';
-    const color = gradeColor(val);
-    const bg = gradeBg(val);
-    const lbl = gradeLabel(val);
-    const pct = Math.round((val / 20) * 100);
-    const name = (subj?.name || '?').slice(0, 10);
-    return `
-      <div class="perf-card">
-        <div class="perf-subj">${name}</div>
-        <div class="perf-note" style="color:${color};">${val.toFixed(2)}</div>
-        <div class="perf-lbl" style="color:${color};background:${bg};">${lbl}</div>
-        <div class="perf-bar-wrap">
-          <div class="perf-bar" style="width:${pct}%;background:${color};"></div>
-        </div>
-        <div class="perf-pct">${pct}%</div>
-      </div>`;
-  }).join('');
-  return `
-  <div class="perf-section">
-    <div class="section-label">📊 BILAN DE PERFORMANCE PAR MATIÈRE</div>
-    <div class="perf-grid">${cards}</div>
-  </div>`;
-};
-
-// ════════════════════════════════════════════════════════════════════
-// BLOC RÉSULTATS FINAUX (banderole)
-// ════════════════════════════════════════════════════════════════════
-const resultsBar = (average, classAverage, classMax, classMin, studentRank, classLen, mention, studentStatus, trend, trendColor) => `
-  <div class="results-bar">
-    <div class="rb-cell">
-      <div class="rb-label">MOYENNE GÉNÉRALE</div>
-      <div class="rb-value main-avg">${fmtAvg(average)}<span style="font-size:9pt;">/20</span></div>
-    </div>
-    <div class="rb-cell">
-      <div class="rb-label">RANG</div>
-      <div class="rb-value">${studentRank}<span style="font-size:9pt;">/${classLen}</span></div>
-    </div>
-    <div class="rb-cell">
-      <div class="rb-label">MOY. CLASSE</div>
-      <div class="rb-value" style="font-size:13pt;">${fmtAvg(classAverage)}</div>
-    </div>
-    <div class="rb-cell">
-      <div class="rb-label">MAX / MIN CLASSE</div>
-      <div class="rb-value" style="font-size:10pt;">${fmtAvg(classMax)} <span style="color:#9ca3af;font-size:9pt;">/</span> ${fmtAvg(classMin)}</div>
-    </div>
-    <div class="rb-cell">
-      <div class="rb-label">ÉVOLUTION</div>
-      <div class="rb-value" style="color:${trendColor || '#64748b'};font-size:18pt;">${trend || '—'}</div>
-    </div>
-    <div class="rb-cell">
-      <div class="rb-label">MENTION</div>
-      <div class="rb-value mention-val" style="color:${mention?.color || '#1e40af'};">${mention?.text || '—'}</div>
-    </div>
-    <div class="rb-cell">
-      <div class="rb-label">DÉCISION DU CONSEIL</div>
-      <div class="rb-value" style="font-size:10pt;color:${studentStatus.color};">${studentStatus.text}</div>
-    </div>
-  </div>`;
-
-// ════════════════════════════════════════════════════════════════════
-// SIGNATURES
-// ════════════════════════════════════════════════════════════════════
-const signaturesBlock = (directorName, principalTeacher, generalAppreciation) => `
-  ${generalAppreciation ? `
-  <div class="council-box">
-    <div class="section-label">📝 APPRÉCIATION DU CONSEIL DE CLASSE</div>
-    <div class="council-text">${generalAppreciation}</div>
-    ${principalTeacher ? `<div class="council-sig">Prof. Principal : ${principalTeacher} — ${new Date().toLocaleDateString('fr-FR')}</div>` : ''}
-  </div>` : ''}
-  <div class="signatures">
-    <div class="sig-box">
-      <div class="sig-title">LE DIRECTEUR</div>
-      <div class="sig-body">
-        ${directorName
-    ? `<div class="sig-name">${directorName}</div>
-             <div class="sig-date">Fait le : ${new Date().toLocaleDateString('fr-FR')}</div>
-             <div class="sig-stamp">✓ Signé numériquement</div>`
-    : `<div class="sig-awaiting">En attente de signature</div>`}
-      </div>
-    </div>
-    <div class="sig-box">
-      <div class="sig-title">LE PROFESSEUR PRINCIPAL</div>
-      <div class="sig-body">
-        ${principalTeacher
-    ? `<div class="sig-name">${principalTeacher}</div>
-             <div class="sig-date">Fait le : ${new Date().toLocaleDateString('fr-FR')}</div>
-             <div class="sig-stamp">✓ Signé numériquement</div>`
-    : `<div class="sig-awaiting">En attente de signature</div>`}
-      </div>
-    </div>
-    <div class="sig-box">
-      <div class="sig-title">SIGNATURE DES PARENTS / TUTEUR</div>
-      <div class="sig-body">
-        <div class="sig-awaiting">Lu et approuvé</div>
-        <div class="sig-date">Date : _____ / _____ / _________</div>
-      </div>
-    </div>
-  </div>`;
-
-// ════════════════════════════════════════════════════════════════════
-// CSS COMMUN À TOUS LES MODÈLES
-// ════════════════════════════════════════════════════════════════════
-const commonCss = () => `
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #1e293b; font-size: 10pt; }
-
-  /* ── En-tête officiel ── */
-  .official-header { border-bottom: 3px double #1e40af; padding-bottom: 8px; margin-bottom: 10px; }
-  .republic-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0 6px; }
-  .republic-col { display: flex; flex-direction: column; }
-  .left-col { align-items: flex-start; min-width: 180px; }
-  .center-col { align-items: center; flex: 1; text-align: center; }
-  .right-col { align-items: flex-end; min-width: 120px; }
-  .republic-name { font-size: 10pt; font-weight: 800; color: #1e40af; text-transform: uppercase; letter-spacing: .5px; }
-  .republic-motto { font-size: 8.5pt; color: #374151; font-style: italic; margin: 2px 0; }
-  .ministry-name { font-size: 7.5pt; color: #374151; line-height: 1.4; font-weight: 600; margin-top: 3px; }
-  .school-logo { width: 70px; height: 70px; object-fit: contain; }
-  .school-logo-placeholder { width: 70px; height: 70px; border: 2px solid #1e40af; display: flex; align-items: center; justify-content: center; font-size: 7pt; color: #1e40af; text-align: center; border-radius: 6px; }
-  .school-main-name { font-size: 15pt; font-weight: 800; color: #1e3a5f; text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
-  .school-contact { font-size: 8pt; color: #6b7280; margin-top: 1px; }
-  .school-devise { font-size: 8.5pt; color: #1e40af; font-style: italic; margin-top: 4px; font-weight: 600; }
-  .year-badge { background: #1e40af; color: white; padding: 4px 10px; border-radius: 20px; font-size: 9pt; font-weight: 700; text-align: center; }
-  .trim-badge { background: #f1f5f9; border: 1.5px solid #1e40af; color: #1e40af; padding: 4px 10px; border-radius: 20px; font-size: 9pt; font-weight: 700; text-align: center; margin-top: 6px; }
-  .bulletin-title-bar { background: #1e40af; color: white; text-align: center; padding: 5px; font-size: 12pt; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-top: 6px; }
-
-  /* ── Infos élève ── */
-  .student-info-block { display: flex; justify-content: space-between; align-items: stretch; border: 2px solid #1e40af; border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
-  .student-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px 14px; flex: 1; }
-  .field-row { }
-  .field-label { display: block; font-size: 7pt; font-weight: 800; color: #1e40af; text-transform: uppercase; }
-  .field-value { display: block; font-size: 10.5pt; font-weight: 600; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }
-  .bold-blue { color: #1e40af; font-size: 12pt; }
-  .qr-block { background: #f8fafc; border-left: 2px solid #1e40af; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; gap: 4px; }
-  .qr-img { width: 90px; height: 90px; display: block; }
-  .qr-label { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
-
-  /* ── Tableau des notes ── */
-  .notes-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt; }
-  .th-main { background: #1e3a5f; color: white; }
-  .th-sub { background: #334155; color: #e2e8f0; }
-  .notes-table th { padding: 5px 6px; text-align: center; font-size: 8pt; border: 1px solid #374151; }
-  .notes-table th.left { text-align: left; }
-  .notes-table td { padding: 5px 6px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
-  .notes-table tr:nth-child(even) td { background: #f8fafc; }
-  .subj-cell { }
-  .subj-name { font-weight: 700; font-size: 10pt; }
-  .subj-teacher { font-size: 7pt; color: #94a3b8; margin-top: 1px; }
-  .center { text-align: center; }
-  .coef-cell { font-weight: 700; color: #1e40af; }
-  .note-sub { font-size: 8.5pt; color: #475569; background: #f9fafb; }
-  .bonus-cell { color: #059669; font-weight: 700; }
-  .note-final { font-size: 12pt; font-weight: 900; border-radius: 4px; }
-  .total-pts { font-size: 8.5pt; color: #374151; }
-  .moy-cls { font-size: 8pt; color: #64748b; }
-  .apprec-cell { font-style: italic; font-size: 8pt; color: #4b5563; max-width: 110px; }
-  .sig-cell { text-align: center; font-size: 8pt; min-width: 70px; }
-  .total-row td { background: #1e3a5f !important; color: white; font-size: 9.5pt; padding: 8px 6px; }
-
-  /* ── Bilan de performance (remplace graphiques) ── */
-  .perf-section { margin-bottom: 10px; }
-  .section-label { font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1e40af; margin-bottom: 6px; }
-  .perf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 6px; }
-  .perf-card { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 6px 8px; text-align: center; }
-  .perf-subj { font-size: 7.5pt; font-weight: 700; color: #374151; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .perf-note { font-size: 14pt; font-weight: 900; line-height: 1; }
-  .perf-lbl { font-size: 6.5pt; font-weight: 700; padding: 2px 4px; border-radius: 10px; margin: 3px auto; display: inline-block; }
-  .perf-bar-wrap { height: 6px; background: #f1f5f9; border-radius: 3px; margin-top: 4px; overflow: hidden; }
-  .perf-bar { height: 100%; border-radius: 3px; }
-  .perf-pct { font-size: 6.5pt; color: #94a3b8; margin-top: 2px; }
-
-  /* ── Banderole résultats ── */
-  .results-bar { display: grid; grid-template-columns: repeat(7, 1fr); border: 2px solid #1e40af; margin-bottom: 10px; }
-  .rb-cell { padding: 8px 4px; text-align: center; border-right: 1px solid #bfdbfe; }
-  .rb-cell:last-child { border-right: none; }
-  .rb-label { font-size: 6.5pt; text-transform: uppercase; color: #64748b; font-weight: 800; margin-bottom: 3px; }
-  .rb-value { font-size: 14pt; font-weight: 900; color: #1e40af; }
-  .main-avg { font-size: 18pt; }
-  .mention-val { font-size: 10pt; }
-
-  /* ── Conseil & signatures ── */
-  .council-box { border: 2px dashed #1e40af; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; }
-  .council-text { font-size: 11pt; color: #1e3a5f; min-height: 24px; }
-  .council-sig { font-size: 7.5pt; color: #2563eb; margin-top: 5px; }
-  .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
-  .sig-box { border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; min-height: 90px; display: flex; flex-direction: column; }
-  .sig-title { font-size: 7.5pt; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
-  .sig-body { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-  .sig-name { font-family: 'Brush Script MT', cursive; font-size: 15pt; color: #1e3a5f; }
-  .sig-date { font-size: 7.5pt; color: #64748b; margin-top: 3px; }
-  .sig-stamp { background: #dbeafe; color: #1d4ed8; font-size: 6.5pt; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-top: 4px; }
-  .sig-awaiting { font-size: 8pt; color: #d1d5db; font-style: italic; }
-
-  /* ── Footer ── */
-  .doc-footer { text-align: center; font-size: 7.5pt; color: #94a3b8; border-top: 1px solid #e5e7eb; padding-top: 6px; margin-top: 8px; }
-
-  @page { size: A4; margin: 9mm; }
-  @media print { body { padding: 0; } }
-`;
-
-// ════════════════════════════════════════════════════════════════════
-// GÉNÉRATEUR BULLETIN COMPLET (1 élève, 1 modèle)
-// ════════════════════════════════════════════════════════════════════
-function buildBulletin(s, template, opts) {
-  const {
-    calculateAverage, grades, subjects, classes, students,
-    schoolLogo, schoolInfo, getMention, selectedTrimester,
-    generalAppreciation
-  } = opts;
-
-  const average = parseFloat(calculateAverage(s.id, selectedTrimester)) || 0;
-  const sGrades = grades.filter(g => (g.studentId || g.student_id) === s.id && g.trimester === selectedTrimester);
-  const classInfo = classes.find(c => c.id === (s.classId || s.class_id));
-  const classStudents = students ? students.filter(st => (st.classId || st.class_id) === classInfo?.id) : [];
-  const mention = getMention(average);
-
-  const ranking = classStudents
-    .map(st => ({ student: st, average: parseFloat(calculateAverage(st.id, selectedTrimester)) || 0 }))
-    .sort((a, b) => b.average - a.average);
-  const studentRank = ranking.findIndex(r => r.student.id === s.id) + 1 || '-';
-
-  const classAverages = classStudents.map(st => parseFloat(calculateAverage(st.id, selectedTrimester)) || 0).filter(a => a > 0);
-  const classAverage = classAverages.length ? classAverages.reduce((a, b) => a + b, 0) / classAverages.length : 0;
-  const classMax = classAverages.length ? Math.max(...classAverages) : 0;
-  const classMin = classAverages.length ? Math.min(...classAverages) : 0;
-
-  const totalCoef = sGrades.reduce((sum, g) => sum + (subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.coefficient || 0), 0);
-  const totalPoints = sGrades.reduce((sum, g) => {
-    const coef = subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.coefficient || 0;
-    const val = computeFinal(g, g.bonus || 0) || 0;
-    return sum + val * coef;
-  }, 0);
-
-  const studentStatus = average >= 12
-    ? { text: 'ADMIS(E)', color: '#059669' }
-    : average >= 8
-      ? { text: 'À SUIVRE', color: '#d97706' }
-      : { text: 'EN DIFFICULTÉ', color: '#dc2626' };
-
-  const schoolName = schoolInfo?.name || 'ÉTABLISSEMENT SCOLAIRE';
-  const schoolAddr = schoolInfo?.address || '';
-  const schoolPhone = schoolInfo?.phone || '';
-  const schoolEmail = schoolInfo?.email || '';
-  const devise = schoolInfo?.devise || schoolInfo?.motto || '';
-  const yearLabel = schoolInfo?.year || '2024-2025';
-  const trimLabel = `Trimestre ${selectedTrimester}`;
-  const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
-  const principalTeacher = schoolInfo?.principalTeacher || '';
-
-  const t1Avg = parseFloat(calculateAverage(s.id, '1')) || 0;
-  const t2Avg = parseFloat(calculateAverage(s.id, '2')) || 0;
-  const prevAvg = selectedTrimester === '1' ? 0 : selectedTrimester === '2' ? t1Avg : t2Avg;
-  const trend = prevAvg > 0 ? (average > prevAvg + 0.5 ? '↑' : average < prevAvg - 0.5 ? '↓' : '→') : null;
-  const trendColor = trend === '↑' ? '#059669' : trend === '↓' ? '#dc2626' : '#d97706';
-
-  const alertBanner = average < 10 ? `
-    <div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:8px;padding:10px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
-      <span style="font-size:18pt;">⚠️</span>
-      <div>
-        <div style="font-weight:800;color:#dc2626;font-size:10pt;">Résultats insuffisants — Suivi renforcé recommandé</div>
-        <div style="font-size:8.5pt;color:#b91c1c;margin-top:2px;">Moyenne actuelle : ${fmtAvg(average)}/20 — Rang : ${studentRank}/${classStudents.length}</div>
-      </div>
-    </div>` : '';
-
-  // CSS spécifique selon modèle
-  let modelCss = '';
-  if (template === 'model1') {
-    modelCss = `body { padding: 12mm 10mm; }`;
-  } else if (template === 'model2') {
-    modelCss = `
-      body { padding: 0; background: #f8fafc; }
-      .page { background: white; margin: 0 auto; max-width: 210mm; padding: 12mm 10mm; }
-      .official-header { padding: 0 0 8px; }
-      .notes-table th { font-size: 7.5pt; }`;
-  } else {
-    modelCss = `
-      body { padding: 0; }
-      .page { padding: 10mm 9mm; }
-      .official-header { border-bottom: 3px solid #0f172a; }
-      .bulletin-title-bar { background: linear-gradient(135deg, #0f172a, #1e40af); letter-spacing: 3px; }
-      .student-info-block { border-color: #0f172a; }
-      .results-bar { border-color: #0f172a; background: #0f172a; }
-      .rb-cell { border-right-color: #334155; }
-      .rb-label { color: #94a3b8; }
-      .rb-value { color: white; }
-      .main-avg { color: #60a5fa; }`;
-  }
-
-  const headerHtml = officialHeader(schoolName, schoolAddr, schoolPhone, schoolEmail, schoolLogo, yearLabel, trimLabel, devise);
-  const studentHtml = studentInfoBlock(s, classInfo, classStudents, studentRank, trimLabel, yearLabel);
-  const tableHtml = gradesTable(sGrades, subjects, classStudents, grades, selectedTrimester, average, totalCoef, totalPoints, classAverage, studentStatus, mention, studentRank, classStudents.length, trend, trendColor);
-  const perfHtml = performanceBoard(sGrades, subjects, computeFinal);
-  const resultsHtml = resultsBar(average, classAverage, classMax, classMin, studentRank, classStudents.length, mention, studentStatus, trend, trendColor);
-  const sigsHtml = signaturesBlock(directorName, principalTeacher, generalAppreciation);
-
-  return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<title>Bulletin — ${s.firstName} ${s.lastName}</title>
-<style>
-  ${commonCss()}
-  ${modelCss}
-</style></head><body><div class="page">
-  ${headerHtml}
-  ${studentHtml}
-  ${alertBanner}
-  ${tableHtml}
-  ${perfHtml}
-  ${resultsHtml}
-  ${sigsHtml}
-  <div class="doc-footer">
-    ${schoolName} — Bulletin officiel — ${yearLabel} — ${trimLabel} — Édité le ${new Date().toLocaleDateString('fr-FR')}
-  </div>
-</div></body></html>`;
-}
-
-// ════════════════════════════════════════════════════════════════════
-// COMPOSANT PRINCIPAL
-// ════════════════════════════════════════════════════════════════════
 export default function PrintPreview({
   printStudent, setShowPrintPreview, selectedTrimester,
   calculateAverage, grades, subjects, classes, students,
@@ -498,6 +15,7 @@ export default function PrintPreview({
 
   const student = printStudent;
   const average = parseFloat(calculateAverage(student.id, selectedTrimester)) || 0;
+  const studentGrades = grades.filter(g => (g.studentId || g.student_id) === student.id && g.trimester === selectedTrimester);
   const classInfo = classes.find(c => c.id === (student.classId || student.class_id));
   const classStudents = students ? students.filter(s => (s.classId || s.class_id) === classInfo?.id) : [];
   const mention = getMention(average);
@@ -506,111 +24,808 @@ export default function PrintPreview({
     .map(s => ({ student: s, average: parseFloat(calculateAverage(s.id, selectedTrimester)) || 0 }))
     .sort((a, b) => b.average - a.average);
   const studentRank = ranking.findIndex(r => r.student.id === student.id) + 1 || '-';
+
+  const classAverages = classStudents.map(s => parseFloat(calculateAverage(s.id, selectedTrimester)) || 0).filter(a => a > 0);
+  const classAverage = classAverages.length ? classAverages.reduce((a, b) => a + b, 0) / classAverages.length : 0;
+  const classMax = classAverages.length ? Math.max(...classAverages) : 0;
+  const classMin = classAverages.length ? Math.min(...classAverages) : 0;
+
+  const totalCoef = studentGrades.reduce((sum, g) => sum + (subjects.find(s => s.id === (g.subjectId || g.subject_id))?.coefficient || 0), 0);
+  const totalPoints = studentGrades.reduce((sum, g) => {
+    const coef = subjects.find(s => s.id === (g.subjectId || g.subject_id))?.coefficient || 0;
+    return sum + ((g.value || 0) * coef);
+  }, 0);
+
+  const studentStatus = average >= 12 ? { text: 'ADMIS(E)', color: '#059669' }
+    : average >= 8 ? { text: 'À SUIVRE', color: '#d97706' }
+      : { text: 'EN DIFFICULTÉ', color: '#dc2626' };
+
+  const schoolName = schoolInfo?.name || 'ÉTABLISSEMENT SCOLAIRE';
+  const schoolAddr = schoolInfo?.address || '';
+  const schoolPhone = schoolInfo?.phone || '';
+  const schoolEmail = schoolInfo?.email || '';
   const trimLabel = `Trimestre ${selectedTrimester}`;
+  const yearLabel = schoolInfo?.year || '2024-2025';
+
+  // ── Champs personnalisables pays/ministère (issus de schoolInfo) ──────────
+  const republic = schoolInfo?.republic || '';   // ex: "REPUBLIQUE TOGOLAISE"
+  const countryMotto = schoolInfo?.countryMotto || '';   // ex: "Travail · Liberté · Patrie"
+  const ministry = schoolInfo?.ministry || '';   // ex: "Ministère des Enseignements Primaire et Secondaire"
+  const schoolDevise = schoolInfo?.devise || '';   // devise de l'école
+
+  const fmtAvg = (v) => { const n = parseFloat(v); return isNaN(n) ? '-' : n.toFixed(2); };
+  const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
+  const gradeLabel = (v) => v >= 16 ? 'Très Bien' : v >= 14 ? 'Bien' : v >= 12 ? 'Assez Bien' : v >= 10 ? 'Passable' : v >= 8 ? 'Insuffisant' : 'Très Insuffisant';
 
   const t1Avg = parseFloat(calculateAverage(student.id, '1')) || 0;
   const t2Avg = parseFloat(calculateAverage(student.id, '2')) || 0;
-  const prevAvg = selectedTrimester === '1' ? 0 : selectedTrimester === '2' ? t1Avg : t2Avg;
-  const trend = prevAvg > 0 ? (average > prevAvg + 0.5 ? '↑' : average < prevAvg - 0.5 ? '↓' : '→') : null;
-  const trendColor = trend === '↑' ? '#059669' : trend === '↓' ? '#dc2626' : '#d97706';
+  const t3Avg = parseFloat(calculateAverage(student.id, '3')) || 0;
 
-  const opts = { calculateAverage, grades, subjects, classes, students, schoolLogo, schoolInfo, getMention, selectedTrimester, generalAppreciation };
+  const sortedGrades = [...studentGrades].filter(g => g.value != null).sort((a, b) => b.value - a.value);
+  const half = Math.max(1, Math.floor(sortedGrades.length / 2));
+  const strengths = sortedGrades.slice(0, Math.min(3, half)).map(g => ({ name: subjects.find(s => s.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
+  const weaknesses = sortedGrades.slice(-Math.min(3, half)).reverse().map(g => ({ name: subjects.find(s => s.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
+
+  const computeFinal = (g) => {
+    if (!g) return null;
+    if (g.value != null) return Math.min(20, g.value + (g.bonus || 0));
+    const parts = [g.interro, g.devoir, g.composition].filter(v => v != null);
+    if (!parts.length) return null;
+    return Math.min(20, (parts.reduce((a, b) => a + b, 0) / parts.length) + (g.bonus || 0));
+  };
 
   const openPrint = (html) => {
     const win = window.open('', '_blank', 'width=960,height=800');
     if (!win) { alert('Autorisez les pop-ups pour imprimer.'); return; }
     win.document.write(html);
     win.document.close();
-    setTimeout(() => { win.print(); setTimeout(() => win.close(), 600); }, 500);
+    setTimeout(() => { win.print(); setTimeout(() => win.close(), 600); }, 450);
   };
 
+  // ── En-tête officiel pays/ministère (commun aux 3 modèles) ───────────────
+  // Inséré au tout début de chaque bulletin HTML si les champs sont renseignés
+  const officialTopBar = () => {
+    if (!republic && !ministry) return '';
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:7pt;line-height:1.45;border-bottom:1px solid #bfdbfe;padding-bottom:5px;margin-bottom:6px;">
+        <div>
+          ${republic ? `<div style="font-weight:800;text-transform:uppercase;color:#1e3a5f;letter-spacing:.4px;">${republic}</div>` : ''}
+          ${countryMotto ? `<div style="font-style:italic;color:#374151;">${countryMotto}</div>` : ''}
+          ${ministry ? `<div style="font-weight:600;color:#374151;">${ministry}</div>` : ''}
+        </div>
+        <div style="text-align:right;">
+          ${schoolDevise ? `<div style="font-style:italic;color:#1e40af;font-weight:600;">"${schoolDevise}"</div>` : ''}
+        </div>
+      </div>`;
+  };
+
+  // ── QR Code élève (API gratuite) ──────────────────────────────────────────
+  const qrCodeImg = (s, avg, rank, total) => {
+    const data = `${s.firstName} ${s.lastName} | ${classInfo?.name || ''} | Rang:${rank}/${total} | Moy:${fmtAvg(avg)}/20 | ${trimLabel} ${yearLabel}`;
+    const url = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(data)}&color=1e3a5f`;
+    return `<img src="${url}" width="80" height="80" alt="QR" style="display:block;">`;
+  };
+
+  // ── Signature numérique (inchangée) ──────────────────────────────────────
+  const digitalSigBox = (title, name, role = '') => `
+    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+      <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">${title}</div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+        <div style="text-align:center;">
+          ${name
+      ? `<div style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:13pt;color:#1e3a5f;line-height:1.1;border-bottom:1.5px solid #94a3b8;padding-bottom:3px;min-width:110px;">${name}</div>
+         <div style="font-size:7pt;color:#64748b;margin-top:3px;">${role ? role + ' — ' : ''}${new Date().toLocaleDateString('fr-FR')}</div>
+         <div style="margin-top:4px;display:inline-block;background:#dbeafe;color:#1d4ed8;font-size:6pt;font-weight:700;padding:1px 6px;border-radius:20px;">✓ Signé numériquement</div>`
+      : `<div style="font-size:7.5pt;color:#cbd5e1;font-style:italic;">En attente de signature</div>`}
+        </div>
+      </div>
+    </div>`;
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // MODÈLE 1 — OFFICIEL (design original préservé + améliorations)
+  // ════════════════════════════════════════════════════════════════════════════
+  const generateModel1Html = (s = student, sGrades = studentGrades, sAvg = average, sRank = studentRank, sStatus = studentStatus, sMention = mention, sTotalCoef = totalCoef, sTotalPts = totalPoints) => {
+    const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
+    const principalTeacher = schoolInfo?.principalTeacher || '';
+
+    const rows = sGrades.map(g => {
+      const subj = subjects.find(sub => sub.id === (g.subjectId || g.subject_id));
+      const coef = subj?.coefficient || 1;
+      const finalVal = computeFinal(g);
+      const color = finalVal != null ? gradeColor(finalVal) : '#374151';
+      const interro = g.interro != null ? g.interro.toFixed(2) : '—';
+      const devoir = g.devoir != null ? g.devoir.toFixed(2) : '—';
+      const compo = g.composition != null ? g.composition.toFixed(2) : '—';
+      const bonus = g.bonus != null && g.bonus > 0 ? `+${g.bonus.toFixed(2)}` : '—';
+      const teacherName = g.teacherName || subj?.teacher || '';
+      const sigCell = teacherName
+        ? `<div style="font-family:'Brush Script MT',cursive;font-size:9pt;color:#1e3a5f;">${teacherName}</div>
+           <div style="font-size:6pt;color:#2563eb;">✓ Signé</div>`
+        : `<span style="color:#d1d5db;font-size:7pt;">—</span>`;
+      return `
+        <tr>
+          <td class="subj-name">${subj?.name || 'N/A'}<br>
+            <span style="font-size:6.5pt;color:#94a3b8;font-weight:400;">${teacherName}</span></td>
+          <td class="center">${coef}</td>
+          <td class="center sub-note">${interro}</td>
+          <td class="center sub-note">${devoir}</td>
+          <td class="center sub-note">${compo}</td>
+          <td class="center sub-note bonus">${bonus}</td>
+          <td class="center" style="color:${color};font-weight:800;font-size:10.5pt;">${finalVal != null ? finalVal.toFixed(2) : '—'}</td>
+          <td class="center" style="color:${color};font-size:8.5pt;">${finalVal != null ? (finalVal * coef).toFixed(2) : '—'}</td>
+          <td class="appreciate">${g.appreciation || ''}</td>
+          <td class="center sig-cell">${sigCell}</td>
+        </tr>`;
+    }).join('');
+
+    return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>Bulletin – ${s.firstName} ${s.lastName}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* @page margin:0 masque l'URL et le titre du navigateur lors de l'impression */
+  @page { size: A4 portrait; margin: 0; }
+  body { font-family: 'Times New Roman', serif; font-size: 9.5pt; color: #111; background: #fff;
+         padding: 9mm 10mm 6mm; width: 210mm; min-height: 297mm; }
+  @media print { body { padding: 9mm 10mm 6mm; } }
+  .header { display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 3px double #1e40af; padding-bottom: 7px; margin-bottom: 8px; gap: 8px; }
+  .header-left { font-size: 8.5pt; line-height: 1.5; }
+  .header-center { text-align: center; flex: 1; }
+  .header-center h1 { font-size: 13pt; color: #1e40af; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1px; }
+  .header-center h2 { font-size: 9.5pt; color: #374151; }
+  .header-center .devise { font-size: 8pt; color: #1e40af; font-style: italic; margin-top: 2px; }
+  .header-right { text-align: right; font-size: 8.5pt; line-height: 1.5; }
+  .logo { width: 60px; height: 60px; object-fit: contain; }
+  .logo-placeholder { width: 60px; height: 60px; border: 2px solid #1e40af; display: flex; align-items: center; justify-content: center; font-size: 7pt; color: #1e40af; text-align: center; }
+  .bulletin-title { background: #1e40af; color: white; text-align: center; padding: 4px; font-size: 11pt; font-weight: bold; letter-spacing: 2px; margin: 7px 0; text-transform: uppercase; }
+  .student-box { border: 2px solid #1e40af; padding: 6px 10px; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .student-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; flex: 1; }
+  .info-row { font-size: 9pt; }
+  .info-label { font-weight: bold; color: #1e40af; font-size: 7pt; text-transform: uppercase; }
+  .info-value { border-bottom: 1px solid #9ca3af; padding-bottom: 1px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 8.5pt; }
+  thead tr { background: #1e40af; color: white; }
+  th { padding: 4px 5px; text-align: center; font-weight: bold; font-size: 7.5pt; }
+  th.left { text-align: left; }
+  td { padding: 3px 5px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  .subj-name { font-weight: 600; min-width: 90px; }
+  .center { text-align: center; }
+  .sub-note { font-size: 8pt; color: #6b7280; background: #f9fafb; }
+  .bonus { color: #059669; font-weight: 700; }
+  .appreciate { font-style: italic; font-size: 7.5pt; color: #4b5563; max-width: 100px; }
+  .sig-cell { min-width: 65px; }
+  .results-band { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid #1e40af; margin-bottom: 8px; }
+  .result-cell { padding: 6px 4px; text-align: center; border-right: 1px solid #1e40af; }
+  .result-cell:last-child { border-right: none; }
+  .result-label { font-size: 6.5pt; text-transform: uppercase; color: #6b7280; font-weight: bold; }
+  .result-value { font-size: 12pt; font-weight: bold; color: #1e40af; margin-top: 1px; }
+  .council-box { border: 1.5px solid #1e40af; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; background: #f8faff; }
+  .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .footer { text-align: center; font-size: 7pt; color: #9ca3af; margin-top: 8px; border-top: 1px solid #e5e7eb; padding-top: 4px; }
+</style></head><body>
+
+  ${officialTopBar()}
+
+  <div class="header">
+    <div class="header-left">
+      ${schoolLogo ? `<img src="${schoolLogo}" class="logo" alt="Logo">` : `<div class="logo-placeholder">LOGO</div>`}
+    </div>
+    <div class="header-center">
+      <h1>${schoolName}</h1>
+      <h2>${schoolAddr}</h2>
+      <p style="font-size:8pt;color:#6b7280;">${schoolPhone}${schoolEmail ? ' | ' + schoolEmail : ''}</p>
+      ${schoolDevise ? `<p class="devise">"${schoolDevise}"</p>` : ''}
+    </div>
+    <div class="header-right">
+      <p><strong>Année scolaire</strong><br>${yearLabel}</p>
+    </div>
+  </div>
+
+  <div class="bulletin-title">Bulletin Scolaire &mdash; ${trimLabel}</div>
+
+  <div class="student-box">
+    <div class="student-fields">
+      <div class="info-row"><div class="info-label">Nom</div><div class="info-value">${s.lastName?.toUpperCase()}</div></div>
+      <div class="info-row"><div class="info-label">Prénom</div><div class="info-value">${s.firstName}</div></div>
+      <div class="info-row"><div class="info-label">Classe</div><div class="info-value">${classInfo?.name || 'N/A'}</div></div>
+      <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">${classStudents.length} élèves</div></div>
+      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">${sRank} / ${classStudents.length}</div></div>
+      <div class="info-row"><div class="info-label">Trimestre</div><div class="info-value">${trimLabel}</div></div>
+    </div>
+    <div style="flex-shrink:0;">${qrCodeImg(s, sAvg, sRank, classStudents.length)}</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="left" style="min-width:95px;">Matière / Professeur</th>
+        <th style="width:32px;">Coef.</th>
+        <th style="width:40px;">Interro</th>
+        <th style="width:40px;">Devoir</th>
+        <th style="width:40px;">Compo</th>
+        <th style="width:38px;">Bonus</th>
+        <th style="width:48px;">Note /20</th>
+        <th style="width:48px;">Total pts</th>
+        <th class="left">Appréciation du prof</th>
+        <th style="width:72px;">Signature</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows}
+      <tr style="background:#1e3a5f !important;">
+        <td colspan="6" style="font-weight:bold;color:white;font-size:9pt;">TOTAL GÉNÉRAL</td>
+        <td class="center" style="font-weight:bold;color:white;font-size:11pt;">${fmtAvg(sAvg)}/20</td>
+        <td class="center" style="color:white;font-size:8.5pt;">${sTotalPts.toFixed(2)}</td>
+        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff.: ${sTotalCoef}</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="results-band">
+    <div class="result-cell"><div class="result-label">Moy. générale</div><div class="result-value">${fmtAvg(sAvg)}<span style="font-size:8pt;">/20</span></div></div>
+    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">${fmtAvg(classAverage)}</div></div>
+    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">${sRank}<span style="font-size:8pt;">/${classStudents.length}</span></div></div>
+    <div class="result-cell"><div class="result-label">Mention</div><div class="result-value" style="font-size:9.5pt;color:${sMention.color || '#1e40af'};">${sMention.text}</div></div>
+    <div class="result-cell"><div class="result-label">Décision</div><div class="result-value" style="font-size:9.5pt;color:${sStatus.color};">${sStatus.text}</div></div>
+  </div>
+
+  <div class="council-box">
+    <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
+    <div style="font-family:'Brush Script MT',cursive;font-size:12pt;color:#1e3a5f;min-height:22px;border-bottom:1px solid #cbd5e1;padding-bottom:3px;">
+      ${generalAppreciation || principalTeacher || ''}
+    </div>
+    ${principalTeacher ? `<div style="font-size:6.5pt;color:#2563eb;margin-top:3px;">✓ ${principalTeacher} — ${new Date().toLocaleDateString('fr-FR')}</div>` : ''}
+  </div>
+
+  <div class="signatures">
+    ${digitalSigBox('Signature du Directeur', directorName, 'Directeur')}
+    ${digitalSigBox('Visa du Prof. Principal', principalTeacher, 'Prof. Principal')}
+    ${digitalSigBox('Signature des Parents / Tuteur', '', '')}
+  </div>
+
+  <div class="footer">${schoolName} &mdash; Bulletin officiel &mdash; ${yearLabel} &mdash; ${trimLabel}</div>
+
+</body></html>`;
+  };
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // MODÈLE 2 — MODERNE (design original préservé + améliorations)
+  // ════════════════════════════════════════════════════════════════════════════
+  const generateModel2Html = (s = student, sGrades = studentGrades, sAvg = average, sRank = studentRank, sStatus = studentStatus, sMention = mention, sTotalCoef = totalCoef) => {
+    const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
+    const principalTeacher = schoolInfo?.principalTeacher || '';
+
+    const rows = sGrades.map(g => {
+      const subj = subjects.find(sub => sub.id === (g.subjectId || g.subject_id));
+      const coef = subj?.coefficient || 1;
+      const finalVal = computeFinal(g);
+      const pct = finalVal != null ? (finalVal / 20) * 100 : 0;
+      const color = finalVal != null ? gradeColor(finalVal) : '#9ca3af';
+      const lbl = finalVal != null ? gradeLabel(finalVal) : '';
+      const teacherName = g.teacherName || subj?.teacher || '';
+      const interro = g.interro != null ? g.interro.toFixed(2) : '—';
+      const devoir = g.devoir != null ? g.devoir.toFixed(2) : '—';
+      const compo = g.composition != null ? g.composition.toFixed(2) : '—';
+      const bonus = g.bonus != null && g.bonus > 0 ? `<span style="color:#059669;font-weight:700;">+${g.bonus.toFixed(2)}</span>` : '';
+      return `
+        <div class="grade-row">
+          <div class="grade-left">
+            <div>
+              <span class="grade-subject">${subj?.name || 'N/A'}</span>
+              <span class="grade-coef">×${coef}</span>
+              ${teacherName ? `<div style="font-size:6.5pt;color:#94a3b8;margin-top:1px;">${teacherName}</div>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:7pt;color:#64748b;width:120px;flex-shrink:0;">
+            <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:${interro}</span>
+            <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:${devoir}</span>
+            <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:${compo}</span>
+            ${bonus}
+          </div>
+          <div class="grade-bar-wrap">
+            <div class="grade-bar" style="width:${pct}%;background:${color};"></div>
+          </div>
+          <div class="grade-right">
+            <span class="grade-value" style="color:${color};">${finalVal != null ? finalVal.toFixed(2) : '—'}</span>
+            <span class="grade-lbl" style="color:${color};">${lbl}</span>
+          </div>
+          <div style="width:82px;text-align:center;flex-shrink:0;font-size:7.5pt;">
+            ${teacherName
+          ? `<div style="font-family:'Brush Script MT',cursive;font-size:9pt;color:#1e3a5f;">${teacherName}</div>
+             <div style="font-size:5.5pt;color:#2563eb;">✓ Signé</div>`
+          : `<span style="font-size:6.5pt;color:#d1d5db;">—</span>`}
+          </div>
+          <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;">${g.appreciation || ''}</div>
+        </div>`;
+    }).join('');
+
+    const svgBars = sGrades.slice(0, 8).map((g, i) => {
+      const subj = subjects.find(s => s.id === (g.subjectId || g.subject_id));
+      const val = computeFinal(g) ?? 0;
+      const h = (val / 20) * 110;
+      const x = 20 + i * 36;
+      const y = 130 - h;
+      const color = gradeColor(val);
+      const name = (subj?.name || '?').slice(0, 4);
+      return `<rect x="${x}" y="${y}" width="22" height="${h}" fill="${color}" rx="3"/>
+        <text x="${x + 11}" y="143" text-anchor="middle" font-size="6.5" fill="#6b7280">${name}</text>
+        <text x="${x + 11}" y="${y - 3}" text-anchor="middle" font-size="7.5" fill="${color}" font-weight="bold">${val.toFixed(0)}</text>`;
+    }).join('');
+
+    const classLine = `<line x1="15" y1="${130 - (classAverage / 20) * 110}" x2="${20 + Math.min(sGrades.length, 8) * 36}" y2="${130 - (classAverage / 20) * 110}" stroke="#94a3b8" stroke-dasharray="4,3" stroke-width="1.5"/>`;
+
+    return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>Bulletin – ${s.firstName} ${s.lastName}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: A4 portrait; margin: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #1e293b; font-size: 9pt; }
+  .page { width: 210mm; min-height: 297mm; background: white; padding: 0 0 8mm; }
+  @media print { .page { padding-bottom: 0; } }
+  .official-top { font-size: 6.5pt; padding: 4px 20px; border-bottom: 1px solid #bfdbfe; display: flex; justify-content: space-between; color: #374151; }
+  .top-banner { background: linear-gradient(135deg,#1e40af 0%,#3b82f6 50%,#06b6d4 100%); color:white; padding: 14px 20px 12px; }
+  .top-row { display: flex; justify-content: space-between; align-items: center; }
+  .school-name { font-size: 15pt; font-weight: 700; letter-spacing: .5px; }
+  .school-sub  { font-size: 8pt; opacity: .85; margin-top: 1px; }
+  .school-devise-m2 { font-size: 7.5pt; opacity: .8; font-style: italic; margin-top: 2px; }
+  .trimestre-badge { background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4); padding: 5px 12px; border-radius: 20px; font-weight: 600; font-size: 9pt; }
+  .logo-img { width: 52px; height: 52px; object-fit: contain; border-radius: 8px; background: white; padding: 3px; }
+  .student-card { display: flex; align-items: center; gap: 14px; background: white; margin: 0 16px; margin-top: -16px; border-radius: 10px; padding: 10px 16px; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+  .student-avatar { width: 44px; height: 44px; background: linear-gradient(135deg,#3b82f6,#06b6d4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 14pt; font-weight: 700; flex-shrink: 0; }
+  .student-name { font-size: 12pt; font-weight: 700; color: #1e293b; }
+  .student-meta { font-size: 8pt; color: #64748b; margin-top: 1px; }
+  .student-stats { display: flex; gap: 10px; margin-left: auto; align-items: center; }
+  .stat-pill { text-align: center; background: #f1f5f9; padding: 6px 12px; border-radius: 8px; }
+  .stat-val { font-size: 12pt; font-weight: 800; color: #1e40af; }
+  .stat-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
+  .mention-bar { margin: 10px 16px 8px; background: ${sMention.color || '#2563eb'}18; border-left: 5px solid ${sMention.color || '#2563eb'}; border-radius: 0 6px 6px 0; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .mention-text { font-size: 11pt; font-weight: 700; color: ${sMention.color || '#2563eb'}; }
+  .decision-badge { background: ${sStatus.color}18; color: ${sStatus.color}; border: 1.5px solid ${sStatus.color}; padding: 3px 12px; border-radius: 20px; font-size: 8.5pt; font-weight: 700; }
+  .section { margin: 0 16px 10px; }
+  .section-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; margin-bottom: 7px; }
+  .grade-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+  .grade-left { width: 150px; display: flex; align-items: flex-start; gap: 5px; flex-shrink: 0; }
+  .grade-subject { font-weight: 600; font-size: 9pt; }
+  .grade-coef { font-size: 7.5pt; color: #94a3b8; }
+  .grade-bar-wrap { flex: 1; height: 9px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+  .grade-bar { height: 100%; border-radius: 4px; }
+  .grade-right { width: 85px; display: flex; align-items: center; gap: 5px; justify-content: flex-end; }
+  .grade-value { font-size: 11pt; font-weight: 800; }
+  .grade-lbl { font-size: 7pt; }
+  .graph-section { margin: 0 16px 10px; background: #f8fafc; border-radius: 8px; padding: 10px; }
+  .class-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 0 16px 10px; }
+  .cstat { background: #f8fafc; border-radius: 7px; padding: 8px; text-align: center; }
+  .cstat-val { font-size: 12pt; font-weight: 800; color: #1e40af; }
+  .cstat-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; }
+  .sigs { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0 16px 12px; }
+  .footer { background: #f1f5f9; padding: 6px 16px; font-size: 7pt; color: #94a3b8; display: flex; justify-content: space-between; }
+</style></head><body><div class="page">
+
+  <div class="official-top">
+    <div>
+      ${republic ? `<span style="font-weight:800;text-transform:uppercase;color:#1e3a5f;">${republic}</span>` : ''}
+      ${countryMotto ? `<span style="font-style:italic;margin-left:6px;">${countryMotto}</span>` : ''}
+      ${ministry ? `<span style="font-weight:600;margin-left:8px;">| ${ministry}</span>` : ''}
+    </div>
+    <div style="font-style:italic;color:#1e40af;">${schoolDevise ? `"${schoolDevise}"` : ''}</div>
+  </div>
+
+  <div class="top-banner">
+    <div class="top-row">
+      <div>
+        <div class="school-name">${schoolName}</div>
+        <div class="school-sub">${schoolAddr}${schoolPhone ? ' | ' + schoolPhone : ''}</div>
+        ${schoolDevise ? `<div class="school-devise-m2">"${schoolDevise}"</div>` : ''}
+      </div>
+      ${schoolLogo ? `<img src="${schoolLogo}" class="logo-img" alt="Logo">` : ''}
+      <div class="trimestre-badge">${trimLabel} &mdash; ${yearLabel}</div>
+    </div>
+  </div>
+
+  <div class="student-card">
+    <div class="student-avatar">${(s.firstName || '?')[0]}${(s.lastName || '?')[0]}</div>
+    <div>
+      <div class="student-name">${s.firstName} ${s.lastName?.toUpperCase()}</div>
+      <div class="student-meta">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;|&nbsp; Effectif: <strong>${classStudents.length}</strong> &nbsp;|&nbsp; ${yearLabel}</div>
+    </div>
+    <div class="student-stats">
+      <div class="stat-pill"><div class="stat-val">${fmtAvg(sAvg)}</div><div class="stat-lbl">Moyenne</div></div>
+      <div class="stat-pill"><div class="stat-val">${sRank}</div><div class="stat-lbl">Rang</div></div>
+      ${qrCodeImg(s, sAvg, sRank, classStudents.length)}
+    </div>
+  </div>
+
+  <div class="mention-bar">
+    <div>
+      <div style="font-size:7.5pt;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:1px;">Mention</div>
+      <div class="mention-text">${sMention.text || 'N/A'}</div>
+    </div>
+    <div class="decision-badge">${sStatus.text}</div>
+  </div>
+
+  <div class="class-stats">
+    <div class="cstat"><div class="cstat-val">${fmtAvg(classAverage)}</div><div class="cstat-lbl">Moy. classe</div></div>
+    <div class="cstat"><div class="cstat-val">${fmtAvg(classMax)}</div><div class="cstat-lbl">Meilleure</div></div>
+    <div class="cstat"><div class="cstat-val">${fmtAvg(classMin)}</div><div class="cstat-lbl">Plus basse</div></div>
+    <div class="cstat"><div class="cstat-val">${sTotalCoef}</div><div class="cstat-lbl">Total coeff.</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Résultats par matière</div>
+    ${rows}
+  </div>
+
+  ${sGrades.length > 0 ? `
+  <div class="graph-section">
+    <div class="section-title" style="margin-bottom:6px;">Visualisation des notes</div>
+    <svg width="100%" height="158" viewBox="0 0 ${Math.max(320, 20 + sGrades.slice(0, 8).length * 36 + 30)} 158">
+      ${[0, 5, 10, 15, 20].map(v => `<line x1="15" y1="${130 - (v / 20) * 110}" x2="${20 + Math.min(sGrades.length, 8) * 36}" y2="${130 - (v / 20) * 110}" stroke="#e2e8f0" stroke-width="1"/>
+        <text x="10" y="${134 - (v / 20) * 110}" text-anchor="end" font-size="6.5" fill="#94a3b8">${v}</text>`).join('')}
+      ${svgBars}${classLine}
+    </svg>
+    <p style="font-size:6.5pt;color:#94a3b8;margin-top:3px;">— Ligne pointillée = moyenne de classe (${fmtAvg(classAverage)})</p>
+  </div>` : ''}
+
+  ${generalAppreciation ? `
+  <div style="margin:0 16px 10px;border:1.5px solid #3b82f6;border-radius:8px;padding:8px 14px;background:#eff6ff;">
+    <div style="font-size:7.5pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe</div>
+    <div style="font-size:10pt;color:#1e3a5f;">${generalAppreciation}</div>
+  </div>` : ''}
+
+  <div class="sigs">
+    ${digitalSigBox('Signature du Directeur', directorName, 'Directeur')}
+    ${digitalSigBox('Visa du Prof. Principal', principalTeacher, 'Prof. Principal')}
+    ${digitalSigBox('Signature des Parents / Tuteur', '', '')}
+  </div>
+
+  <div class="footer">
+    <span>${schoolName} — Bulletin scolaire</span>
+    <span>${yearLabel} — ${trimLabel}</span>
+    <span>Édité le ${new Date().toLocaleDateString('fr-FR')}</span>
+  </div>
+</div></body></html>`;
+  };
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // MODÈLE 3 — PREMIUM (design original préservé + améliorations)
+  // ════════════════════════════════════════════════════════════════════════════
+  const generateModel3Html = (s = student, sGrades = studentGrades, sAvg = average, sRank = studentRank, sStatus = studentStatus, sMention = mention, sTotalCoef = totalCoef, sTotalPts = totalPoints) => {
+    const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
+    const principalTeacher = schoolInfo?.principalTeacher || '';
+
+    const sT1 = parseFloat(calculateAverage(s.id, '1')) || 0;
+    const sT2 = parseFloat(calculateAverage(s.id, '2')) || 0;
+    const sT3 = parseFloat(calculateAverage(s.id, '3')) || 0;
+    const sSorted = [...sGrades].filter(g => g.value != null).sort((a, b) => b.value - a.value);
+    const sHalf = Math.max(1, Math.floor(sSorted.length / 2));
+    const sStr = sSorted.slice(0, Math.min(3, sHalf)).map(g => ({ name: subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
+    const sWeak = sSorted.slice(-Math.min(3, sHalf)).reverse().map(g => ({ name: subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
+
+    const rows = sGrades.map(g => {
+      const subj = subjects.find(sub => sub.id === (g.subjectId || g.subject_id));
+      const coef = subj?.coefficient || 1;
+      const finalVal = computeFinal(g);
+      const color = finalVal != null ? gradeColor(finalVal) : '#9ca3af';
+      const lbl = finalVal != null ? gradeLabel(finalVal) : '-';
+      const pct = finalVal != null ? (finalVal / 20) * 100 : 0;
+      const interro = g.interro != null ? g.interro.toFixed(2) : '—';
+      const devoir = g.devoir != null ? g.devoir.toFixed(2) : '—';
+      const compo = g.composition != null ? g.composition.toFixed(2) : '—';
+      const bonus = g.bonus != null && g.bonus > 0 ? `+${g.bonus.toFixed(2)}` : '—';
+      const teacherName = g.teacherName || subj?.teacher || '';
+      const cAvgs = classStudents.map(st => {
+        const sg = grades.find(gg => (gg.studentId || gg.student_id) === st.id && (gg.subjectId || gg.subject_id) === (g.subjectId || g.subject_id) && gg.trimester === selectedTrimester);
+        return computeFinal(sg) || 0;
+      }).filter(v => v > 0);
+      const subjClsAvg = cAvgs.length ? cAvgs.reduce((a, b) => a + b, 0) / cAvgs.length : 0;
+      return `
+        <tr>
+          <td class="subj-name">${subj?.name || 'N/A'}<br><span style="font-size:6.5pt;color:#94a3b8;">${teacherName}</span></td>
+          <td class="center"><span class="coef-badge">${coef}</span></td>
+          <td class="center" style="font-size:7.5pt;color:#64748b;">
+            <div style="display:flex;gap:2px;justify-content:center;flex-wrap:wrap;">
+              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:${interro}</span>
+              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:${devoir}</span>
+              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:${compo}</span>
+              <span style="background:#d1fae5;border-radius:3px;padding:1px 4px;color:#059669;font-weight:700;">B:${bonus}</span>
+            </div>
+          </td>
+          <td class="center">
+            <div style="display:flex;align-items:center;gap:5px;">
+              <div style="flex:1;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+                <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;"></div>
+              </div>
+              <span style="color:${color};font-weight:800;font-size:10.5pt;min-width:34px;">${finalVal != null ? finalVal.toFixed(2) : '—'}</span>
+            </div>
+          </td>
+          <td class="center" style="font-size:7.5pt;color:#64748b;">${subjClsAvg > 0 ? subjClsAvg.toFixed(2) : '—'}</td>
+          <td><span style="color:${color};font-size:7.5pt;font-style:italic;">${lbl}</span></td>
+          <td style="font-size:7pt;color:#475569;font-style:italic;">${g.appreciation || ''}</td>
+          <td class="center" style="font-size:7.5pt;">
+            ${teacherName
+          ? `<div style="font-family:'Brush Script MT',cursive;font-size:8.5pt;color:#1e3a5f;">${teacherName}</div>
+             <div style="font-size:5.5pt;color:#2563eb;">✓ Signé</div>`
+          : `<span style="color:#d1d5db;">—</span>`}
+          </td>
+        </tr>`;
+    }).join('');
+
+    const evol = [[1, sT1], [2, sT2], [3, sT3]].filter(([, v]) => v > 0);
+    const evolSvg = evol.length > 1 ? `
+      <svg width="270" height="75" viewBox="0 0 270 75">
+        ${[0, 10, 20].map(v => `<line x1="28" y1="${60 - (v / 20) * 50}" x2="260" y2="${60 - (v / 20) * 50}" stroke="#f1f5f9" stroke-width="1"/>
+          <text x="22" y="${64 - (v / 20) * 50}" text-anchor="end" font-size="6.5" fill="#94a3b8">${v}</text>`).join('')}
+        <polyline points="${evol.map(([t, v]) => `${28 + (t - 1) * 115},${60 - (v / 20) * 50}`).join(' ')}" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round"/>
+        ${evol.map(([t, v]) => `
+          <circle cx="${28 + (t - 1) * 115}" cy="${60 - (v / 20) * 50}" r="4.5" fill="#3b82f6"/>
+          <text x="${28 + (t - 1) * 115}" y="${60 - (v / 20) * 50 - 7}" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">${v.toFixed(2)}</text>
+          <text x="${28 + (t - 1) * 115}" y="72" text-anchor="middle" font-size="7" fill="#64748b">T${t}</text>`).join('')}
+      </svg>` : '<p style="color:#94a3b8;font-size:8pt;">Données insuffisantes</p>';
+
+    return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<title>Bulletin Premium – ${s.firstName} ${s.lastName}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: A4 portrait; margin: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #1e293b; font-size: 9pt; }
+  .page { width: 210mm; background: white; }
+  .official-top { font-size: 6.5pt; padding: 4px 18px; background: #f8fafc; display: flex; justify-content: space-between; color: #374151; border-bottom: 1px solid #e2e8f0; }
+  .cover { background: linear-gradient(160deg,#0f172a 0%,#1e3a8a 60%,#1e40af 100%); padding: 16px 20px 12px; color: white; position: relative; overflow: hidden; }
+  .cover::before { content:''; position:absolute; right:-40px; top:-40px; width:180px; height:180px; background:rgba(255,255,255,.04); border-radius:50%; }
+  .cover-row { display: flex; justify-content: space-between; align-items: flex-start; }
+  .cover-left { flex: 1; }
+  .school-name { font-size: 14pt; font-weight: 800; letter-spacing: .5px; margin-bottom: 1px; }
+  .school-info { font-size: 7.5pt; opacity: .7; line-height: 1.5; }
+  .school-devise-m3 { font-size: 8pt; opacity: .85; font-style: italic; margin-top: 2px; }
+  .cover-badge { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 8px 14px; text-align: center; }
+  .cover-badge-year { font-size: 7.5pt; opacity: .7; }
+  .cover-badge-trim { font-size: 11pt; font-weight: 800; margin: 1px 0; }
+  .logo-img { width: 50px; height: 50px; object-fit: contain; border-radius: 6px; background: white; padding: 3px; }
+  .student-banner { background: #f8fafc; border-left: 6px solid #2563eb; padding: 9px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .student-fullname { font-size: 13pt; font-weight: 800; color: #0f172a; }
+  .student-class { font-size: 8.5pt; color: #64748b; margin-top: 1px; }
+  .avg-display { text-align: center; background: #1e40af; color: white; padding: 8px 16px; border-radius: 8px; }
+  .avg-num { font-size: 18pt; font-weight: 900; line-height: 1; }
+  .avg-label { font-size: 7pt; opacity: .8; }
+  .kpis { display: grid; grid-template-columns: repeat(5,1fr); border: 1.5px solid #e2e8f0; }
+  .kpi { padding: 7px; text-align: center; border-right: 1px solid #e2e8f0; }
+  .kpi:last-child { border-right: none; }
+  .kpi-val { font-size: 11pt; font-weight: 800; color: #1e40af; }
+  .kpi-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: 1px; }
+  .body-grid { display: grid; grid-template-columns: 3fr 1.5fr; padding: 10px 14px; gap: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  thead tr { background: #0f172a; color: white; }
+  th { padding: 5px 6px; font-size: 7.5pt; text-align: left; font-weight: 600; }
+  th.center { text-align: center; }
+  td { padding: 4px 5px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  .subj-name { font-weight: 700; }
+  .center { text-align: center; }
+  .coef-badge { background: #e0e7ff; color: #3730a3; padding: 1px 5px; border-radius: 8px; font-size: 7.5pt; font-weight: 700; }
+  .total-row td { background: #0f172a !important; color: white; font-weight: 700; }
+  .side-panel { display: flex; flex-direction: column; gap: 8px; }
+  .panel-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px; }
+  .panel-title { font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #64748b; margin-bottom: 6px; }
+  .mention-box { background: linear-gradient(135deg,${sMention.color || '#2563eb'}15,${sMention.color || '#2563eb'}08); border: 2px solid ${sMention.color || '#2563eb'}; border-radius: 8px; padding: 9px; text-align: center; }
+  .mention-val { font-size: 12pt; font-weight: 900; color: ${sMention.color || '#2563eb'}; }
+  .decision-tag { display:inline-block; background:${sStatus.color}18; color:${sStatus.color}; border:1.5px solid ${sStatus.color}; padding:2px 10px; border-radius:20px; font-size:7.5pt; font-weight:800; margin-top:5px; }
+  .evol-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px; }
+  .strength-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; font-size: 8pt; }
+  .sigs { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 0 14px 10px; }
+  .footer { background: #0f172a; color: #64748b; padding: 5px 14px; font-size: 6.5pt; display: flex; justify-content: space-between; }
+</style></head><body><div class="page">
+
+  <div class="official-top">
+    <div>
+      ${republic ? `<span style="font-weight:800;text-transform:uppercase;color:#1e3a5f;">${republic}</span>` : ''}
+      ${countryMotto ? `<span style="font-style:italic;margin-left:6px;">${countryMotto}</span>` : ''}
+      ${ministry ? `<span style="font-weight:600;margin-left:8px;">| ${ministry}</span>` : ''}
+    </div>
+    <div style="font-style:italic;color:#1e40af;">${schoolDevise ? `"${schoolDevise}"` : ''}</div>
+  </div>
+
+  <div class="cover">
+    <div class="cover-row">
+      <div class="cover-left">
+        ${schoolLogo ? `<img src="${schoolLogo}" class="logo-img" style="margin-bottom:6px;" alt="Logo">` : ''}
+        <div class="school-name">${schoolName}</div>
+        <div class="school-info">${schoolAddr}${schoolPhone ? ' | ' + schoolPhone : ''}${schoolEmail ? ' | ' + schoolEmail : ''}</div>
+        ${schoolDevise ? `<div class="school-devise-m3">"${schoolDevise}"</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        <div class="cover-badge">
+          <div class="cover-badge-year">${yearLabel}</div>
+          <div class="cover-badge-trim">${trimLabel}</div>
+          <div style="font-size:7pt;opacity:.6;margin-top:2px;">Bulletin scolaire</div>
+        </div>
+        ${qrCodeImg(s, sAvg, sRank, classStudents.length)}
+      </div>
+    </div>
+  </div>
+
+  <div class="student-banner">
+    <div>
+      <div class="student-fullname">${s.firstName} ${s.lastName?.toUpperCase()}</div>
+      <div class="student-class">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;·&nbsp; Effectif: <strong>${classStudents.length}</strong> &nbsp;·&nbsp; Rang: <strong>${sRank}/${classStudents.length}</strong></div>
+    </div>
+    <div class="avg-display">
+      <div class="avg-num">${fmtAvg(sAvg)}</div>
+      <div class="avg-label">Moy. / 20</div>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-val">${fmtAvg(classAverage)}</div><div class="kpi-lbl">Moy. classe</div></div>
+    <div class="kpi"><div class="kpi-val">${fmtAvg(classMax)}</div><div class="kpi-lbl">Max classe</div></div>
+    <div class="kpi"><div class="kpi-val">${fmtAvg(classMin)}</div><div class="kpi-lbl">Min classe</div></div>
+    <div class="kpi"><div class="kpi-val">${sTotalCoef}</div><div class="kpi-lbl">Coeff. total</div></div>
+    <div class="kpi"><div class="kpi-val">${sTotalPts.toFixed(1)}</div><div class="kpi-lbl">Total pts</div></div>
+  </div>
+
+  <div class="body-grid">
+    <div>
+      <table>
+        <thead><tr>
+          <th>Matière / Prof.</th>
+          <th class="center" style="width:32px;">Coef.</th>
+          <th class="center" style="width:110px;">I / D / C / Bonus</th>
+          <th style="width:120px;">Note /20</th>
+          <th class="center" style="width:46px;">Moy.cl.</th>
+          <th style="width:52px;">Niveau</th>
+          <th>Appréciation</th>
+          <th class="center" style="width:68px;">Signature</th>
+        </tr></thead>
+        <tbody>
+          ${rows}
+          <tr class="total-row">
+            <td>MOYENNE GÉNÉRALE</td>
+            <td class="center">${sTotalCoef}</td><td></td>
+            <td><strong style="font-size:11pt;">${fmtAvg(sAvg)}/20</strong></td>
+            <td class="center">${fmtAvg(classAverage)}</td>
+            <td>${sMention.text || ''}</td><td></td><td></td>
+          </tr>
+        </tbody>
+      </table>
+      ${generalAppreciation ? `
+      <div style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
+        <div style="font-size:7pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">Appréciation du conseil de classe</div>
+        <div style="font-size:9.5pt;color:#1e3a5f;">${generalAppreciation}</div>
+      </div>` : ''}
+    </div>
+
+    <div class="side-panel">
+      <div class="mention-box">
+        <div style="font-size:7pt;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:3px;">Mention</div>
+        <div class="mention-val">${sMention.text || 'N/A'}</div>
+        <div class="decision-tag">${sStatus.text}</div>
+      </div>
+      <div class="evol-box">
+        <div class="panel-title">📈 Évolution des moyennes</div>
+        ${evolSvg}
+      </div>
+      ${sStr.length > 0 ? `
+      <div class="panel-box">
+        <div class="panel-title">💪 Points forts</div>
+        ${sStr.map(st => `<div class="strength-item"><span style="font-weight:600;">${st.name}</span><span style="font-weight:800;color:#059669;">${st.value.toFixed(2)}</span></div>`).join('')}
+      </div>` : ''}
+      ${sWeak.length > 0 ? `
+      <div class="panel-box">
+        <div class="panel-title">⚠️ À renforcer</div>
+        ${sWeak.map(st => `<div class="strength-item"><span style="font-weight:600;">${st.name}</span><span style="font-weight:800;color:#dc2626;">${st.value.toFixed(2)}</span></div>`).join('')}
+      </div>` : ''}
+    </div>
+  </div>
+
+  <div class="sigs">
+    ${digitalSigBox('Signature du Directeur', directorName, 'Directeur')}
+    ${digitalSigBox('Visa du Prof. Principal', principalTeacher, 'Prof. Principal')}
+    ${digitalSigBox('Signature des Parents / Tuteur', '', '')}
+  </div>
+
+  <div class="footer">
+    <span>${schoolName}</span>
+    <span>Document officiel — ${yearLabel} — ${trimLabel}</span>
+    <span>Édité le ${new Date().toLocaleDateString('fr-FR')}</span>
+  </div>
+
+</div></body></html>`;
+  };
+
+  // ── Générateur selon modèle ───────────────────────────────────────────────
+  const buildHtml = (tmpl, s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef, sTotalPts) => {
+    if (tmpl === 'model2') return generateModel2Html(s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef);
+    if (tmpl === 'model3') return generateModel3Html(s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef, sTotalPts);
+    return generateModel1Html(s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef, sTotalPts);
+  };
+
+  // ── Batch print — tous les élèves de la classe ────────────────────────────
   const openBatchPrint = () => {
     if (!classStudents.length) return;
     setIsBatchLoading(true);
     const pages = classStudents.map(s => {
-      const html = buildBulletin(s, batchTemplate, opts);
-      // On extrait le contenu du body pour la concaténation
-      const match = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      return match ? `<div class="page-break">${match[1]}</div>` : '';
+      const sAvg = parseFloat(calculateAverage(s.id, selectedTrimester)) || 0;
+      const sGrades = grades.filter(g => (g.studentId || g.student_id) === s.id && g.trimester === selectedTrimester);
+      const sRanking = ranking;
+      const sRank = sRanking.findIndex(r => r.student.id === s.id) + 1 || '-';
+      const sMention = getMention(sAvg);
+      const sStatus = sAvg >= 12 ? { text: 'ADMIS(E)', color: '#059669' } : sAvg >= 8 ? { text: 'À SUIVRE', color: '#d97706' } : { text: 'EN DIFFICULTÉ', color: '#dc2626' };
+      const sTotalCoef = sGrades.reduce((sum, g) => sum + (subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.coefficient || 0), 0);
+      const sTotalPts = sGrades.reduce((sum, g) => {
+        const coef = subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.coefficient || 0;
+        return sum + ((g.value || 0) * coef);
+      }, 0);
+      const html = buildHtml(batchTemplate, s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef, sTotalPts);
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      return bodyMatch ? `<div style="page-break-after:always;">${bodyMatch[1]}</div>` : '';
     }).join('');
 
-    const css = commonCss();
+    // Récupérer le CSS du premier bulletin pour le batch
+    const firstHtml = buildHtml(batchTemplate, classStudents[0],
+      grades.filter(g => (g.studentId || g.student_id) === classStudents[0].id && g.trimester === selectedTrimester),
+      parseFloat(calculateAverage(classStudents[0].id, selectedTrimester)) || 0, 1,
+      { text: '', color: '' }, getMention(0), 0, 0);
+    const cssMatch = firstHtml.match(/<style>([\s\S]*?)<\/style>/i);
+    const css = cssMatch ? cssMatch[1] : '';
+
     const batchHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
 <title>Bulletins — Classe ${classInfo?.name} — ${trimLabel}</title>
-<style>
-  ${css}
-  body { padding: 0; }
-  .page-break { padding: 10mm; page-break-after: always; }
-  .page-break:last-child { page-break-after: auto; }
-  @page { size: A4; margin: 6mm; }
-</style></head><body>${pages}</body></html>`;
+<style>${css} @page{size:A4 portrait;margin:0;} body{padding:0;} div[style*="page-break"]:last-child{page-break-after:auto!important;}</style>
+</head><body>${pages}</body></html>`;
 
     const win = window.open('', '_blank', 'width=960,height=800');
     if (!win) { alert('Autorisez les pop-ups pour imprimer.'); setIsBatchLoading(false); return; }
     win.document.write(batchHtml);
     win.document.close();
-    setTimeout(() => {
-      win.print();
-      setTimeout(() => win.close(), 600);
-      setIsBatchLoading(false);
-    }, 700);
+    setTimeout(() => { win.print(); setTimeout(() => win.close(), 600); setIsBatchLoading(false); }, 600);
     setShowPrintPreview(false);
   };
 
-  // Bugfix useEffect — dependency array
+  // ── Bugfix useEffect ──────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       const tmpl = e?.detail?.template || bulletinTemplate;
-      const html = buildBulletin(student, tmpl, opts);
+      const html = buildHtml(tmpl, student, studentGrades, average, studentRank, studentStatus, mention, totalCoef, totalPoints);
       if (html) openPrint(html);
     };
     window.addEventListener('print-bulletin', handler);
     return () => window.removeEventListener('print-bulletin', handler);
   }, [bulletinTemplate, generalAppreciation]);
 
-  const modelOptions = [
-    { id: 'model1', icon: '📋', label: 'Modèle Officiel', desc: 'Style ministère · Tableau complet', color: 'blue' },
-    { id: 'model2', icon: '🎨', label: 'Modèle Moderne', desc: 'Fond clair · Bilan visuel', color: 'emerald' },
-    { id: 'model3', icon: '🏆', label: 'Modèle Premium', desc: 'Style sombre · Dégradé premium', color: 'purple' },
-  ];
-
-  const colorMap = {
-    blue: { border: 'border-blue-400', bg: 'hover:bg-blue-50', btn: 'bg-blue-600 hover:bg-blue-700', hover: 'group-hover:text-blue-700' },
-    emerald: { border: 'border-emerald-400', bg: 'hover:bg-emerald-50', btn: 'bg-emerald-600 hover:bg-emerald-700', hover: 'group-hover:text-emerald-700' },
-    purple: { border: 'border-purple-400', bg: 'hover:bg-purple-50', btn: 'bg-purple-600 hover:bg-purple-700', hover: 'group-hover:text-purple-700' },
-  };
-
+  // ════════════════════════════════════════════════════════════════════════════
+  // UI MODAL
+  // ════════════════════════════════════════════════════════════════════════════
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[94vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-screen overflow-y-auto">
 
-        {/* ── Header ── */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <div>
-            <h3 className="text-lg font-bold text-gray-900">Impression du bulletin</h3>
-            <p className="text-sm text-gray-400">{student.firstName} {student.lastName?.toUpperCase()} — {classInfo?.name} — {trimLabel}</p>
+            <h3 className="text-lg font-bold text-gray-900">Imprimer le bulletin</h3>
+            <p className="text-sm text-gray-500">{student.firstName} {student.lastName} — {classInfo?.name} — {trimLabel}</p>
           </div>
-          <button onClick={() => setShowPrintPreview(false)} className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+          <button onClick={() => setShowPrintPreview(false)} className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* ── Résumé ── */}
-        <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 grid grid-cols-4 gap-2 text-center">
-          {[
-            { val: fmtAvg(average), lbl: 'Moyenne', color: 'text-blue-600' },
-            { val: `${studentRank}/${classStudents.length}`, lbl: 'Rang', color: 'text-indigo-600' },
-            { val: mention?.text || '—', lbl: 'Mention', color: '', style: { color: mention?.color || '#2563eb' } },
-            { val: trend || '—', lbl: 'Évolution', color: '', style: { color: trend ? trendColor : '#9ca3af' } },
-          ].map((item, i) => (
-            <div key={i} className="bg-white rounded-xl p-2.5 shadow-sm">
-              <div className={`text-lg font-black ${item.color}`} style={item.style || {}}>{item.val}</div>
-              <div className="text-xs text-gray-400 font-semibold uppercase">{item.lbl}</div>
+        <div className="px-5 py-4 bg-gray-50 border-b border-gray-100">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-white rounded-xl p-3 shadow-sm">
+              <div className="text-2xl font-black text-blue-600">{fmtAvg(average)}</div>
+              <div className="text-xs text-gray-400 uppercase font-semibold">Moyenne</div>
             </div>
-          ))}
+            <div className="bg-white rounded-xl p-3 shadow-sm">
+              <div className="text-2xl font-black text-indigo-600">{studentRank}/{classStudents.length}</div>
+              <div className="text-xs text-gray-400 uppercase font-semibold">Rang</div>
+            </div>
+            <div className="bg-white rounded-xl p-3 shadow-sm">
+              <div className="text-lg font-black" style={{ color: mention.color || '#2563eb' }}>{mention.text || 'N/A'}</div>
+              <div className="text-xs text-gray-400 uppercase font-semibold">Mention</div>
+            </div>
+          </div>
         </div>
 
-        {/* ── Appréciation conseil ── */}
         <div className="px-5 pt-4 pb-1">
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
             📝 Appréciation du conseil de classe <span className="text-gray-300 normal-case font-normal">(optionnel)</span>
@@ -618,38 +833,42 @@ export default function PrintPreview({
           <textarea
             value={generalAppreciation}
             onChange={e => setGeneralAppreciation(e.target.value)}
-            placeholder="Ex: Trimestre encourageant. Des efforts constants sont à poursuivre en mathématiques…"
+            placeholder="Ex: Bon trimestre. Des efforts à poursuivre en mathématiques…"
             rows={2}
             className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none text-gray-700 placeholder-gray-300"
           />
         </div>
 
-        {/* ── Choix du modèle ── */}
         <div className="p-5 space-y-3">
-          <p className="text-sm font-semibold text-gray-700">Choisissez un modèle :</p>
+          <p className="text-sm font-semibold text-gray-700 mb-3">Choisissez un modèle :</p>
 
-          {modelOptions.map(({ id, icon, label, desc, color }) => {
-            const c = colorMap[color];
-            return (
-              <div key={id} className={`border-2 border-gray-200 rounded-xl p-4 transition-all group cursor-pointer ${c.bg} hover:${c.border}`}>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-lg flex-shrink-0">{icon}</div>
-                  <div>
-                    <h4 className={`font-bold text-gray-800 text-sm ${c.hover}`}>{label}</h4>
-                    <p className="text-xs text-gray-400">{desc}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => { openPrint(buildBulletin(student, id, opts)); setShowPrintPreview(false); }}
-                  className={`w-full ${c.btn} text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 text-sm`}
-                >
-                  <Printer className="w-4 h-4" /> Imprimer ce modèle
-                </button>
-              </div>
-            );
-          })}
+          <div className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:bg-blue-50 transition-all group">
+            <div className="flex items-center gap-2 mb-1"><span className="text-lg">📋</span><h4 className="font-bold text-gray-800 group-hover:text-blue-700">Modèle Officiel</h4></div>
+            <p className="text-xs text-gray-500 mb-3">Style ministère · Tableau avec Interro/Devoir/Compo/Bonus · Signatures · QR Code · 1 page A4</p>
+            <button onClick={() => { openPrint(generateModel1Html()); setShowPrintPreview(false); }}
+              className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+              <Printer className="w-4 h-4" /> Imprimer ce modèle
+            </button>
+          </div>
 
-          {/* ── Batch Print ── */}
+          <div className="border-2 border-gray-200 rounded-xl p-4 hover:border-emerald-400 hover:bg-emerald-50 transition-all group">
+            <div className="flex items-center gap-2 mb-1"><span className="text-lg">📊</span><h4 className="font-bold text-gray-800 group-hover:text-emerald-700">Modèle Moderne</h4></div>
+            <p className="text-xs text-gray-500 mb-3">Gradient bleu · Barres de progression · Graphique SVG · QR Code · 1 page A4</p>
+            <button onClick={() => { openPrint(generateModel2Html()); setShowPrintPreview(false); }}
+              className="w-full bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
+              <Printer className="w-4 h-4" /> Imprimer ce modèle
+            </button>
+          </div>
+
+          <div className="border-2 border-gray-200 rounded-xl p-4 hover:border-purple-400 hover:bg-purple-50 transition-all group">
+            <div className="flex items-center gap-2 mb-1"><span className="text-lg">🏆</span><h4 className="font-bold text-gray-800 group-hover:text-purple-700">Modèle Premium</h4></div>
+            <p className="text-xs text-gray-500 mb-3">Couverture dégradée · KPIs · Évolution 3 trimestres · Points forts/faibles · QR Code · 1 page A4</p>
+            <button onClick={() => { openPrint(generateModel3Html()); setShowPrintPreview(false); }}
+              className="w-full bg-purple-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2">
+              <Printer className="w-4 h-4" /> Imprimer ce modèle
+            </button>
+          </div>
+
           <div className="border-2 border-orange-200 bg-orange-50 rounded-xl p-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -657,40 +876,33 @@ export default function PrintPreview({
               </div>
               <div>
                 <h4 className="font-bold text-orange-800 text-sm">Imprimer toute la classe</h4>
-                <p className="text-xs text-orange-500">{classStudents.length} bulletins en 1 clic — choisissez le modèle ci-dessous</p>
+                <p className="text-xs text-orange-500">{classStudents.length} bulletins en 1 clic — choisissez le modèle</p>
               </div>
             </div>
-            <div className="mb-2.5">
-              <label className="text-xs font-semibold text-orange-700 uppercase mb-1 block">Modèle à utiliser</label>
-              <div className="relative">
-                <select
-                  value={batchTemplate}
-                  onChange={e => setBatchTemplate(e.target.value)}
-                  className="w-full border border-orange-300 rounded-lg px-3 py-2 text-sm font-medium text-orange-800 bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-orange-400"
-                >
-                  <option value="model1">📋 Modèle Officiel</option>
-                  <option value="model2">🎨 Modèle Moderne</option>
-                  <option value="model3">🏆 Modèle Premium</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-2.5 w-4 h-4 text-orange-400 pointer-events-none" />
-              </div>
+            <div className="mb-2.5 relative">
+              <select value={batchTemplate} onChange={e => setBatchTemplate(e.target.value)}
+                className="w-full border border-orange-300 rounded-lg px-3 py-2 text-sm font-medium text-orange-800 bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-orange-400">
+                <option value="model1">📋 Modèle Officiel</option>
+                <option value="model2">📊 Modèle Moderne</option>
+                <option value="model3">🏆 Modèle Premium</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-2.5 w-4 h-4 text-orange-400 pointer-events-none" />
             </div>
-            <button
-              onClick={openBatchPrint}
-              disabled={isBatchLoading}
-              className="w-full bg-orange-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-            >
+            <button onClick={openBatchPrint} disabled={isBatchLoading}
+              className="w-full bg-orange-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed">
               {isBatchLoading
                 ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Génération en cours…</>
-                : <><Printer className="w-4 h-4" /> Imprimer les {classStudents.length} bulletins</>}
+                : <><Printer className="w-4 h-4" /> Imprimer {classStudents.length} bulletins</>}
             </button>
           </div>
         </div>
 
-        {/* ── Info tip ── */}
-        <div className="px-5 pb-5">
+        <div className="px-5 pb-5 space-y-2">
           <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
-            💡 Si la fenêtre d'impression ne s'ouvre pas, autorisez les pop-ups dans votre navigateur pour ce site.
+            💡 Autorisez les pop-ups dans votre navigateur si la fenêtre d'impression ne s'ouvre pas.
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">
+            🌍 Pour afficher la République et le Ministère, renseignez <code className="bg-blue-100 px-1 rounded">republic</code>, <code className="bg-blue-100 px-1 rounded">countryMotto</code>, <code className="bg-blue-100 px-1 rounded">ministry</code> et <code className="bg-blue-100 px-1 rounded">devise</code> dans <strong>Paramètres → Infos établissement</strong>.
           </div>
         </div>
       </div>

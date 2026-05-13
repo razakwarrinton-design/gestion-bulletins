@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, CheckCircle, ChevronDown, ChevronUp, User, Pen } from 'lucide-react';
+import { Save, CheckCircle, ChevronDown, ChevronUp, User, Pen, Star } from 'lucide-react';
 
 // ─── Hook debounce ────────────────────────────────────────────────────────────
 function useDebounce(value, delay) {
@@ -16,8 +16,8 @@ const noteColor = v => v === '' ? '#E2E8F0' : isNaN(+v) ? '#FCA5A5' : +v < 8 ? '
 const noteTxtCol = v => +v < 8 ? '#DC2626' : +v < 10 ? '#D97706' : +v < 14 ? '#2563EB' : '#059669';
 const mention = v => +v >= 16 ? 'Très Bien' : +v >= 14 ? 'Bien' : +v >= 12 ? 'Assez Bien' : +v >= 10 ? 'Passable' : +v >= 8 ? 'Insuffisant' : 'Très Insuf.';
 
-// ─── Calcul note finale depuis interro/devoir/compo ──────────────────────────
-// Pondération : Interro ×1 · Devoir ×2 · Composition ×3 (modifiable)
+// ─── Calcul note finale depuis interro/devoir/compo (sans bonus) ─────────────
+// Pondération : Interro ×1 · Devoir ×2 · Composition ×3
 const computeFinal = (interro, devoir, compo) => {
   const parts = [];
   if (interro !== '' && !isNaN(+interro)) parts.push({ v: +interro, w: 1 });
@@ -29,22 +29,33 @@ const computeFinal = (interro, devoir, compo) => {
 };
 
 // ─── Petit champ numérique réutilisable ───────────────────────────────────────
-function NoteField({ label, value, onChange, disabled }) {
+function NoteField({ label, value, onChange, disabled, isBonus = false }) {
   const v = parseFloat(value);
-  const bg = value === '' ? '#F8FAFF' : isNaN(v) ? '#FFF1F1' : v < 8 ? '#FFF7ED' : v < 10 ? '#FEFCE8' : v < 14 ? '#EFF6FF' : '#F0FDF4';
-  const bord = value === '' ? '#E2E8F0' : isNaN(v) ? '#FCA5A5' : v < 8 ? '#FCD34D' : v < 10 ? '#FCD34D' : v < 14 ? '#93C5FD' : '#6EE7B7';
+  const bg = isBonus
+    ? (value === '' ? '#F0FDF4' : '#DCFCE7')
+    : (value === '' ? '#F8FAFF' : isNaN(v) ? '#FFF1F1' : v < 8 ? '#FFF7ED' : v < 10 ? '#FEFCE8' : v < 14 ? '#EFF6FF' : '#F0FDF4');
+  const brd = isBonus
+    ? (value === '' ? '#BBF7D0' : '#4ADE80')
+    : (value === '' ? '#E2E8F0' : isNaN(v) ? '#FCA5A5' : v < 8 ? '#FCD34D' : v < 10 ? '#FCD34D' : v < 14 ? '#93C5FD' : '#6EE7B7');
   return (
     <div style={{ flex: 1 }}>
-      <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>{label}</div>
+      <div style={{
+        fontSize: 9.5, fontWeight: 700, color: isBonus ? '#059669' : '#94A3B8',
+        textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4,
+        display: 'flex', alignItems: 'center', gap: 3,
+      }}>
+        {isBonus && <Star size={9} color="#059669" />}
+        {label}
+      </div>
       <input
-        type="number" min="0" max="20" step="0.25"
+        type="number" min="0" max={isBonus ? '5' : '20'} step="0.25"
         value={value}
         onChange={e => onChange(e.target.value)}
         disabled={disabled}
         style={{
           width: '100%', padding: '7px 10px', borderRadius: 8,
-          border: `1.5px solid ${bord}`, background: bg,
-          fontSize: 13, fontWeight: 600, color: '#0F172A',
+          border: `1.5px solid ${brd}`, background: bg,
+          fontSize: 13, fontWeight: 600, color: isBonus ? '#059669' : '#0F172A',
           outline: 'none', textAlign: 'center',
           fontFamily: 'inherit', transition: 'border-color .15s',
           opacity: disabled ? .5 : 1,
@@ -62,49 +73,59 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
   const [interro, setInterro] = useState(initialGrade?.interro ?? '');
   const [devoir, setDevoir] = useState(initialGrade?.devoir ?? '');
   const [compo, setCompo] = useState(initialGrade?.composition ?? '');
+  const [bonus, setBonus] = useState(initialGrade?.bonus ?? '');
   const [teacherName, setTeacher] = useState(initialGrade?.teacherName ?? '');
   const [apprecVal, setApprec] = useState(initialGrade?.appreciation ?? '');
   const [saved, setSaved] = useState(false);
   const isFirst = useRef(true);
 
-  // final note calculée
-  const finalNote = mode === 'detail'
-    ? computeFinal(interro, devoir, compo)
-    : noteSimple;
+  // Note finale calculée (avant bonus)
+  const baseNote = mode === 'detail' ? computeFinal(interro, devoir, compo) : noteSimple;
+  // Note finale avec bonus (plafonnée à 20)
+  const bonusVal = bonus !== '' && !isNaN(+bonus) ? +bonus : 0;
+  const finalNote = baseNote !== '' && !isNaN(+baseNote)
+    ? Math.min(20, +baseNote + bonusVal).toFixed(2)
+    : '';
 
-  // sync si données externes changent (import Excel)
+  // Sync si données externes changent (import Excel)
   useEffect(() => {
     setSimple(initialGrade?.value ?? '');
     setInterro(initialGrade?.interro ?? '');
     setDevoir(initialGrade?.devoir ?? '');
     setCompo(initialGrade?.composition ?? '');
+    setBonus(initialGrade?.bonus ?? '');
     setTeacher(initialGrade?.teacherName ?? '');
     setApprec(initialGrade?.appreciation ?? '');
   }, [
     initialGrade?.value, initialGrade?.interro, initialGrade?.devoir,
-    initialGrade?.composition, initialGrade?.teacherName, initialGrade?.appreciation,
+    initialGrade?.composition, initialGrade?.bonus,
+    initialGrade?.teacherName, initialGrade?.appreciation,
   ]);
 
   const dbInterro = useDebounce(interro, 700);
   const dbDevoir = useDebounce(devoir, 700);
   const dbCompo = useDebounce(compo, 700);
   const dbSimple = useDebounce(noteSimple, 700);
+  const dbBonus = useDebounce(bonus, 700);
   const dbTeacher = useDebounce(teacherName, 800);
   const dbApprec = useDebounce(apprecVal, 800);
 
   useEffect(() => {
     if (isFirst.current) { isFirst.current = false; return; }
-    const val = mode === 'detail' ? computeFinal(dbInterro, dbDevoir, dbCompo) : dbSimple;
-    onSave(studentId, subject.id, trimester, val === '' ? '' : parseFloat(val), dbApprec, {
+    const base = mode === 'detail' ? computeFinal(dbInterro, dbDevoir, dbCompo) : dbSimple;
+    const bonusN = dbBonus !== '' && !isNaN(+dbBonus) ? +dbBonus : 0;
+    const finalN = base !== '' && !isNaN(+base) ? Math.min(20, +base + bonusN) : '';
+    onSave(studentId, subject.id, trimester, finalN === '' ? '' : parseFloat(finalN), dbApprec, {
       interro: dbInterro === '' ? null : parseFloat(dbInterro),
       devoir: dbDevoir === '' ? null : parseFloat(dbDevoir),
       composition: dbCompo === '' ? null : parseFloat(dbCompo),
+      bonus: dbBonus === '' ? null : parseFloat(dbBonus),
       teacherName: dbTeacher,
     });
     setSaved(true);
     const t = setTimeout(() => setSaved(false), 1600);
     return () => clearTimeout(t);
-  }, [dbInterro, dbDevoir, dbCompo, dbSimple, dbTeacher, dbApprec]);
+  }, [dbInterro, dbDevoir, dbCompo, dbSimple, dbBonus, dbTeacher, dbApprec]);
 
   const fv = finalNote !== '' && !isNaN(+finalNote) ? +finalNote : null;
 
@@ -114,7 +135,7 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
       border: `1.5px solid ${fv != null ? noteColor(fv) : '#E8EFFE'}`,
       padding: '12px 14px', transition: 'border-color .2s',
     }}>
-      {/* Header matière */}
+      {/* ── Header matière ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
@@ -138,7 +159,6 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
               <CheckCircle size={13} /> Sauvegardé
             </span>
           )}
-          {/* Toggle mode */}
           <button
             onClick={() => setMode(m => m === 'detail' ? 'simple' : 'detail')}
             style={{
@@ -153,15 +173,18 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
         </div>
       </div>
 
-      {/* Sous-notes */}
+      {/* ── Sous-notes ── */}
       {mode === 'detail' ? (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
           <NoteField label="Interrogation" value={interro} onChange={setInterro} />
           <NoteField label="Devoir" value={devoir} onChange={setDevoir} />
           <NoteField label="Composition" value={compo} onChange={setCompo} />
+          <NoteField label="Bonus" value={bonus} onChange={setBonus} isBonus />
           {/* Note finale calculée (lecture seule) */}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>Finale (auto)</div>
+            <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+              Finale (auto)
+            </div>
             <div style={{
               width: '100%', padding: '7px 10px', borderRadius: 8,
               border: '1.5px solid ' + (fv != null ? noteColor(fv) : '#E2E8F0'),
@@ -171,16 +194,32 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
             }}>
               {fv != null ? fv.toFixed(2) : '—'}
             </div>
-            <div style={{ fontSize: 9, color: '#CBD5E1', textAlign: 'center', marginTop: 2 }}>I×1 D×2 C×3</div>
+            <div style={{ fontSize: 9, color: '#CBD5E1', textAlign: 'center', marginTop: 2 }}>I×1 D×2 C×3 +B</div>
           </div>
         </div>
       ) : (
-        <div style={{ marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
           <NoteField label="Note /20" value={noteSimple} onChange={setSimple} />
+          <NoteField label="Bonus" value={bonus} onChange={setBonus} isBonus />
+          {/* Résultat avec bonus */}
+          {bonusVal > 0 && (
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 9.5, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+                Avec bonus
+              </div>
+              <div style={{
+                padding: '7px 10px', borderRadius: 8, border: '1.5px solid #6EE7B7',
+                background: '#F0FDF4', fontSize: 14, fontWeight: 800, color: '#059669',
+                textAlign: 'center', minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {fv != null ? fv.toFixed(2) : '—'}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Appréciation + Nom prof */}
+      {/* ── Appréciation + Nom prof ── */}
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ flex: 2 }}>
           <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
@@ -215,7 +254,7 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
         </div>
       </div>
 
-      {/* Signature numérique affichée si nom prof renseigné */}
+      {/* ── Signature numérique si nom prof renseigné ── */}
       {teacherName.trim() && (
         <div style={{
           marginTop: 8, padding: '5px 10px', borderRadius: 8,
@@ -229,6 +268,21 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
             background: '#DBEAFE', borderRadius: 20, padding: '1px 7px', border: '1px solid #BFDBFE',
           }}>
             ✓ Signé numériquement · {new Date().toLocaleDateString('fr-FR')}
+          </span>
+        </div>
+      )}
+
+      {/* ── Badge bonus actif ── */}
+      {bonusVal > 0 && (
+        <div style={{
+          marginTop: 6, padding: '4px 10px', borderRadius: 8,
+          background: '#F0FDF4', border: '1px solid #BBF7D0',
+          display: 'flex', alignItems: 'center', gap: 6, fontSize: 11,
+        }}>
+          <Star size={11} color="#059669" />
+          <span style={{ color: '#059669', fontWeight: 700 }}>
+            Bonus de +{bonusVal.toFixed(2)} pt{bonusVal > 1 ? 's' : ''} appliqué
+            {baseNote !== '' ? ` · Base : ${baseNote}/20 → Final : ${fv?.toFixed(2)}/20` : ''}
           </span>
         </div>
       )}
@@ -248,7 +302,6 @@ export default function GradesForm({
     ? students.filter(s => (s.classId || s.class_id) === selectedClass)
     : [];
 
-  // wrapper updateGrade pour accepter les champs extra
   const handleSave = (studentId, subjectId, trimester, value, appreciation, extra = {}) => {
     updateGrade(studentId, subjectId, trimester, value, appreciation, extra);
   };
@@ -256,13 +309,13 @@ export default function GradesForm({
   return (
     <div className="space-y-5">
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
             <Pen className="w-5 h-5 text-blue-600" /> Saisie des notes
           </h2>
-          <p className="text-xs text-gray-400 mt-0.5">Sauvegarde automatique · Interro / Devoir / Composition</p>
+          <p className="text-xs text-gray-400 mt-0.5">Sauvegarde automatique · Interro / Devoir / Composition / Bonus</p>
         </div>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 500,
@@ -273,7 +326,7 @@ export default function GradesForm({
         </div>
       </div>
 
-      {/* Filtres */}
+      {/* ── Filtres ── */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Classe</label>
@@ -290,42 +343,35 @@ export default function GradesForm({
           <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Trimestre</label>
           <div style={{ display: 'flex', gap: 6 }}>
             {['1', '2', '3'].map(t => (
-              <button
-                key={t}
-                onClick={() => setSelectedTrimester(t)}
-                style={{
-                  flex: 1, padding: '9px 0', borderRadius: 10, border: 'none',
-                  fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
-                  background: selectedTrimester === t ? '#2563EB' : '#EFF6FF',
-                  color: selectedTrimester === t ? '#fff' : '#2563EB',
-                  border: `1.5px solid ${selectedTrimester === t ? '#2563EB' : '#BFDBFE'}`,
-                  transition: 'all .15s',
-                }}
-              >
-                T{t}
-              </button>
+              <button key={t} onClick={() => setSelectedTrimester(t)} style={{
+                flex: 1, padding: '9px 0', borderRadius: 10, border: 'none',
+                fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
+                background: selectedTrimester === t ? '#2563EB' : '#EFF6FF',
+                color: selectedTrimester === t ? '#fff' : '#2563EB',
+                border: `1.5px solid ${selectedTrimester === t ? '#2563EB' : '#BFDBFE'}`,
+                transition: 'all .15s',
+              }}>T{t}</button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Légende pondération */}
+      {/* ── Légende ── */}
       {selectedClass && (
         <div style={{
           background: '#F0F5FF', border: '1px solid #DBEAFE', borderRadius: 10,
           padding: '8px 14px', fontSize: 11.5, color: '#3B82F6', display: 'flex', gap: 16, flexWrap: 'wrap',
         }}>
-          <span>📐 <strong>Formule :</strong> (Interro×1 + Devoir×2 + Composition×3) ÷ 6</span>
-          <span>💡 Basculez entre <strong>mode détaillé</strong> (I/D/C) et <strong>mode simple</strong> par matière</span>
+          <span>📐 <strong>Formule :</strong> (Interro×1 + Devoir×2 + Composition×3) ÷ 6 + Bonus</span>
+          <span style={{ color: '#059669' }}>⭐ <strong>Bonus :</strong> Points ajoutés sur la note finale (max +5, plafond 20)</span>
         </div>
       )}
 
-      {/* Vide */}
       {selectedClass && classStudents.length === 0 && (
         <div className="text-center py-16 text-gray-300 text-sm">Aucun élève dans cette classe</div>
       )}
 
-      {/* Cartes élèves */}
+      {/* ── Cartes élèves ── */}
       {selectedClass && classStudents.map(student => {
         const avg = calculateAverage(student.id, selectedTrimester);
         const ment = getMention(avg);

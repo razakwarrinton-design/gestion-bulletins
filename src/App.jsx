@@ -102,11 +102,21 @@ const BulletinApp = () => {
 
     // ── Données persistées (useSupabaseState) ───────────────────────────────────
     const [schoolInfo, setSchoolInfo] = useSupabaseState('schoolInfo', {
+        // ── Infos de base (existants) ──
         name: 'ÉTABLISSEMENT SCOLAIRE',
         address: 'Adresse de l\'établissement',
         phone: '+33 XXX XXX XXX',
-        email: 'contact@ecole.com'
+        email: 'contact@ecole.com',
+        year: '2024-2025',
+        // ── Nouveaux champs (à renseigner dans Paramètres) ──
+        republic: '',   // ex: "REPUBLIQUE TOGOLAISE"
+        countryMotto: '',   // ex: "Travail · Liberté · Patrie"
+        ministry: '',   // ex: "Ministère des Enseignements Primaire et Secondaire"
+        devise: '',   // devise de l'école, ex: "L'excellence avant tout"
+        directorName: '',   // nom complet du directeur
+        principalTeacher: '',   // nom du professeur principal (pour les bulletins)
     });
+
     const [appColors, setAppColors] = useSupabaseState('appColors', {
         primary: '#2563eb', secondary: '#10b981', accent: '#f59e0b'
     });
