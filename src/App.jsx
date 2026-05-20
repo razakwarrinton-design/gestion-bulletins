@@ -160,6 +160,18 @@ const BulletinApp = () => {
         open: false, title: '', message: '', onConfirm: null
     });
 
+    // ── Items de navigation visibles selon le rôle ───────────────────────────────
+    const visibleNavItems = NAV_ITEMS.filter(item =>
+        !currentUser || item.roles.includes(currentUser.role)
+    );
+
+    // ── Redirection automatique : un parent va directement à son espace ──────────
+    useEffect(() => {
+        if (currentUser?.role === 'parent') {
+            setCurrentView('parents');
+        }
+    }, [currentUser]);
+
     // ── Helpers ──────────────────────────────────────────────────────────────────
     const showNotification = (message) => {
         setAlertMessage(message);
@@ -920,11 +932,6 @@ const BulletinApp = () => {
         </div>
     );
 
-    // ── Rendu principal ───────────────────────────────────────────────────────────
-    const visibleNavItems = NAV_ITEMS.filter(item =>
-        !currentUser || item.roles.includes(currentUser.role)
-    );
-
     // ── Écran de chargement ───────────────────────────────────────────────────
     if (authLoading) {
         return (
@@ -1051,7 +1058,8 @@ const BulletinApp = () => {
                                 </div>
                                 <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
                                     {currentUser.role === 'admin' ? 'Administrateur' :
-                                        currentUser.role === 'professeur' ? 'Professeur' : 'Secrétaire'}
+                                        currentUser.role === 'professeur' ? 'Professeur' :
+                                            currentUser.role === 'parent' ? 'Parent' : 'Secrétaire'}
                                 </div>
                             </div>
                         </div>
