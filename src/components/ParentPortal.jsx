@@ -44,8 +44,8 @@ function ChildSummaryCard({ child, trimester, calculateAverage, isSelected, onSe
         <div
             onClick={onSelect}
             className={`cursor-pointer rounded-2xl p-5 border-2 transition-all ${isSelected
-                    ? 'border-blue-500 shadow-lg bg-blue-50'
-                    : 'border-gray-100 bg-white hover:border-blue-300 hover:shadow-md'
+                ? 'border-blue-500 shadow-lg bg-blue-50'
+                : 'border-gray-100 bg-white hover:border-blue-300 hover:shadow-md'
                 }`}
         >
             {/* Avatar + nom */}
@@ -345,6 +345,240 @@ function ChangePasswordSection({ onNotify }) {
     );
 }
 
+// ── Évolution trimestrielle ──────────────────────────────────────────────────
+function EvolutionTrimestrielle({ child, currentTrimester, calculateAverage, getStudentGrades }) {
+    const avgs = ['1', '2', '3'].map(t => ({
+        t,
+        label: `T${t}`,
+        value: parseFloat(calculateAverage(child.id, t)) || 0,
+        hasData: parseFloat(calculateAverage(child.id, t)) > 0,
+    }));
+
+    const availableTrims = avgs.filter(d => d.hasData);
+    if (availableTrims.length < 2) return null; // pas assez de données
+
+    const maxVal = Math.max(...availableTrims.map(d => d.value), 1);
+
+    // Évolution par matière : on compare chaque trimestre disponible
+    const subjectEvolution = (() => {
+        const subjectMap = {};
+        avgs.forEach(({ t, hasData }) => {
+            if (!hasData) return;
+            const grades = getStudentGrades(child.id, t);
+            grades.forEach(g => {
+                if (!subjectMap[g.subjectName]) subjectMap[g.subjectName] = {};
+                subjectMap[g.subjectName][t] = g.value;
+            });
+        });
+        return Object.entries(subjectMap)
+            .map(([name, scores]) => ({ name, scores }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+    })();
+
+    // Meilleure progression et plus grosse régression
+    const progressions = subjectEvolution.map(({ name, scores }) => {
+        const vals = avgs.filter(d => d.hasData && scores[d.t] !== undefined).map(d => scores[d.t]);
+        if (vals.length < 2) return null;
+        return { name, delta: vals[vals.length - 1] - vals[0] };
+    }).filter(Boolean);
+
+    const bestProgress = progressions.sort((a, b) => b.delta - a.delta)[0];
+    const worstRegress = [...progressions].sort((a, b) => a.delta - b.delta)[0];
+
+    // Tendance globale
+    const firstAvg = availableTrims[0].value;
+    const lastAvg = availableTrims[availableTrims.length - 1].value;
+    const globalDelta = lastAvg - firstAvg;
+
+    return (
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            {/* En-tête */}
+            <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-blue-600" /> Évolution trimestrielle
+                </h3>
+                {/* Tendance globale */}
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 ${globalDelta > 0.5 ? 'bg-green-100 text-green-700' :
+                        globalDelta < -0.5 ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-600'
+                    }`}>
+                    {globalDelta > 0.5 ? '↑' : globalDelta < -0.5 ? '↓' : '→'}
+                    {globalDelta > 0 ? '+' : ''}{globalDelta.toFixed(2)} pts
+                </span>
+            </div>
+
+            <div className="p-5 space-y-5">
+
+                {/* ── Graphique barres ── */}
+                <div className="flex items-end gap-3">
+                    {avgs.map(({ t, label, value, hasData }, i) => {
+                        const isCurrent = t === currentTrimester;
+                        const h = hasData ? Math.max((value / 20) * 100, 4) : 0;
+                        const color = gradeColor(value);
+                        const prevVal = i > 0 ? avgs[i - 1].value : null;
+                        const delta = prevVal && hasData ? value - prevVal : null;
+
+                        return (
+                            <div key={t} className="flex-1 flex flex-col items-center gap-1.5">
+                                {/* Delta vs trimestre précédent */}
+                                <div className="h-5 flex items-center">
+                                    {delta !== null && avgs[i - 1].hasData && (
+                                        <span className={`text-xs font-bold ${delta > 0.5 ? 'text-green-600' : delta < -0.5 ? 'text-red-500' : 'text-gray-400'
+                                            }`}>
+                                            {delta > 0 ? '+' : ''}{delta.toFixed(2)}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Valeur */}
+                                {hasData && (
+                                    <span className="text-sm font-black" style={{ color }}>{value.toFixed(2)}</span>
+                                )}
+
+                                {/* Barre */}
+                                <div className="w-full flex flex-col justify-end" style={{ height: 110 }}>
+                                    {hasData ? (
+                                        <div
+                                            className="w-full rounded-t-xl transition-all duration-700 relative"
+                                            style={{
+                                                height: `${h}%`,
+                                                background: isCurrent
+                                                    ? `linear-gradient(180deg, ${color}, ${color}bb)`
+                                                    : color + '66',
+                                                border: isCurrent ? `2px solid ${color}` : 'none',
+                                                minHeight: 6,
+                                            }}
+                                        >
+                                            {isCurrent && (
+                                                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+                                                    style={{ background: color }} />
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="w-full rounded-t-xl bg-gray-100 flex items-center justify-center"
+                                            style={{ height: 20 }}>
+                                            <span className="text-xs text-gray-400">—</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Label */}
+                                <span className={`text-xs font-bold ${isCurrent ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    {label} {isCurrent && '●'}
+                                </span>
+                                {hasData && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                        style={{ color, background: color + '18' }}>
+                                        {gradeLabel(value)}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* ── Ligne de repère 10/20 ── */}
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <div className="flex-1 border-t border-dashed border-gray-200" />
+                    <span>Moyenne minimale : 10/20</span>
+                    <div className="flex-1 border-t border-dashed border-gray-200" />
+                </div>
+
+                {/* ── Bilan progression ── */}
+                {progressions.length > 0 && (
+                    <div className="grid grid-cols-2 gap-3">
+                        {bestProgress?.delta > 0 && (
+                            <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
+                                <span className="text-lg">📈</span>
+                                <div>
+                                    <p className="text-xs font-bold text-green-800">Meilleure progression</p>
+                                    <p className="text-xs text-green-700 font-semibold mt-0.5">
+                                        {bestProgress.name}
+                                        <span className="ml-1 text-green-600">+{bestProgress.delta.toFixed(2)} pts</span>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        {worstRegress?.delta < 0 && (
+                            <div className="bg-red-50 border border-red-100 rounded-xl p-3 flex items-center gap-2">
+                                <span className="text-lg">📉</span>
+                                <div>
+                                    <p className="text-xs font-bold text-red-800">À surveiller</p>
+                                    <p className="text-xs text-red-700 font-semibold mt-0.5">
+                                        {worstRegress.name}
+                                        <span className="ml-1 text-red-600">{worstRegress.delta.toFixed(2)} pts</span>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── Tableau évolution par matière ── */}
+                {subjectEvolution.length > 0 && (
+                    <div>
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                            Détail par matière
+                        </p>
+                        <div className="rounded-xl border border-gray-100 overflow-hidden">
+                            {/* En-tête tableau */}
+                            <div className="grid bg-gray-50 border-b border-gray-100 px-3 py-2"
+                                style={{ gridTemplateColumns: '1fr repeat(3, 64px) 56px' }}>
+                                <span className="text-xs font-bold text-gray-500">Matière</span>
+                                {avgs.map(({ t, label, hasData }) => (
+                                    <span key={t} className={`text-xs font-bold text-center ${t === currentTrimester ? 'text-blue-600' : 'text-gray-400'
+                                        } ${!hasData ? 'opacity-40' : ''}`}>
+                                        {label}
+                                    </span>
+                                ))}
+                                <span className="text-xs font-bold text-gray-500 text-center">Évol.</span>
+                            </div>
+
+                            {/* Lignes matières */}
+                            {subjectEvolution.map(({ name, scores }, idx) => {
+                                const vals = avgs.filter(d => d.hasData && scores[d.t] !== undefined).map(d => scores[d.t]);
+                                const delta = vals.length >= 2 ? vals[vals.length - 1] - vals[0] : null;
+                                return (
+                                    <div key={name}
+                                        className={`grid items-center px-3 py-2.5 border-b border-gray-50 last:border-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                                        style={{ gridTemplateColumns: '1fr repeat(3, 64px) 56px' }}>
+                                        <span className="text-xs font-semibold text-gray-700 truncate pr-2">{name}</span>
+                                        {avgs.map(({ t, hasData }) => {
+                                            const v = scores[t];
+                                            const color = v !== undefined ? gradeColor(v) : '#d1d5db';
+                                            return (
+                                                <div key={t} className="text-center">
+                                                    {v !== undefined ? (
+                                                        <span className="text-xs font-black" style={{ color }}>{v.toFixed(1)}</span>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-300">—</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                        <div className="text-center">
+                                            {delta !== null ? (
+                                                <span className={`text-xs font-bold ${delta > 0.5 ? 'text-green-600' :
+                                                        delta < -0.5 ? 'text-red-500' :
+                                                            'text-gray-400'
+                                                    }`}>
+                                                    {delta > 0 ? '↑' : delta < 0 ? '↓' : '→'}
+                                                    {Math.abs(delta).toFixed(1)}
+                                                </span>
+                                            ) : <span className="text-gray-300 text-xs">—</span>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
+}
+
 // ── Détail des notes d'un élève ───────────────────────────────────────────────
 function ChildGradesDetail({ child, trimester, calculateAverage, getStudentGrades, schoolInfo, paymentStatus, onPrint, rankData }) {
     const avg = calculateAverage(child.id, trimester);
@@ -353,14 +587,6 @@ function ChildGradesDetail({ child, trimester, calculateAverage, getStudentGrade
     const studentGrades = getStudentGrades(child.id, trimester);
     const rank = rankData[`${child.id}_${trimester}`];
 
-    const t1 = parseFloat(calculateAverage(child.id, '1')) || 0;
-    const t2 = parseFloat(calculateAverage(child.id, '2')) || 0;
-    const t3 = parseFloat(calculateAverage(child.id, '3')) || 0;
-    const evolData = [
-        { label: 'T1', value: t1 },
-        { label: 'T2', value: t2 },
-        { label: 'T3', value: t3 },
-    ].filter(d => d.value > 0);
 
     if (studentGrades.length === 0) {
         return (
@@ -415,27 +641,13 @@ function ChildGradesDetail({ child, trimester, calculateAverage, getStudentGrade
                 child={child}
             />
 
-            {/* Évolution graphique */}
-            {evolData.length > 1 && (
-                <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                    <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-blue-600" /> Évolution des moyennes
-                    </h3>
-                    <div className="flex items-end gap-4 h-24">
-                        {evolData.map((d, i) => {
-                            const h = (d.value / 20) * 80;
-                            const color = gradeColor(d.value);
-                            return (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                                    <span className="text-xs font-bold" style={{ color }}>{d.value.toFixed(2)}</span>
-                                    <div className="w-full rounded-t-lg" style={{ height: h, background: color, minHeight: 4 }} />
-                                    <span className="text-xs text-gray-400 font-semibold">{d.label}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
+            {/* ── Évolution trimestrielle ── */}
+            <EvolutionTrimestrielle
+                child={child}
+                currentTrimester={trimester}
+                calculateAverage={calculateAverage}
+                getStudentGrades={getStudentGrades}
+            />
 
             {/* Tableau des notes */}
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -666,8 +878,8 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                     {['1', '2', '3'].map(t => (
                         <button key={t} onClick={() => setSelectedTrimester(t)}
                             className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${selectedTrimester === t
-                                    ? 'bg-blue-600 text-white shadow-md'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}>
                             T{t}
                         </button>

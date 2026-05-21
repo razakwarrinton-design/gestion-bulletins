@@ -242,12 +242,14 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
     const [accessList, setAccessList] = useState([]); // { id, firstName, lastName, className, bulletin_access, totalPaid, totalDue }
     const [loadingAccess, setLoadingAccess] = useState(false);
     const [togglingId, setTogglingId] = useState(null);
+    const [accessSearch, setAccessSearch] = useState('');
+    const [accessClass, setAccessClass] = useState('');
 
     const fetchAccessList = useCallback(async () => {
         setLoadingAccess(true);
         const { data: stds } = await supabase
             .from('students')
-            .select('id, first_name, last_name, bulletin_access, classes(name)')
+            .select('id, first_name, last_name, bulletin_access, class_id, classes(name)')
             .order('last_name');
 
         const { data: pays } = await supabase
@@ -265,6 +267,7 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
                 firstName: s.first_name,
                 lastName: s.last_name,
                 className: s.classes?.name || '—',
+                classId: s.class_id,
                 bulletinAccess: s.bulletin_access,
                 totalPaid,
                 totalDue,
@@ -291,18 +294,28 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
     };
 
     const grantAll = async () => {
-        const ids = accessList.filter(s => !s.bulletinAccess).map(s => s.id);
+        const ids = filteredAccessList.filter(s => !s.bulletinAccess).map(s => s.id);
         if (ids.length === 0) return;
         await supabase.from('students').update({ bulletin_access: true }).in('id', ids);
-        setAccessList(prev => prev.map(s => ({ ...s, bulletinAccess: true })));
+        setAccessList(prev => prev.map(s => ids.includes(s.id) ? { ...s, bulletinAccess: true } : s));
     };
 
     const revokeAll = async () => {
-        const ids = accessList.filter(s => s.bulletinAccess).map(s => s.id);
+        const ids = filteredAccessList.filter(s => s.bulletinAccess).map(s => s.id);
         if (ids.length === 0) return;
         await supabase.from('students').update({ bulletin_access: false }).in('id', ids);
-        setAccessList(prev => prev.map(s => ({ ...s, bulletinAccess: false })));
+        setAccessList(prev => prev.map(s => ids.includes(s.id) ? { ...s, bulletinAccess: false } : s));
     };
+
+    // Liste filtrée pour l'onglet accès bulletins
+    const filteredAccessList = useMemo(() => {
+        return accessList.filter(s => {
+            const name = `${s.firstName} ${s.lastName}`.toLowerCase();
+            const matchSearch = !accessSearch || name.includes(accessSearch.toLowerCase());
+            const matchClass = !accessClass || s.classId === accessClass;
+            return matchSearch && matchClass;
+        });
+    }, [accessList, accessSearch, accessClass]);
 
     // Filtres
     const filtered = useMemo(() => {
@@ -415,15 +428,39 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
                         ))}
                     </div>
 
-                    {/* Actions groupées */}
+                    {/* Recherche + Filtre classe */}
+                    <div className="flex gap-3">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                value={accessSearch}
+                                onChange={e => setAccessSearch(e.target.value)}
+                                placeholder="Rechercher un élève..."
+                                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                        <select
+                            value={accessClass}
+                            onChange={e => setAccessClass(e.target.value)}
+                            className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none min-w-[140px]"
+                        >
+                            <option value="">Toutes les classes</option>
+                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                    </div>
+
+                    {/* Actions groupées (sur la sélection filtrée) */}
                     <div className="flex gap-3">
                         <button onClick={grantAll}
                             className="flex-1 flex items-center justify-center gap-2 bg-green-50 border border-green-200 text-green-700 font-semibold text-sm py-2.5 rounded-xl hover:bg-green-100 transition-colors">
-                            <ToggleRight className="w-4 h-4" /> Tout autoriser
+                            <ToggleRight className="w-4 h-4" />
+                            Tout autoriser {accessSearch || accessClass ? '(filtrés)' : ''}
                         </button>
                         <button onClick={revokeAll}
                             className="flex-1 flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-700 font-semibold text-sm py-2.5 rounded-xl hover:bg-red-100 transition-colors">
-                            <ToggleLeft className="w-4 h-4" /> Tout bloquer
+                            <ToggleLeft className="w-4 h-4" />
+                            Tout bloquer {accessSearch || accessClass ? '(filtrés)' : ''}
                         </button>
                     </div>
 
@@ -431,7 +468,10 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
                     <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
                         <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
                             <h3 className="font-bold text-gray-800 text-sm">Liste des élèves</h3>
-                            <span className="text-xs text-gray-400">{accessList.length} élèves</span>
+                            <span className="text-xs text-gray-400">
+                                {filteredAccessList.length} élève{filteredAccessList.length > 1 ? 's' : ''}
+                                {(accessSearch || accessClass) && ` sur ${accessList.length}`}
+                            </span>
                         </div>
 
                         {loadingAccess ? (
@@ -439,9 +479,13 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
                                 <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                                 <span className="text-sm text-gray-400">Chargement...</span>
                             </div>
+                        ) : filteredAccessList.length === 0 ? (
+                            <div className="py-10 text-center">
+                                <p className="text-sm text-gray-400">Aucun élève trouvé</p>
+                            </div>
                         ) : (
                             <div className="divide-y divide-gray-50">
-                                {accessList.map(student => {
+                                {filteredAccessList.map(student => {
                                     const pct = student.totalDue > 0 ? Math.round((student.totalPaid / student.totalDue) * 100) : null;
                                     const isToggling = togglingId === student.id;
                                     return (
@@ -476,9 +520,7 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
 
                                             {/* Statut + Toggle */}
                                             <div className="flex items-center gap-3 flex-shrink-0">
-                                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${student.bulletinAccess
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : 'bg-gray-100 text-gray-500'
+                                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${student.bulletinAccess ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                                                     }`}>
                                                     {student.bulletinAccess ? '🔓 Autorisé' : '🔒 Bloqué'}
                                                 </span>
@@ -487,11 +529,13 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
                                                     disabled={isToggling}
                                                     className="relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none disabled:opacity-60"
                                                     style={{ background: student.bulletinAccess ? '#059669' : '#d1d5db' }}
-                                                    title={student.bulletinAccess ? 'Bloquer l\'accès' : 'Autoriser l\'accès'}
+                                                    title={student.bulletinAccess ? "Bloquer l'accès" : "Autoriser l'accès"}
                                                 >
-                                                    <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-300"
-                                                        style={{ transform: student.bulletinAccess ? 'translateX(24px)' : 'translateX(0)' }}
-                                                    />
+                                                    {isToggling
+                                                        ? <span className="absolute inset-0 flex items-center justify-center"><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /></span>
+                                                        : <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-300"
+                                                            style={{ transform: student.bulletinAccess ? 'translateX(24px)' : 'translateX(0)' }} />
+                                                    }
                                                 </button>
                                             </div>
                                         </div>
@@ -601,9 +645,7 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
                     )}
                 </div>
 
-                {/* Modals */}
-            </>)}
-            {activeTab === 'liste' && (<>
+                {/* Modals — toujours montés pour fonctionner correctement */}
                 <PaymentModal
                     isOpen={paymentModalOpen}
                     onClose={() => setPaymentModalOpen(false)}
