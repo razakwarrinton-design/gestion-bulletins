@@ -24,7 +24,7 @@ const getStatus = (avg) => {
     const v = parseFloat(avg);
     if (isNaN(v)) return null;
     if (v >= 12) return { text: 'ADMIS(E)', color: '#059669', bg: '#ecfdf5' };
-    if (v >= 8) return { text: 'À SUIVRE', color: '#d97706', bg: '#fffbeb' };
+    if (v >= 8)  return { text: 'À SUIVRE', color: '#d97706', bg: '#fffbeb' };
     return { text: 'EN DIFFICULTÉ', color: '#dc2626', bg: '#fef2f2' };
 };
 
@@ -38,8 +38,9 @@ function ChildSummaryCard({ child, trimester, calculateAverage, isSelected, onSe
     return (
         <div
             onClick={onSelect}
-            className={`cursor-pointer rounded-2xl p-5 border-2 transition-all ${isSelected ? 'border-blue-500 shadow-lg bg-blue-50' : 'border-gray-100 bg-white hover:border-blue-300 hover:shadow-md'
-                }`}
+            className={`cursor-pointer rounded-2xl p-5 border-2 transition-all ${
+                isSelected ? 'border-blue-500 shadow-lg bg-blue-50' : 'border-gray-100 bg-white hover:border-blue-300 hover:shadow-md'
+            }`}
         >
             {/* Avatar + nom */}
             <div className="flex items-center gap-3 mb-4">
@@ -57,8 +58,9 @@ function ChildSummaryCard({ child, trimester, calculateAverage, isSelected, onSe
                 </div>
                 {/* Badge paiement */}
                 {paid !== undefined && (
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
                         {paid ? '✓ Payé' : '⚠ Dû'}
                     </span>
                 )}
@@ -384,7 +386,7 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
             ids.forEach(id => {
                 const rows = data.filter(p => p.student_id === id);
                 const totalPaid = rows.reduce((s, p) => s + parseFloat(p.amount_paid || 0), 0);
-                const totalDue = rows.reduce((s, p) => s + parseFloat(p.amount_due || 0), 0);
+                const totalDue  = rows.reduce((s, p) => s + parseFloat(p.amount_due  || 0), 0);
                 status[id] = {
                     isPaid: totalDue === 0 ? null : totalPaid >= totalDue,
                     totalPaid,
@@ -447,10 +449,11 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                         <button
                             key={t}
                             onClick={() => setSelectedTrimester(t)}
-                            className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${selectedTrimester === t
+                            className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
+                                selectedTrimester === t
                                     ? 'bg-blue-600 text-white shadow-md'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
+                            }`}
                         >
                             T{t}
                         </button>
