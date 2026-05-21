@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, CheckCircle, ChevronDown, ChevronUp, User, Pen, Star } from 'lucide-react';
+import { Save, CheckCircle, ChevronDown, ChevronUp, User, Pen, Star, Bell, Send } from 'lucide-react';
+import { supabase } from '../config/supabase';
 
 // ─── Hook debounce ────────────────────────────────────────────────────────────
 function useDebounce(value, delay) {
@@ -302,6 +303,34 @@ export default function GradesForm({
     ? students.filter(s => (s.classId || s.class_id) === selectedClass)
     : [];
 
+  // ── Notification parents ──────────────────────────────────────────────────
+  const [notifState, setNotifState] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
+  const [notifResult, setNotifResult] = useState(null);
+
+  const notifyParents = async () => {
+    if (!selectedClass || !selectedTrimester) return;
+    setNotifState('loading');
+    setNotifResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('notify-parents', {
+        body: {
+          trimester: selectedTrimester,
+          classId: selectedClass,
+          schoolName: 'EduPulse',
+          appUrl: 'https://gestion-bulletins-rho.vercel.app',
+        },
+      });
+      if (error) throw error;
+      setNotifState('success');
+      setNotifResult(data);
+      setTimeout(() => setNotifState('idle'), 5000);
+    } catch (err) {
+      setNotifState('error');
+      setNotifResult({ error: err.message });
+      setTimeout(() => setNotifState('idle'), 5000);
+    }
+  };
+
   const handleSave = (studentId, subjectId, trimester, value, appreciation, extra = {}) => {
     updateGrade(studentId, subjectId, trimester, value, appreciation, extra);
   };
@@ -317,12 +346,43 @@ export default function GradesForm({
           </h2>
           <p className="text-xs text-gray-400 mt-0.5">Sauvegarde automatique · Interro / Devoir / Composition / Bonus</p>
         </div>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 500,
-          color: '#2563EB', background: '#EFF6FF', border: '1px solid #DBEAFE',
-          borderRadius: 8, padding: '5px 10px',
-        }}>
-          <Save size={13} /> Auto-sauvegarde activée
+        <div className="flex items-center gap-3">
+          {/* Bouton notifier les parents */}
+          {selectedClass && classStudents.length > 0 && (
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={notifyParents}
+                disabled={notifState === 'loading'}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${notifState === 'success' ? 'bg-green-100 text-green-700 border border-green-200' :
+                    notifState === 'error' ? 'bg-red-100 text-red-700 border border-red-200' :
+                      'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
+                  } disabled:opacity-60`}
+              >
+                {notifState === 'loading' ? (
+                  <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Envoi...</>
+                ) : notifState === 'success' ? (
+                  <><CheckCircle className="w-4 h-4" /> {notifResult?.sent ?? 0} email{notifResult?.sent > 1 ? 's' : ''} envoyé{notifResult?.sent > 1 ? 's' : ''} ✓</>
+                ) : notifState === 'error' ? (
+                  <><Bell className="w-4 h-4" /> Erreur d'envoi</>
+                ) : (
+                  <><Send className="w-4 h-4" /> Notifier les parents</>
+                )}
+              </button>
+              {notifState === 'success' && notifResult?.failed > 0 && (
+                <p className="text-xs text-orange-500">{notifResult.failed} échec{notifResult.failed > 1 ? 's' : ''}</p>
+              )}
+              {notifState === 'error' && (
+                <p className="text-xs text-red-500 max-w-[200px] text-right">{notifResult?.error}</p>
+              )}
+            </div>
+          )}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 500,
+            color: '#2563EB', background: '#EFF6FF', border: '1px solid #DBEAFE',
+            borderRadius: 8, padding: '5px 10px',
+          }}>
+            <Save size={13} /> Auto-sauvegarde activée
+          </div>
         </div>
       </div>
 
