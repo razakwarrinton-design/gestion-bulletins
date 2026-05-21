@@ -3,10 +3,11 @@ import { useParent } from '../hooks/useParent';
 import { supabase } from '../config/supabase';
 import {
     GraduationCap, TrendingUp, BookOpen, Award,
-    Printer, Lock, AlertTriangle, CheckCircle, CreditCard
+    Printer, Lock, AlertTriangle, CheckCircle, CreditCard,
+    Trophy, KeyRound, Eye, EyeOff, ChevronDown, ChevronUp
 } from 'lucide-react';
 
-// ── Helpers couleurs/mentions ─────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
 const gradeLabel = (v) => v >= 16 ? 'Très Bien' : v >= 14 ? 'Bien' : v >= 12 ? 'Assez Bien' : v >= 10 ? 'Passable' : v >= 8 ? 'Insuffisant' : 'Très Insuffisant';
 
@@ -24,30 +25,33 @@ const getStatus = (avg) => {
     const v = parseFloat(avg);
     if (isNaN(v)) return null;
     if (v >= 12) return { text: 'ADMIS(E)', color: '#059669', bg: '#ecfdf5' };
-    if (v >= 8)  return { text: 'À SUIVRE', color: '#d97706', bg: '#fffbeb' };
+    if (v >= 8) return { text: 'À SUIVRE', color: '#d97706', bg: '#fffbeb' };
     return { text: 'EN DIFFICULTÉ', color: '#dc2626', bg: '#fef2f2' };
 };
 
+// Suffixe ordinal français : 1er, 2ème, 3ème...
+const ordinal = (n) => n === 1 ? '1er' : `${n}ème`;
+
 // ── Carte résumé enfant ───────────────────────────────────────────────────────
-function ChildSummaryCard({ child, trimester, calculateAverage, isSelected, onSelect, paymentStatus }) {
+function ChildSummaryCard({ child, trimester, calculateAverage, isSelected, onSelect, paymentStatus, rankData }) {
     const avg = calculateAverage(child.id, trimester);
     const mention = getMention(avg);
     const status = getStatus(avg);
     const paid = paymentStatus[child.id]?.isPaid;
+    const rank = rankData[`${child.id}_${trimester}`];
 
     return (
         <div
             onClick={onSelect}
-            className={`cursor-pointer rounded-2xl p-5 border-2 transition-all ${
-                isSelected ? 'border-blue-500 shadow-lg bg-blue-50' : 'border-gray-100 bg-white hover:border-blue-300 hover:shadow-md'
-            }`}
+            className={`cursor-pointer rounded-2xl p-5 border-2 transition-all ${isSelected
+                    ? 'border-blue-500 shadow-lg bg-blue-50'
+                    : 'border-gray-100 bg-white hover:border-blue-300 hover:shadow-md'
+                }`}
         >
             {/* Avatar + nom */}
             <div className="flex items-center gap-3 mb-4">
-                <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)' }}
-                >
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)' }}>
                     {child.firstName?.[0]}{child.lastName?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -56,11 +60,9 @@ function ChildSummaryCard({ child, trimester, calculateAverage, isSelected, onSe
                         <GraduationCap className="w-3 h-3" /> {child.className}
                     </p>
                 </div>
-                {/* Badge paiement */}
                 {paid !== undefined && (
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                        paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
                         {paid ? '✓ Payé' : '⚠ Dû'}
                     </span>
                 )}
@@ -73,8 +75,17 @@ function ChildSummaryCard({ child, trimester, calculateAverage, isSelected, onSe
                     <div className="text-xs text-gray-400 uppercase font-semibold mt-0.5">Moyenne T{trimester}</div>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3 text-center">
-                    <div className="text-sm font-bold" style={{ color: mention.color }}>{mention.text}</div>
-                    <div className="text-xs text-gray-400 uppercase font-semibold mt-0.5">Mention</div>
+                    {rank ? (
+                        <>
+                            <div className="text-lg font-black text-amber-500">{ordinal(rank.rang)}</div>
+                            <div className="text-xs text-gray-400 uppercase font-semibold mt-0.5">/ {rank.total} élèves</div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="text-sm font-bold" style={{ color: mention.color }}>{mention.text}</div>
+                            <div className="text-xs text-gray-400 uppercase font-semibold mt-0.5">Mention</div>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -88,14 +99,11 @@ function ChildSummaryCard({ child, trimester, calculateAverage, isSelected, onSe
     );
 }
 
-// ── Bannière accès bulletin (payé ou bloqué) ──────────────────────────────────
-function BulletinAccessBanner({ childId, paymentStatus, onPrint, child, trimester }) {
+// ── Bannière accès bulletin ───────────────────────────────────────────────────
+function BulletinAccessBanner({ childId, paymentStatus, onPrint, child }) {
     const info = paymentStatus[childId];
-
-    // Pas encore chargé
     if (!info) return null;
 
-    // ✅ Frais réglés → bouton PDF
     if (info.isPaid) {
         return (
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5">
@@ -105,10 +113,19 @@ function BulletinAccessBanner({ childId, paymentStatus, onPrint, child, trimeste
                             <CheckCircle className="w-5 h-5 text-green-600" />
                         </div>
                         <div>
-                            <p className="font-bold text-green-800 text-sm">Frais scolaires réglés</p>
-                            <p className="text-green-600 text-xs mt-0.5">
-                                {info.totalPaid.toLocaleString('fr-FR')} FCFA payés — Bulletin disponible
-                            </p>
+                            {info.noFees ? (
+                                <>
+                                    <p className="font-bold text-green-800 text-sm">Accès bulletin autorisé</p>
+                                    <p className="text-green-600 text-xs mt-0.5">Aucun frais en attente pour cet élève</p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="font-bold text-green-800 text-sm">Frais scolaires réglés</p>
+                                    <p className="text-green-600 text-xs mt-0.5">
+                                        {info.totalPaid.toLocaleString('fr-FR')} FCFA payés — Bulletin disponible
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
                     <button
@@ -123,7 +140,6 @@ function BulletinAccessBanner({ childId, paymentStatus, onPrint, child, trimeste
         );
     }
 
-    // ❌ Frais non réglés → bulletin bloqué
     const resteAPayer = info.totalDue - info.totalPaid;
     const pct = info.totalDue > 0 ? Math.round((info.totalPaid / info.totalDue) * 100) : 0;
 
@@ -140,8 +156,6 @@ function BulletinAccessBanner({ childId, paymentStatus, onPrint, child, trimeste
                     </p>
                 </div>
             </div>
-
-            {/* Barre de progression paiement */}
             <div className="bg-white rounded-xl p-4 border border-red-100">
                 <div className="flex justify-between text-xs font-semibold mb-2">
                     <span className="text-gray-600 flex items-center gap-1">
@@ -150,8 +164,7 @@ function BulletinAccessBanner({ childId, paymentStatus, onPrint, child, trimeste
                     <span className="text-red-600">{pct}% réglé</span>
                 </div>
                 <div className="h-2.5 bg-red-100 rounded-full overflow-hidden mb-3">
-                    <div
-                        className="h-full rounded-full transition-all"
+                    <div className="h-full rounded-full transition-all"
                         style={{
                             width: `${pct}%`,
                             background: pct >= 75 ? '#f59e0b' : pct >= 50 ? '#f97316' : '#ef4444'
@@ -173,25 +186,173 @@ function BulletinAccessBanner({ childId, paymentStatus, onPrint, child, trimeste
                     </div>
                 </div>
             </div>
-
             <div className="flex items-center gap-2 mt-3">
                 <AlertTriangle className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                <p className="text-xs text-orange-700">
-                    Contactez l'administration pour régulariser votre situation.
-                </p>
+                <p className="text-xs text-orange-700">Contactez l'administration pour régulariser votre situation.</p>
             </div>
         </div>
     );
 }
 
-// ── Détail des notes d'un élève ────────────────────────────────────────────────
-function ChildGradesDetail({ child, trimester, calculateAverage, getStudentGrades, schoolInfo, paymentStatus, onPrint }) {
+// ── Section changement de mot de passe ────────────────────────────────────────
+function ChangePasswordSection({ onNotify }) {
+    const [open, setOpen] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async () => {
+        setError('');
+        if (newPassword.length < 6) {
+            setError('Le mot de passe doit contenir au moins 6 caractères.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setError('Les mots de passe ne correspondent pas.');
+            return;
+        }
+        setLoading(true);
+        const { error: err } = await supabase.auth.updateUser({ password: newPassword });
+        setLoading(false);
+        if (err) {
+            setError(err.message);
+        } else {
+            setNewPassword('');
+            setConfirmPassword('');
+            setOpen(false);
+            onNotify('Mot de passe modifié avec succès ! 🔐');
+        }
+    };
+
+    return (
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            {/* En-tête cliquable */}
+            <button
+                onClick={() => setOpen(o => !o)}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+            >
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <KeyRound className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                        <p className="font-semibold text-gray-800 text-sm">Changer mon mot de passe</p>
+                        <p className="text-xs text-gray-400">Modifier votre mot de passe de connexion</p>
+                    </div>
+                </div>
+                {open
+                    ? <ChevronUp className="w-4 h-4 text-gray-400" />
+                    : <ChevronDown className="w-4 h-4 text-gray-400" />
+                }
+            </button>
+
+            {/* Formulaire dépliable */}
+            {open && (
+                <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
+                    {/* Nouveau mot de passe */}
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                            Nouveau mot de passe
+                        </label>
+                        <div className="relative">
+                            <input
+                                type={showNew ? 'text' : 'password'}
+                                value={newPassword}
+                                onChange={e => setNewPassword(e.target.value)}
+                                placeholder="Minimum 6 caractères"
+                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowNew(v => !v)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Confirmer mot de passe */}
+                    <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                            Confirmer le mot de passe
+                        </label>
+                        <div className="relative">
+                            <input
+                                type={showConfirm ? 'text' : 'password'}
+                                value={confirmPassword}
+                                onChange={e => setConfirmPassword(e.target.value)}
+                                placeholder="Répétez le mot de passe"
+                                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirm(v => !v)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Indicateur de force */}
+                    {newPassword.length > 0 && (
+                        <div>
+                            <div className="flex gap-1 mb-1">
+                                {[1, 2, 3, 4].map(i => {
+                                    const strength = newPassword.length >= 10 && /[A-Z]/.test(newPassword) && /[0-9]/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword) ? 4
+                                        : newPassword.length >= 8 && (/[A-Z]/.test(newPassword) || /[0-9]/.test(newPassword)) ? 3
+                                            : newPassword.length >= 6 ? 2 : 1;
+                                    return (
+                                        <div key={i} className="flex-1 h-1.5 rounded-full"
+                                            style={{ background: i <= strength ? (strength >= 4 ? '#059669' : strength >= 3 ? '#2563eb' : strength >= 2 ? '#f59e0b' : '#ef4444') : '#e5e7eb' }}
+                                        />
+                                    );
+                                })}
+                            </div>
+                            <p className="text-xs text-gray-400">
+                                {newPassword.length < 6 ? 'Trop court' : newPassword.length < 8 ? 'Faible' : /[A-Z]/.test(newPassword) && /[0-9]/.test(newPassword) ? 'Fort 💪' : 'Moyen'}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Erreur */}
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                            <p className="text-red-700 text-xs">{error}</p>
+                        </div>
+                    )}
+
+                    {/* Bouton */}
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading || !newPassword || !confirmPassword}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                        {loading ? (
+                            <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Enregistrement...</>
+                        ) : (
+                            <><KeyRound className="w-4 h-4" /> Enregistrer le nouveau mot de passe</>
+                        )}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Détail des notes d'un élève ───────────────────────────────────────────────
+function ChildGradesDetail({ child, trimester, calculateAverage, getStudentGrades, schoolInfo, paymentStatus, onPrint, rankData }) {
     const avg = calculateAverage(child.id, trimester);
     const mention = getMention(avg);
     const status = getStatus(avg);
     const studentGrades = getStudentGrades(child.id, trimester);
+    const rank = rankData[`${child.id}_${trimester}`];
 
-    // Évolution sur 3 trimestres
     const t1 = parseFloat(calculateAverage(child.id, '1')) || 0;
     const t2 = parseFloat(calculateAverage(child.id, '2')) || 0;
     const t3 = parseFloat(calculateAverage(child.id, '3')) || 0;
@@ -230,21 +391,28 @@ function ChildGradesDetail({ child, trimester, calculateAverage, getStudentGrade
                         <div className="text-blue-100 text-sm">/ 20</div>
                     </div>
                 </div>
-                <div className="flex items-center gap-3 mt-4">
+
+                {/* Mention + statut + rang */}
+                <div className="flex items-center gap-3 mt-4 flex-wrap">
                     <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">{mention.text}</span>
                     {status && (
                         <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">{status.text}</span>
                     )}
+                    {rank && (
+                        <span className="bg-amber-400/30 border border-amber-300/40 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1.5">
+                            <Trophy className="w-3.5 h-3.5" />
+                            {ordinal(rank.rang)} / {rank.total} élèves
+                        </span>
+                    )}
                 </div>
             </div>
 
-            {/* ✅ Accès bulletin (payé ou bloqué) */}
+            {/* Accès bulletin */}
             <BulletinAccessBanner
                 childId={child.id}
                 paymentStatus={paymentStatus}
                 onPrint={onPrint}
                 child={child}
-                trimester={trimester}
             />
 
             {/* Évolution graphique */}
@@ -346,93 +514,144 @@ function ChildGradesDetail({ child, trimester, calculateAverage, getStudentGrade
     );
 }
 
-// ── Composant principal ParentPortal ──────────────────────────────────────────
+// ── Composant principal ───────────────────────────────────────────────────────
 export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
     const [selectedTrimester, setSelectedTrimester] = useState('1');
     const [selectedChild, setSelectedChild] = useState(null);
-    // Statut des paiements par enfant : { [studentId]: { isPaid, totalPaid, totalDue } }
     const [paymentStatus, setPaymentStatus] = useState({});
+    // rankData : { "${childId}_${trimester}": { rang, total } }
+    const [rankData, setRankData] = useState({});
+    const [notification, setNotification] = useState('');
 
-    const {
-        children,
-        loading,
-        error,
-        calculateAverage,
-        getStudentGrades,
-    } = useParent(currentUser?.id);
+    const { children, loading, error, calculateAverage, getStudentGrades } = useParent(currentUser?.id);
 
-    // Sélectionner le premier enfant automatiquement
+    // Notification interne (changement de mot de passe)
+    const showLocalNotif = (msg) => {
+        setNotification(msg);
+        setTimeout(() => setNotification(''), 3500);
+    };
+
+    // Sélection automatique du premier enfant
     useEffect(() => {
-        if (children.length > 0 && !selectedChild) {
-            setSelectedChild(children[0]);
-        }
+        if (children.length > 0 && !selectedChild) setSelectedChild(children[0]);
     }, [children]);
 
-    // Charger le statut des paiements pour chaque enfant
+    // Chargement du statut bulletin_access depuis Supabase
     useEffect(() => {
         if (children.length === 0) return;
-
-        const fetchPayments = async () => {
+        const fetchAccess = async () => {
             const ids = children.map(c => c.id);
-            const { data, error } = await supabase
-                .from('payments')
-                .select('student_id, amount_paid, amount_due')
-                .in('student_id', ids);
-
-            if (error || !data) return;
-
-            // Agréger par élève
+            const [{ data: stds }, { data: pays }] = await Promise.all([
+                supabase.from('students').select('id, bulletin_access').in('id', ids),
+                supabase.from('payments').select('student_id, amount_paid, amount_due').in('student_id', ids),
+            ]);
             const status = {};
             ids.forEach(id => {
-                const rows = data.filter(p => p.student_id === id);
+                const access = stds?.find(s => s.id === id);
+                const rows = (pays || []).filter(p => p.student_id === id);
                 const totalPaid = rows.reduce((s, p) => s + parseFloat(p.amount_paid || 0), 0);
-                const totalDue  = rows.reduce((s, p) => s + parseFloat(p.amount_due  || 0), 0);
+                const totalDue = rows.reduce((s, p) => s + parseFloat(p.amount_due || 0), 0);
                 status[id] = {
-                    isPaid: totalDue === 0 ? null : totalPaid >= totalDue,
+                    isPaid: access?.bulletin_access === true, // 👈 décision admin
+                    noFees: totalDue === 0,
                     totalPaid,
                     totalDue,
                 };
             });
             setPaymentStatus(status);
         };
-
-        fetchPayments();
+        fetchAccess();
     }, [children]);
 
-    if (loading) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                <p className="text-gray-500">Chargement de l'espace parent...</p>
-            </div>
-        );
-    }
+    // Chargement du rang quand l'enfant ou le trimestre change
+    useEffect(() => {
+        if (!selectedChild) return;
+        const key = `${selectedChild.id}_${selectedTrimester}`;
+        if (rankData[key]) return; // déjà chargé
 
-    if (error) {
-        return (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
-                <p className="text-red-700 font-semibold">Erreur de chargement</p>
-                <p className="text-red-500 text-sm mt-1">{error}</p>
-            </div>
-        );
-    }
+        const fetchRank = async () => {
+            const { data } = await supabase.rpc('get_class_ranking', {
+                p_student_id: selectedChild.id,
+                p_trimester: selectedTrimester,
+            });
 
-    if (children.length === 0) {
-        return (
-            <div className="text-center py-20">
-                <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <GraduationCap className="w-10 h-10 text-blue-400" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Aucun élève associé</h3>
-                <p className="text-gray-500 max-w-sm mx-auto">
-                    Aucun élève n'est encore lié à votre compte. Contactez l'administration pour associer vos enfants.
-                </p>
+            // Si la RPC n'existe pas encore, fallback sur requête directe
+            if (!data) {
+                const { data: rows } = await supabase
+                    .from('grades')
+                    .select('student_id, value, subjects(coefficient), students!inner(class_id)')
+                    .eq('trimester', selectedTrimester)
+                    .eq('students.class_id', selectedChild.classId);
+
+                if (!rows) return;
+
+                // Calcul des moyennes par élève
+                const byStudent = {};
+                rows.forEach(r => {
+                    if (!byStudent[r.student_id]) byStudent[r.student_id] = { total: 0, coefSum: 0 };
+                    const coef = r.subjects?.coefficient || 1;
+                    byStudent[r.student_id].total += (r.value || 0) * coef;
+                    byStudent[r.student_id].coefSum += coef;
+                });
+
+                const sorted = Object.entries(byStudent)
+                    .map(([id, d]) => ({ id, avg: d.coefSum > 0 ? d.total / d.coefSum : 0 }))
+                    .sort((a, b) => b.avg - a.avg);
+
+                const idx = sorted.findIndex(e => e.id === selectedChild.id);
+                if (idx !== -1) {
+                    setRankData(prev => ({
+                        ...prev,
+                        [key]: { rang: idx + 1, total: sorted.length }
+                    }));
+                }
+                return;
+            }
+
+            if (data.rang) {
+                setRankData(prev => ({ ...prev, [key]: { rang: data.rang, total: data.total } }));
+            }
+        };
+
+        fetchRank();
+    }, [selectedChild, selectedTrimester]);
+
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-500">Chargement de l'espace parent...</p>
+        </div>
+    );
+
+    if (error) return (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+            <p className="text-red-700 font-semibold">Erreur de chargement</p>
+            <p className="text-red-500 text-sm mt-1">{error}</p>
+        </div>
+    );
+
+    if (children.length === 0) return (
+        <div className="text-center py-20">
+            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <GraduationCap className="w-10 h-10 text-blue-400" />
             </div>
-        );
-    }
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Aucun élève associé</h3>
+            <p className="text-gray-500 max-w-sm mx-auto">
+                Aucun élève n'est encore lié à votre compte. Contactez l'administration pour associer vos enfants.
+            </p>
+        </div>
+    );
 
     return (
         <div className="space-y-6">
+
+            {/* Notification locale */}
+            {notification && (
+                <div className="fixed top-4 right-4 z-[100] bg-white border border-green-200 rounded-xl px-4 py-3 shadow-lg flex items-center gap-3">
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <p className="text-sm font-medium text-gray-800">{notification}</p>
+                </div>
+            )}
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -442,26 +661,21 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                         Bienvenue, {currentUser?.firstName} — {children.length} élève{children.length > 1 ? 's' : ''} suivi{children.length > 1 ? 's' : ''}
                     </p>
                 </div>
-                {/* Sélecteur trimestre */}
                 <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500 font-medium">Trimestre :</span>
                     {['1', '2', '3'].map(t => (
-                        <button
-                            key={t}
-                            onClick={() => setSelectedTrimester(t)}
-                            className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
-                                selectedTrimester === t
+                        <button key={t} onClick={() => setSelectedTrimester(t)}
+                            className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${selectedTrimester === t
                                     ? 'bg-blue-600 text-white shadow-md'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                        >
+                                }`}>
                             T{t}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Cartes résumé enfants (si plusieurs) */}
+            {/* Cartes résumé (plusieurs enfants) */}
             {children.length > 1 && (
                 <div className={`grid gap-4 ${children.length === 2 ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-3'}`}>
                     {children.map(child => (
@@ -473,12 +687,13 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                             isSelected={selectedChild?.id === child.id}
                             onSelect={() => setSelectedChild(child)}
                             paymentStatus={paymentStatus}
+                            rankData={rankData}
                         />
                     ))}
                 </div>
             )}
 
-            {/* Détail de l'enfant sélectionné */}
+            {/* Détail notes */}
             {selectedChild && (
                 <ChildGradesDetail
                     child={selectedChild}
@@ -488,8 +703,12 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                     schoolInfo={schoolInfo}
                     paymentStatus={paymentStatus}
                     onPrint={onPrint}
+                    rankData={rankData}
                 />
             )}
+
+            {/* Changer mot de passe */}
+            <ChangePasswordSection onNotify={showLocalNotif} />
 
         </div>
     );

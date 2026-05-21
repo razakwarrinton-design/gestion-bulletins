@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { usePayments } from '../hooks/usePayments';
-import { Plus, Search, Filter, Printer, Trash2, CheckCircle, Clock, XCircle, TrendingUp, DollarSign, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Plus, Search, Printer, Trash2, CheckCircle, Clock, XCircle, TrendingUp, DollarSign, AlertTriangle, ChevronDown, BookOpen, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
+import { supabase } from '../config/supabase';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n || 0) + ' FCFA';
@@ -237,6 +238,72 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
 
     const stats = getStats();
 
+    // ── Accès bulletins ───────────────────────────────────────────────────────
+    const [accessList, setAccessList] = useState([]); // { id, firstName, lastName, className, bulletin_access, totalPaid, totalDue }
+    const [loadingAccess, setLoadingAccess] = useState(false);
+    const [togglingId, setTogglingId] = useState(null);
+
+    const fetchAccessList = useCallback(async () => {
+        setLoadingAccess(true);
+        const { data: stds } = await supabase
+            .from('students')
+            .select('id, first_name, last_name, bulletin_access, classes(name)')
+            .order('last_name');
+
+        const { data: pays } = await supabase
+            .from('payments')
+            .select('student_id, amount_paid, amount_due');
+
+        if (!stds) { setLoadingAccess(false); return; }
+
+        const list = stds.map(s => {
+            const rows = (pays || []).filter(p => p.student_id === s.id);
+            const totalPaid = rows.reduce((sum, p) => sum + parseFloat(p.amount_paid || 0), 0);
+            const totalDue = rows.reduce((sum, p) => sum + parseFloat(p.amount_due || 0), 0);
+            return {
+                id: s.id,
+                firstName: s.first_name,
+                lastName: s.last_name,
+                className: s.classes?.name || '—',
+                bulletinAccess: s.bulletin_access,
+                totalPaid,
+                totalDue,
+                isFullyPaid: totalDue > 0 && totalPaid >= totalDue,
+            };
+        });
+        setAccessList(list);
+        setLoadingAccess(false);
+    }, []);
+
+    useEffect(() => { fetchAccessList(); }, [fetchAccessList]);
+
+    const toggleAccess = async (student) => {
+        setTogglingId(student.id);
+        const newVal = !student.bulletinAccess;
+        await supabase
+            .from('students')
+            .update({ bulletin_access: newVal })
+            .eq('id', student.id);
+        setAccessList(prev =>
+            prev.map(s => s.id === student.id ? { ...s, bulletinAccess: newVal } : s)
+        );
+        setTogglingId(null);
+    };
+
+    const grantAll = async () => {
+        const ids = accessList.filter(s => !s.bulletinAccess).map(s => s.id);
+        if (ids.length === 0) return;
+        await supabase.from('students').update({ bulletin_access: true }).in('id', ids);
+        setAccessList(prev => prev.map(s => ({ ...s, bulletinAccess: true })));
+    };
+
+    const revokeAll = async () => {
+        const ids = accessList.filter(s => s.bulletinAccess).map(s => s.id);
+        if (ids.length === 0) return;
+        await supabase.from('students').update({ bulletin_access: false }).in('id', ids);
+        setAccessList(prev => prev.map(s => ({ ...s, bulletinAccess: false })));
+    };
+
     // Filtres
     const filtered = useMemo(() => {
         return payments.filter(p => {
@@ -298,119 +365,262 @@ export default function PaymentManager({ students, classes, currentUser, schoolI
                 ))}
             </div>
 
-            {/* Barre de progression globale */}
-            {stats.totalDu > 0 && (
-                <div className="bg-white border border-gray-100 rounded-xl p-4">
-                    <div className="flex justify-between text-sm font-semibold text-gray-700 mb-2">
-                        <span>Taux de recouvrement</span>
-                        <span style={{ color: '#059669' }}>{((stats.totalPaye / stats.totalDu) * 100).toFixed(1)}%</span>
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-gray-200">
+                {[
+                    { key: 'liste', label: '📋 Paiements' },
+                    { key: 'acces', label: '🔓 Accès bulletins' },
+                ].map(tab => (
+                    <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                        className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === tab.key
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}>
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* ── Onglet Accès bulletins ── */}
+            {activeTab === 'acces' && (
+                <div className="space-y-4">
+
+                    {/* En-tête + actions globales */}
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                            <BookOpen className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p className="font-bold text-blue-800 text-sm">Gestion des accès aux bulletins</p>
+                                <p className="text-blue-600 text-xs mt-0.5">
+                                    Activez ou désactivez l'accès au bulletin pour chaque élève, indépendamment de son statut de paiement.
+                                </p>
+                            </div>
+                        </div>
+                        <button onClick={fetchAccessList} className="p-1.5 text-blue-500 hover:bg-blue-100 rounded-lg transition-colors flex-shrink-0" title="Actualiser">
+                            <RefreshCw className="w-4 h-4" />
+                        </button>
                     </div>
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all" style={{ width: `${Math.min((stats.totalPaye / stats.totalDu) * 100, 100)}%` }} />
+
+                    {/* Compteurs rapides */}
+                    <div className="grid grid-cols-3 gap-3">
+                        {[
+                            { label: 'Accès activé', value: accessList.filter(s => s.bulletinAccess).length, color: '#059669', bg: '#ecfdf5' },
+                            { label: 'Accès bloqué', value: accessList.filter(s => !s.bulletinAccess).length, color: '#dc2626', bg: '#fef2f2' },
+                            { label: 'Totalement payé', value: accessList.filter(s => s.isFullyPaid).length, color: '#2563eb', bg: '#eff6ff' },
+                        ].map((k, i) => (
+                            <div key={i} className="rounded-xl p-3 text-center border" style={{ background: k.bg, borderColor: k.color + '33' }}>
+                                <div className="text-2xl font-black" style={{ color: k.color }}>{k.value}</div>
+                                <div className="text-xs font-semibold text-gray-500 mt-0.5">{k.label}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Actions groupées */}
+                    <div className="flex gap-3">
+                        <button onClick={grantAll}
+                            className="flex-1 flex items-center justify-center gap-2 bg-green-50 border border-green-200 text-green-700 font-semibold text-sm py-2.5 rounded-xl hover:bg-green-100 transition-colors">
+                            <ToggleRight className="w-4 h-4" /> Tout autoriser
+                        </button>
+                        <button onClick={revokeAll}
+                            className="flex-1 flex items-center justify-center gap-2 bg-red-50 border border-red-200 text-red-700 font-semibold text-sm py-2.5 rounded-xl hover:bg-red-100 transition-colors">
+                            <ToggleLeft className="w-4 h-4" /> Tout bloquer
+                        </button>
+                    </div>
+
+                    {/* Liste élèves */}
+                    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="font-bold text-gray-800 text-sm">Liste des élèves</h3>
+                            <span className="text-xs text-gray-400">{accessList.length} élèves</span>
+                        </div>
+
+                        {loadingAccess ? (
+                            <div className="flex items-center justify-center py-10 gap-3">
+                                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                <span className="text-sm text-gray-400">Chargement...</span>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-50">
+                                {accessList.map(student => {
+                                    const pct = student.totalDue > 0 ? Math.round((student.totalPaid / student.totalDue) * 100) : null;
+                                    const isToggling = togglingId === student.id;
+                                    return (
+                                        <div key={student.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                                            {/* Avatar */}
+                                            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                                                style={{ background: student.bulletinAccess ? 'linear-gradient(135deg,#059669,#10b981)' : 'linear-gradient(135deg,#9ca3af,#6b7280)' }}>
+                                                {student.firstName?.[0]}{student.lastName?.[0]}
+                                            </div>
+
+                                            {/* Nom + classe */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-gray-800 text-sm">{student.firstName} {student.lastName}</p>
+                                                <p className="text-xs text-gray-400">{student.className}</p>
+                                            </div>
+
+                                            {/* Situation paiement */}
+                                            <div className="hidden md:block text-right min-w-[140px]">
+                                                {student.totalDue > 0 ? (
+                                                    <>
+                                                        <p className="text-xs font-semibold" style={{ color: student.isFullyPaid ? '#059669' : '#d97706' }}>
+                                                            {pct}% réglé
+                                                        </p>
+                                                        <p className="text-xs text-gray-400">
+                                                            {fmt(student.totalPaid)} / {fmt(student.totalDue)}
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    <p className="text-xs text-gray-400 italic">Aucun frais enregistré</p>
+                                                )}
+                                            </div>
+
+                                            {/* Statut + Toggle */}
+                                            <div className="flex items-center gap-3 flex-shrink-0">
+                                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${student.bulletinAccess
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-gray-100 text-gray-500'
+                                                    }`}>
+                                                    {student.bulletinAccess ? '🔓 Autorisé' : '🔒 Bloqué'}
+                                                </span>
+                                                <button
+                                                    onClick={() => toggleAccess(student)}
+                                                    disabled={isToggling}
+                                                    className="relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none disabled:opacity-60"
+                                                    style={{ background: student.bulletinAccess ? '#059669' : '#d1d5db' }}
+                                                    title={student.bulletinAccess ? 'Bloquer l\'accès' : 'Autoriser l\'accès'}
+                                                >
+                                                    <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-300"
+                                                        style={{ transform: student.bulletinAccess ? 'translateX(24px)' : 'translateX(0)' }}
+                                                    />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
 
-            {/* Filtres */}
-            <div className="flex flex-wrap gap-3">
-                <div className="flex-1 min-w-48 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher élève ou N° reçu..." className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">Tous les statuts</option>
-                    <option value="paye">✅ Payé</option>
-                    <option value="partiel">⏳ Partiel</option>
-                    <option value="impaye">❌ Impayé</option>
-                </select>
-                <select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">Toutes les classes</option>
-                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-            </div>
+            {/* ── Onglet Paiements ── */}
+            {activeTab === 'liste' && (<>
 
-            {/* Liste des paiements */}
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-                    <h3 className="font-bold text-gray-800">Historique des paiements</h3>
-                    <span className="text-sm text-gray-400">{filtered.length} enregistrement{filtered.length > 1 ? 's' : ''}</span>
-                </div>
-
-                {filtered.length === 0 ? (
-                    <div className="py-16 text-center">
-                        <DollarSign className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                        <p className="text-gray-400">Aucun paiement enregistré</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    {['N° Reçu', 'Élève', 'Frais', 'Dû', 'Payé', 'Reste', 'Mode', 'Date', 'Statut', 'Actions'].map(h => (
-                                        <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {filtered.map(payment => {
-                                    const student = payment.students;
-                                    const sc = STATUS_CONFIG[payment.status] || STATUS_CONFIG.impaye;
-                                    const reste = payment.amount_due - payment.amount_paid;
-                                    return (
-                                        <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">{payment.receipt_number}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <div className="font-semibold text-sm text-gray-900">{student?.first_name} {student?.last_name}</div>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{payment.fee_types?.name}</td>
-                                            <td className="px-4 py-3 text-sm font-semibold text-gray-700 whitespace-nowrap">{fmt(payment.amount_due)}</td>
-                                            <td className="px-4 py-3 text-sm font-bold whitespace-nowrap" style={{ color: '#059669' }}>{fmt(payment.amount_paid)}</td>
-                                            <td className="px-4 py-3 text-sm font-bold whitespace-nowrap" style={{ color: reste > 0 ? '#dc2626' : '#059669' }}>{fmt(reste)}</td>
-                                            <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{METHOD_LABELS[payment.payment_method]}</td>
-                                            <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{fmtDate(payment.payment_date)}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className="px-2 py-1 rounded-full text-xs font-bold" style={{ color: sc.color, background: sc.bg }}>
-                                                    {sc.label}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => generateReceipt(payment, schoolInfo)} title="Imprimer le reçu" className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                                        <Printer className="w-4 h-4" />
-                                                    </button>
-                                                    {currentUser?.role === 'admin' && (
-                                                        <button onClick={() => handleDelete(payment)} title="Supprimer" className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                {stats.totalDu > 0 && (
+                    <div className="bg-white border border-gray-100 rounded-xl p-4">
+                        <div className="flex justify-between text-sm font-semibold text-gray-700 mb-2">
+                            <span>Taux de recouvrement</span>
+                            <span style={{ color: '#059669' }}>{((stats.totalPaye / stats.totalDu) * 100).toFixed(1)}%</span>
+                        </div>
+                        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all" style={{ width: `${Math.min((stats.totalPaye / stats.totalDu) * 100, 100)}%` }} />
+                        </div>
                     </div>
                 )}
-            </div>
 
-            {/* Modals */}
-            <PaymentModal
-                isOpen={paymentModalOpen}
-                onClose={() => setPaymentModalOpen(false)}
-                onSave={addPayment}
-                students={students}
-                feeTypes={feeTypes}
-                classes={classes}
-            />
+                {/* Filtres */}
+                <div className="flex flex-wrap gap-3">
+                    <div className="flex-1 min-w-48 relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher élève ou N° reçu..." className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                    </div>
+                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Tous les statuts</option>
+                        <option value="paye">✅ Payé</option>
+                        <option value="partiel">⏳ Partiel</option>
+                        <option value="impaye">❌ Impayé</option>
+                    </select>
+                    <select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Toutes les classes</option>
+                        {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                </div>
 
-            <ConfirmModal
-                isOpen={confirmModal.open}
-                onClose={() => setConfirmModal(m => ({ ...m, open: false }))}
-                onConfirm={confirmModal.onConfirm}
-                title={confirmModal.title}
-                message={confirmModal.message}
-            />
+                {/* Liste des paiements */}
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+                        <h3 className="font-bold text-gray-800">Historique des paiements</h3>
+                        <span className="text-sm text-gray-400">{filtered.length} enregistrement{filtered.length > 1 ? 's' : ''}</span>
+                    </div>
+
+                    {filtered.length === 0 ? (
+                        <div className="py-16 text-center">
+                            <DollarSign className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                            <p className="text-gray-400">Aucun paiement enregistré</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        {['N° Reçu', 'Élève', 'Frais', 'Dû', 'Payé', 'Reste', 'Mode', 'Date', 'Statut', 'Actions'].map(h => (
+                                            <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {filtered.map(payment => {
+                                        const student = payment.students;
+                                        const sc = STATUS_CONFIG[payment.status] || STATUS_CONFIG.impaye;
+                                        const reste = payment.amount_due - payment.amount_paid;
+                                        return (
+                                            <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-4 py-3 text-xs font-mono text-gray-600 whitespace-nowrap">{payment.receipt_number}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">
+                                                    <div className="font-semibold text-sm text-gray-900">{student?.first_name} {student?.last_name}</div>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{payment.fee_types?.name}</td>
+                                                <td className="px-4 py-3 text-sm font-semibold text-gray-700 whitespace-nowrap">{fmt(payment.amount_due)}</td>
+                                                <td className="px-4 py-3 text-sm font-bold whitespace-nowrap" style={{ color: '#059669' }}>{fmt(payment.amount_paid)}</td>
+                                                <td className="px-4 py-3 text-sm font-bold whitespace-nowrap" style={{ color: reste > 0 ? '#dc2626' : '#059669' }}>{fmt(reste)}</td>
+                                                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{METHOD_LABELS[payment.payment_method]}</td>
+                                                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{fmtDate(payment.payment_date)}</td>
+                                                <td className="px-4 py-3 whitespace-nowrap">
+                                                    <span className="px-2 py-1 rounded-full text-xs font-bold" style={{ color: sc.color, background: sc.bg }}>
+                                                        {sc.label}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={() => generateReceipt(payment, schoolInfo)} title="Imprimer le reçu" className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                            <Printer className="w-4 h-4" />
+                                                        </button>
+                                                        {currentUser?.role === 'admin' && (
+                                                            <button onClick={() => handleDelete(payment)} title="Supprimer" className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
+                {/* Modals */}
+            </>)}
+            {activeTab === 'liste' && (<>
+                <PaymentModal
+                    isOpen={paymentModalOpen}
+                    onClose={() => setPaymentModalOpen(false)}
+                    onSave={addPayment}
+                    students={students}
+                    feeTypes={feeTypes}
+                    classes={classes}
+                />
+
+                <ConfirmModal
+                    isOpen={confirmModal.open}
+                    onClose={() => setConfirmModal(m => ({ ...m, open: false }))}
+                    onConfirm={confirmModal.onConfirm}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                />
+            </>)}
         </div>
     );
 }
