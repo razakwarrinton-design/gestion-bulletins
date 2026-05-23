@@ -5,7 +5,7 @@ import {
     GraduationCap, TrendingUp, BookOpen, Award,
     Printer, Lock, AlertTriangle, CheckCircle, CreditCard,
     Trophy, KeyRound, Eye, EyeOff, ChevronDown, ChevronUp,
-    Receipt, Wallet, ArrowUpCircle, Clock, BarChart3, LayoutDashboard
+    Receipt, Wallet, LayoutDashboard, Calendar, UserX, Shield, Clock
 } from 'lucide-react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -727,144 +727,33 @@ function ChildGradesDetail({ child, trimester, calculateAverage, getStudentGrade
     );
 }
 
-// ── Vue d'ensemble 3 trimestres (N°1) ────────────────────────────────────────
-function DashboardOverview({ child, calculateAverage, paymentStatus, rankData, onPrint }) {
-    const trims = ['1', '2', '3'].map(t => {
-        const avg = parseFloat(calculateAverage(child.id, t)) || 0;
-        const rank = rankData[`${child.id}_${t}`];
-        return { t, avg, rank, has: avg > 0 };
-    });
-    const available = trims.filter(d => d.has);
-    const best = available.length ? [...available].sort((a, b) => b.avg - a.avg)[0] : null;
-    const trend = available.length >= 2
-        ? available[available.length - 1].avg - available[0].avg
-        : null;
-    const info = paymentStatus[child.id];
-
-    return (
-        <div className="space-y-4">
-            {/* Bannière enfant */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-5 text-white">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold">
-                            {child.firstName?.[0]}{child.lastName?.[0]}
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold">{child.firstName} {child.lastName}</h2>
-                            <p className="text-blue-100 text-sm flex items-center gap-1">
-                                <GraduationCap className="w-3 h-3" /> {child.className}
-                            </p>
-                        </div>
-                    </div>
-                    {trend !== null && (
-                        <div className={`text-right px-3 py-2 rounded-xl ${trend > 0.5 ? 'bg-green-400/20' : trend < -0.5 ? 'bg-red-400/20' : 'bg-white/10'}`}>
-                            <p className="text-xs text-white/70">Tendance</p>
-                            <p className="text-lg font-black">{trend > 0 ? '+' : ''}{trend.toFixed(2)}</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Cartes T1 / T2 / T3 */}
-            <div className="grid grid-cols-3 gap-3">
-                {trims.map(({ t, avg, rank, has }) => {
-                    const mention = getMention(avg);
-                    const isBest = best?.t === t && has;
-                    return (
-                        <div key={t} className={`rounded-2xl p-4 border-2 text-center transition-all ${isBest ? 'border-amber-300 bg-amber-50' :
-                                has ? 'border-gray-100 bg-white' :
-                                    'border-dashed border-gray-200 bg-gray-50'
-                            }`}>
-                            <div className="flex items-center justify-center gap-1 mb-2">
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isBest ? 'bg-amber-200 text-amber-800' : 'bg-gray-100 text-gray-600'
-                                    }`}>T{t}</span>
-                                {isBest && <span className="text-xs">🏅</span>}
-                            </div>
-                            {has ? (
-                                <>
-                                    <div className="text-2xl font-black mb-1" style={{ color: mention.color }}>{avg.toFixed(2)}</div>
-                                    <div className="text-xs font-semibold" style={{ color: mention.color }}>{mention.text}</div>
-                                    {rank && (
-                                        <div className="text-xs text-amber-600 font-bold mt-1">🏆 {ordinal(rank.rang)}/{rank.total}</div>
-                                    )}
-                                </>
-                            ) : (
-                                <div className="text-gray-300 text-sm mt-2">—<br /><span className="text-xs">Pas de notes</span></div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Situation financière */}
-            {info && (
-                <div className={`rounded-2xl p-4 border flex items-center justify-between gap-4 ${info.isPaid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                    }`}>
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${info.isPaid ? 'bg-green-100' : 'bg-red-100'}`}>
-                            {info.isPaid ? <CheckCircle className="w-5 h-5 text-green-600" /> : <Lock className="w-5 h-5 text-red-600" />}
-                        </div>
-                        <div>
-                            <p className={`font-bold text-sm ${info.isPaid ? 'text-green-800' : 'text-red-800'}`}>
-                                {info.isPaid ? 'Frais réglés — Bulletin disponible' : 'Bulletin bloqué — Frais en attente'}
-                            </p>
-                            {!info.noFees && (
-                                <p className={`text-xs mt-0.5 ${info.isPaid ? 'text-green-600' : 'text-red-600'}`}>
-                                    {info.totalPaid.toLocaleString('fr-FR')} / {info.totalDue.toLocaleString('fr-FR')} FCFA
-                                    {!info.isPaid && ` — Reste : ${(info.totalDue - info.totalPaid).toLocaleString('fr-FR')} FCFA`}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                    {info.isPaid && (
-                        <button onClick={() => onPrint(child)}
-                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition-colors flex-shrink-0">
-                            <Printer className="w-3.5 h-3.5" /> Imprimer
-                        </button>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
-
-// ── Historique des paiements (N°2) ────────────────────────────────────────────
-function PaymentHistory({ child }) {
-    const [payments, setPayments] = useState([]);
+// ── Absences de l'enfant (vue parent) ────────────────────────────────────────
+function AbsencesParent({ child }) {
+    const [absences, setAbsences] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('tous'); // 'tous' | 'absent' | 'retard'
 
     useEffect(() => {
         const fetch = async () => {
             setLoading(true);
             const { data } = await supabase
-                .from('payments')
-                .select('id, amount_paid, amount_due, payment_date, payment_method, status, receipt_number, notes, academic_year, fee_types(name)')
+                .from('absences')
+                .select('id, date, type, justified, notes, subjects(name)')
                 .eq('student_id', child.id)
-                .order('payment_date', { ascending: false });
-            setPayments(data || []);
+                .order('date', { ascending: false });
+            setAbsences(data || []);
             setLoading(false);
         };
         fetch();
     }, [child.id]);
 
-    const totalPaid = payments.reduce((s, p) => s + parseFloat(p.amount_paid || 0), 0);
-    const totalDue = payments.reduce((s, p) => s + parseFloat(p.amount_due || 0), 0);
-    const pct = totalDue > 0 ? Math.round((totalPaid / totalDue) * 100) : 0;
+    const totalAbsents = absences.filter(a => a.type === 'absent').length;
+    const totalRetards = absences.filter(a => a.type === 'retard').length;
+    const totalInjust = absences.filter(a => !a.justified).length;
 
-    const statusStyle = (s) => {
-        if (s === 'paye' || s === 'paid') return { bg: 'bg-green-100', text: 'text-green-700', label: 'Payé' };
-        if (s === 'partiel' || s === 'partial') return { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Partiel' };
-        return { bg: 'bg-red-100', text: 'text-red-700', label: 'Impayé' };
-    };
+    const filtered = filter === 'tous' ? absences : absences.filter(a => a.type === filter);
 
-    const methodIcon = (m) => {
-        if (!m) return '💵';
-        const ml = m.toLowerCase();
-        if (ml.includes('mobile') || ml.includes('momo') || ml.includes('flooz')) return '📱';
-        if (ml.includes('virement') || ml.includes('bank')) return '🏦';
-        return '💵';
-    };
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' }) : '—';
 
     if (loading) return (
         <div className="flex items-center justify-center py-12 gap-3">
@@ -876,93 +765,90 @@ function PaymentHistory({ child }) {
     return (
         <div className="space-y-4">
 
-            {/* Résumé financier */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5">
-                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <Wallet className="w-4 h-4 text-blue-600" /> Situation financière — {child.firstName}
-                </h3>
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                    {[
-                        { label: 'Total dû', value: totalDue, color: '#1e293b' },
-                        { label: 'Total payé', value: totalPaid, color: '#059669' },
-                        { label: 'Reste à payer', value: totalDue - totalPaid, color: totalDue - totalPaid > 0 ? '#dc2626' : '#059669' },
-                    ].map((k, i) => (
-                        <div key={i} className="bg-gray-50 rounded-xl p-3 text-center">
-                            <p className="text-xs text-gray-400 mb-1">{k.label}</p>
-                            <p className="font-black text-sm" style={{ color: k.color }}>
-                                {k.value.toLocaleString('fr-FR')} F
-                            </p>
-                        </div>
-                    ))}
-                </div>
-                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all"
-                        style={{ width: `${pct}%`, background: pct >= 100 ? '#059669' : pct >= 50 ? '#f59e0b' : '#ef4444' }} />
-                </div>
-                <p className="text-xs text-gray-400 mt-1.5 text-right">{pct}% réglé</p>
+            {/* Résumé */}
+            <div className="grid grid-cols-3 gap-3">
+                {[
+                    { label: 'Absences', value: totalAbsents, icon: '🔴', color: '#dc2626', bg: '#fef2f2', type: 'absent' },
+                    { label: 'Retards', value: totalRetards, icon: '🟡', color: '#d97706', bg: '#fffbeb', type: 'retard' },
+                    { label: 'Non justifiés', value: totalInjust, icon: '⚠️', color: '#7c3aed', bg: '#f5f3ff', type: null },
+                ].map((k, i) => (
+                    <button key={i}
+                        onClick={() => k.type && setFilter(filter === k.type ? 'tous' : k.type)}
+                        className={`rounded-2xl p-4 text-center border-2 transition-all ${filter === k.type ? 'border-current shadow-sm' : 'border-transparent'
+                            }`}
+                        style={{ background: k.bg, borderColor: filter === k.type ? k.color : 'transparent' }}>
+                        <div className="text-xl mb-1">{k.icon}</div>
+                        <div className="text-2xl font-black" style={{ color: k.color }}>{k.value}</div>
+                        <div className="text-xs font-semibold text-gray-500 mt-0.5">{k.label}</div>
+                    </button>
+                ))}
             </div>
 
-            {/* Liste des transactions */}
+            {/* Alerte si trop d'absences */}
+            {totalAbsents >= 5 && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <p className="font-bold text-red-800 text-sm">Attention — Nombreuses absences</p>
+                        <p className="text-red-600 text-xs mt-0.5">
+                            {child.firstName} a {totalAbsents} absence{totalAbsents > 1 ? 's' : ''} enregistrée{totalAbsents > 1 ? 's' : ''}.
+                            Contactez l'administration si nécessaire.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Liste */}
             <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
-                        <Receipt className="w-4 h-4 text-blue-600" /> Historique des paiements
+                        <Calendar className="w-4 h-4 text-blue-600" />
+                        {filter === 'tous' ? 'Toutes les absences & retards' : filter === 'absent' ? 'Absences' : 'Retards'}
                     </h3>
-                    <span className="text-xs text-gray-400">{payments.length} transaction{payments.length > 1 ? 's' : ''}</span>
+                    {filter !== 'tous' && (
+                        <button onClick={() => setFilter('tous')} className="text-xs text-blue-600 hover:underline">
+                            Voir tout
+                        </button>
+                    )}
                 </div>
 
-                {payments.length === 0 ? (
+                {filtered.length === 0 ? (
                     <div className="py-10 text-center">
-                        <Receipt className="w-10 h-10 text-gray-200 mx-auto mb-2" />
-                        <p className="text-sm text-gray-400">Aucun paiement enregistré</p>
+                        <CheckCircle className="w-10 h-10 text-green-300 mx-auto mb-2" />
+                        <p className="text-sm font-semibold text-green-700">
+                            {filter === 'tous' ? 'Aucune absence enregistrée 🎉' : `Aucun${filter === 'retard' ? ' retard' : 'e absence'} enregistré${filter === 'absent' ? 'e' : ''}`}
+                        </p>
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-50">
-                        {payments.map(p => {
-                            const st = statusStyle(p.status);
-                            return (
-                                <div key={p.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
-                                    {/* Icône méthode */}
-                                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg flex-shrink-0">
-                                        {methodIcon(p.payment_method)}
-                                    </div>
+                        {filtered.map(a => (
+                            <div key={a.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                                {/* Type */}
+                                <span className="text-xl flex-shrink-0">{a.type === 'absent' ? '🔴' : '🟡'}</span>
 
-                                    {/* Type + date */}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-gray-800 text-sm truncate">
-                                            {p.fee_types?.name || 'Frais scolaires'}
-                                        </p>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <p className="text-xs text-gray-400">
-                                                {p.payment_date
-                                                    ? new Date(p.payment_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-                                                    : '—'
-                                                }
-                                            </p>
-                                            {p.receipt_number && (
-                                                <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                                                    N° {p.receipt_number}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {p.notes && <p className="text-xs text-gray-400 italic mt-0.5 truncate">"{p.notes}"</p>}
+                                {/* Infos */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="font-semibold text-gray-800 text-sm capitalize">{a.type}</p>
+                                        {a.subjects?.name && (
+                                            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                                {a.subjects.name}
+                                            </span>
+                                        )}
                                     </div>
-
-                                    {/* Montants + statut */}
-                                    <div className="text-right flex-shrink-0">
-                                        <p className="font-black text-green-600 text-sm">
-                                            +{parseFloat(p.amount_paid || 0).toLocaleString('fr-FR')} F
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            / {parseFloat(p.amount_due || 0).toLocaleString('fr-FR')} F
-                                        </p>
-                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${st.bg} ${st.text}`}>
-                                            {st.label}
-                                        </span>
-                                    </div>
+                                    {a.notes && <p className="text-xs text-gray-400 italic mt-0.5">"{a.notes}"</p>}
                                 </div>
-                            );
-                        })}
+
+                                {/* Date + statut */}
+                                <div className="text-right flex-shrink-0">
+                                    <p className="text-xs font-semibold text-gray-700">{fmtDate(a.date)}</p>
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full mt-1 inline-block ${a.justified ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                        }`}>
+                                        {a.justified ? '✓ Justifié' : 'Non justifié'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
@@ -977,22 +863,16 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
     const [paymentStatus, setPaymentStatus] = useState({});
     const [rankData, setRankData] = useState({});
     const [notification, setNotification] = useState('');
-    const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'notes' | 'paiements'
+    const [activeTab, setActiveTab] = useState('dashboard');
 
     const { children, loading, error, calculateAverage, getStudentGrades } = useParent(currentUser?.id);
 
-    // Notification interne (changement de mot de passe)
-    const showLocalNotif = (msg) => {
-        setNotification(msg);
-        setTimeout(() => setNotification(''), 3500);
-    };
+    const showLocalNotif = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3500); };
 
-    // Sélection automatique du premier enfant
     useEffect(() => {
         if (children.length > 0 && !selectedChild) setSelectedChild(children[0]);
     }, [children]);
 
-    // Chargement du statut bulletin_access depuis Supabase
     useEffect(() => {
         if (children.length === 0) return;
         const fetchAccess = async () => {
@@ -1007,68 +887,37 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                 const rows = (pays || []).filter(p => p.student_id === id);
                 const totalPaid = rows.reduce((s, p) => s + parseFloat(p.amount_paid || 0), 0);
                 const totalDue = rows.reduce((s, p) => s + parseFloat(p.amount_due || 0), 0);
-                status[id] = {
-                    isPaid: access?.bulletin_access === true, // 👈 décision admin
-                    noFees: totalDue === 0,
-                    totalPaid,
-                    totalDue,
-                };
+                status[id] = { isPaid: access?.bulletin_access === true, noFees: totalDue === 0, totalPaid, totalDue };
             });
             setPaymentStatus(status);
         };
         fetchAccess();
     }, [children]);
 
-    // Chargement du rang quand l'enfant ou le trimestre change
     useEffect(() => {
         if (!selectedChild) return;
         const key = `${selectedChild.id}_${selectedTrimester}`;
-        if (rankData[key]) return; // déjà chargé
-
+        if (rankData[key]) return;
         const fetchRank = async () => {
-            const { data } = await supabase.rpc('get_class_ranking', {
-                p_student_id: selectedChild.id,
-                p_trimester: selectedTrimester,
+            const { data: rows } = await supabase
+                .from('grades')
+                .select('student_id, value, subjects(coefficient), students!inner(class_id)')
+                .eq('trimester', selectedTrimester)
+                .eq('students.class_id', selectedChild.classId);
+            if (!rows) return;
+            const byStudent = {};
+            rows.forEach(r => {
+                const coef = r.subjects?.coefficient || 1;
+                if (!byStudent[r.student_id]) byStudent[r.student_id] = { total: 0, coefSum: 0 };
+                byStudent[r.student_id].total += (r.value || 0) * coef;
+                byStudent[r.student_id].coefSum += coef;
             });
-
-            // Si la RPC n'existe pas encore, fallback sur requête directe
-            if (!data) {
-                const { data: rows } = await supabase
-                    .from('grades')
-                    .select('student_id, value, subjects(coefficient), students!inner(class_id)')
-                    .eq('trimester', selectedTrimester)
-                    .eq('students.class_id', selectedChild.classId);
-
-                if (!rows) return;
-
-                // Calcul des moyennes par élève
-                const byStudent = {};
-                rows.forEach(r => {
-                    if (!byStudent[r.student_id]) byStudent[r.student_id] = { total: 0, coefSum: 0 };
-                    const coef = r.subjects?.coefficient || 1;
-                    byStudent[r.student_id].total += (r.value || 0) * coef;
-                    byStudent[r.student_id].coefSum += coef;
-                });
-
-                const sorted = Object.entries(byStudent)
-                    .map(([id, d]) => ({ id, avg: d.coefSum > 0 ? d.total / d.coefSum : 0 }))
-                    .sort((a, b) => b.avg - a.avg);
-
-                const idx = sorted.findIndex(e => e.id === selectedChild.id);
-                if (idx !== -1) {
-                    setRankData(prev => ({
-                        ...prev,
-                        [key]: { rang: idx + 1, total: sorted.length }
-                    }));
-                }
-                return;
-            }
-
-            if (data.rang) {
-                setRankData(prev => ({ ...prev, [key]: { rang: data.rang, total: data.total } }));
-            }
+            const sorted = Object.entries(byStudent)
+                .map(([id, d]) => ({ id, avg: d.coefSum > 0 ? d.total / d.coefSum : 0 }))
+                .sort((a, b) => b.avg - a.avg);
+            const idx = sorted.findIndex(e => e.id === selectedChild.id);
+            if (idx !== -1) setRankData(prev => ({ ...prev, [key]: { rang: idx + 1, total: sorted.length } }));
         };
-
         fetchRank();
     }, [selectedChild, selectedTrimester]);
 
@@ -1101,7 +950,7 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
     return (
         <div className="space-y-6">
 
-            {/* Notification locale */}
+            {/* Notification */}
             {notification && (
                 <div className="fixed top-4 right-4 z-[100] bg-white border border-green-200 rounded-xl px-4 py-3 shadow-lg flex items-center gap-3">
                     <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
@@ -1117,16 +966,13 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                         Bienvenue, {currentUser?.firstName} — {children.length} élève{children.length > 1 ? 's' : ''} suivi{children.length > 1 ? 's' : ''}
                     </p>
                 </div>
-                {/* Sélecteur trimestre (visible seulement sur onglet notes) */}
                 {activeTab === 'notes' && (
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-500 font-medium">Trimestre :</span>
                         {['1', '2', '3'].map(t => (
                             <button key={t} onClick={() => setSelectedTrimester(t)}
                                 className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${selectedTrimester === t ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}>
-                                T{t}
-                            </button>
+                                    }`}>T{t}</button>
                         ))}
                     </div>
                 )}
@@ -1150,18 +996,17 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                 </div>
             )}
 
-            {/* Navigation par onglets */}
+            {/* Onglets */}
             {selectedChild && (
                 <div className="flex gap-1 bg-gray-100 p-1 rounded-2xl">
                     {[
-                        { key: 'dashboard', icon: <LayoutDashboard className="w-4 h-4" />, label: 'Vue d\'ensemble' },
+                        { key: 'dashboard', icon: <LayoutDashboard className="w-4 h-4" />, label: "Vue d'ensemble" },
                         { key: 'notes', icon: <BookOpen className="w-4 h-4" />, label: 'Notes' },
-                        { key: 'paiements', icon: <Wallet className="w-4 h-4" />, label: 'Paiements' },
+                        { key: 'paiements', icon: <CreditCard className="w-4 h-4" />, label: 'Paiements' },
+                        { key: 'absences', icon: <Calendar className="w-4 h-4" />, label: 'Absences' },
                     ].map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all ${activeTab === tab.key
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700'
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                                 }`}>
                             {tab.icon}
                             <span className="hidden sm:inline">{tab.label}</span>
@@ -1170,7 +1015,7 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                 </div>
             )}
 
-            {/* ── Onglet Vue d'ensemble ── */}
+            {/* ── Vue d'ensemble ── */}
             {activeTab === 'dashboard' && selectedChild && (
                 <DashboardOverview
                     child={selectedChild}
@@ -1181,7 +1026,7 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                 />
             )}
 
-            {/* ── Onglet Notes ── */}
+            {/* ── Notes ── */}
             {activeTab === 'notes' && selectedChild && (
                 <ChildGradesDetail
                     child={selectedChild}
@@ -1195,9 +1040,14 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                 />
             )}
 
-            {/* ── Onglet Paiements ── */}
+            {/* ── Paiements ── */}
             {activeTab === 'paiements' && selectedChild && (
                 <PaymentHistory child={selectedChild} />
+            )}
+
+            {/* ── Absences ── */}
+            {activeTab === 'absences' && selectedChild && (
+                <AbsencesParent child={selectedChild} />
             )}
 
             {/* Changer mot de passe */}

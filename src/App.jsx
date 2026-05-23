@@ -12,7 +12,7 @@ import {
     Printer, BarChart3, Upload, FileDown, Settings, Image, Menu, X,
     LogOut, UserCircle, Shield, LayoutDashboard, Pencil, Calendar,
     Star, TrendingUp, FolderUp, UserCheck, UsersRound, CreditCard,
-    Bot, CheckCircle, BarChart2, ChevronRight
+    Bot, CheckCircle, BarChart2, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { supabase } from './config/supabase';
 import LoginModalSupabase from './components/LoginModalSupabase';
@@ -47,6 +47,7 @@ import ParentPortal from './components/ParentPortal';
 import ParentAssignModal from './components/ParentAssignModal';
 import PaymentManager from './components/PaymentManager';
 import AIAppreciations from './components/AIAppreciations';
+import AbsenceManager from './components/AbsenceManager';
 import DashboardKPIs from './components/DashboardKPIs';
 import LoginPage from './components/LoginPage';
 import { useDarkMode } from './hooks/useDarkMode';
@@ -67,6 +68,7 @@ const NAV_ITEMS = [
     { view: 'students', label: 'Élèves', Icon: Users, section: 'principal', roles: ['admin', 'professeur', 'secretaire'] },
     { view: 'subjects', label: 'Matières', Icon: BookOpen, section: 'principal', roles: ['admin'] },
     { view: 'grades', label: 'Saisir notes', Icon: Pencil, section: 'notes', roles: ['admin', 'professeur'] },
+    { view: 'absences', label: 'Absences', Icon: ClipboardList, section: 'notes', roles: ['admin', 'professeur', 'secretaire'] },
     { view: 'bulletins', label: 'Bulletins', Icon: FileText, section: 'notes', roles: ['admin', 'professeur', 'secretaire'] },
     { view: 'academicyears', label: 'Années scolaires', Icon: Calendar, section: 'notes', roles: ['admin'] },
     { view: 'appreciations', label: 'Appréciations', Icon: Star, section: 'notes', roles: ['admin', 'professeur'] },
@@ -1471,6 +1473,14 @@ const BulletinApp = () => {
                             <PaymentManager
                                 students={students} classes={classes}
                                 currentUser={currentUser} schoolInfo={schoolInfo} currentYear={currentYear}
+                            />
+                        )}
+                        {currentView === 'absences' && (
+                            <AbsenceManager
+                                students={students}
+                                classes={classes}
+                                subjects={subjects}
+                                currentUser={currentUser}
                             />
                         )}
                         {currentView === 'ia-appreciations' && (
