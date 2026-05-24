@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, X, Users, ChevronDown } from 'lucide-react';
+import { supabase } from '../config/supabase';
 
 export default function PrintPreview({
   printStudent, setShowPrintPreview, selectedTrimester,
@@ -10,6 +11,23 @@ export default function PrintPreview({
   const [generalAppreciation, setGeneralAppreciation] = useState('');
   const [batchTemplate, setBatchTemplate] = useState('model1');
   const [isBatchLoading, setIsBatchLoading] = useState(false);
+  const [absData, setAbsData] = useState({ absents: 0, retards: 0, injustifies: 0 });
+
+  // Charger les absences de l'élève
+  useEffect(() => {
+    if (!student?.id) return;
+    supabase.from('absences')
+      .select('id, type, justified')
+      .eq('student_id', student.id)
+      .then(({ data }) => {
+        if (!data) return;
+        setAbsData({
+          absents: data.filter(a => a.type === 'absent').length,
+          retards: data.filter(a => a.type === 'retard').length,
+          injustifies: data.filter(a => !a.justified).length,
+        });
+      });
+  }, [student?.id]);
 
   if (!printStudent) return null;
 
@@ -138,6 +156,11 @@ export default function PrintPreview({
       const compo = g.composition != null ? g.composition.toFixed(2) : '—';
       const bonus = g.bonus != null && g.bonus > 0 ? `+${g.bonus.toFixed(2)}` : '—';
       const teacherName = g.teacherName || subj?.teacher || '';
+      const cAvgs = classStudents.map(st => {
+        const sg = grades.find(gg => (gg.studentId || gg.student_id) === st.id && (gg.subjectId || gg.subject_id) === (g.subjectId || g.subject_id) && gg.trimester === selectedTrimester);
+        return computeFinal(sg) || 0;
+      }).filter(v => v > 0);
+      const subjClsAvg = cAvgs.length ? (cAvgs.reduce((a, b) => a + b, 0) / cAvgs.length).toFixed(2) : '—';
       const sigCell = teacherName
         ? `<div style="font-family:'Brush Script MT',cursive;font-size:9pt;color:#1e3a5f;">${teacherName}</div>
            <div style="font-size:6pt;color:#2563eb;">✓ Signé</div>`
@@ -152,6 +175,7 @@ export default function PrintPreview({
           <td class="center sub-note">${compo}</td>
           <td class="center sub-note bonus">${bonus}</td>
           <td class="center" style="color:${color};font-weight:800;font-size:10.5pt;">${finalVal != null ? finalVal.toFixed(2) : '—'}</td>
+          <td class="center" style="font-size:8pt;color:#6b7280;">${subjClsAvg}</td>
           <td class="center" style="color:${color};font-size:8.5pt;">${finalVal != null ? (finalVal * coef).toFixed(2) : '—'}</td>
           <td class="appreciate">${g.appreciation || ''}</td>
           <td class="center sig-cell">${sigCell}</td>
@@ -195,7 +219,7 @@ export default function PrintPreview({
   .bonus { color: #059669; font-weight: 700; }
   .appreciate { font-style: italic; font-size: 7.5pt; color: #4b5563; max-width: 100px; }
   .sig-cell { min-width: 65px; }
-  .results-band { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid #1e40af; margin-bottom: 8px; }
+  .results-band { display: grid; grid-template-columns: repeat(6, 1fr); border: 2px solid #1e40af; margin-bottom: 8px; }
   .result-cell { padding: 6px 4px; text-align: center; border-right: 1px solid #1e40af; }
   .result-cell:last-child { border-right: none; }
   .result-label { font-size: 6.5pt; text-transform: uppercase; color: #6b7280; font-weight: bold; }
@@ -232,6 +256,8 @@ export default function PrintPreview({
       <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">${classStudents.length} élèves</div></div>
       <div class="info-row"><div class="info-label">Rang</div><div class="info-value">${sRank} / ${classStudents.length}</div></div>
       <div class="info-row"><div class="info-label">Trimestre</div><div class="info-value">${trimLabel}</div></div>
+      ${s.birthDate || s.birth_date ? `<div class="info-row"><div class="info-label">Date de naissance</div><div class="info-value">${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</div></div>` : ''}
+      <div class="info-row"><div class="info-label">Absences</div><div class="info-value" style="color:${absData.absents > 3 ? '#dc2626' : '#374151'};">${absData.absents} abs. · ${absData.retards} ret. · ${absData.injustifies} injust.</div></div>
     </div>
     <div style="flex-shrink:0;">${qrCodeImg(s, sAvg, sRank, classStudents.length)}</div>
   </div>
@@ -246,8 +272,9 @@ export default function PrintPreview({
         <th style="width:40px;">Compo</th>
         <th style="width:38px;">Bonus</th>
         <th style="width:48px;">Note /20</th>
+        <th style="width:42px;">Moy.Cl.</th>
         <th style="width:48px;">Total pts</th>
-        <th class="left">Appréciation du prof</th>
+        <th class="left">Appréciation</th>
         <th style="width:72px;">Signature</th>
       </tr>
     </thead>
@@ -269,6 +296,7 @@ export default function PrintPreview({
     <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">${sRank}<span style="font-size:8pt;">/${classStudents.length}</span></div></div>
     <div class="result-cell"><div class="result-label">Mention</div><div class="result-value" style="font-size:9.5pt;color:${sMention.color || '#1e40af'};">${sMention.text}</div></div>
     <div class="result-cell"><div class="result-label">Décision</div><div class="result-value" style="font-size:9.5pt;color:${sStatus.color};">${sStatus.text}</div></div>
+    <div class="result-cell" style="background:${absData.absents > 3 ? '#fef2f2' : '#f8fafc'}"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:${absData.absents > 3 ? '#dc2626' : '#374151'};">${absData.absents}<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">${absData.retards} retard${absData.retards > 1 ? 's' : ''}</div></div>
   </div>
 
   <div class="council-box">
@@ -341,21 +369,6 @@ export default function PrintPreview({
         </div>`;
     }).join('');
 
-    const svgBars = sGrades.slice(0, 8).map((g, i) => {
-      const subj = subjects.find(s => s.id === (g.subjectId || g.subject_id));
-      const val = computeFinal(g) ?? 0;
-      const h = (val / 20) * 110;
-      const x = 20 + i * 36;
-      const y = 130 - h;
-      const color = gradeColor(val);
-      const name = (subj?.name || '?').slice(0, 4);
-      return `<rect x="${x}" y="${y}" width="22" height="${h}" fill="${color}" rx="3"/>
-        <text x="${x + 11}" y="143" text-anchor="middle" font-size="6.5" fill="#6b7280">${name}</text>
-        <text x="${x + 11}" y="${y - 3}" text-anchor="middle" font-size="7.5" fill="${color}" font-weight="bold">${val.toFixed(0)}</text>`;
-    }).join('');
-
-    const classLine = `<line x1="15" y1="${130 - (classAverage / 20) * 110}" x2="${20 + Math.min(sGrades.length, 8) * 36}" y2="${130 - (classAverage / 20) * 110}" stroke="#94a3b8" stroke-dasharray="4,3" stroke-width="1.5"/>`;
-
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
 <title>Bulletin – ${s.firstName} ${s.lastName}</title>
 <style>
@@ -395,7 +408,7 @@ export default function PrintPreview({
   .grade-value { font-size: 11pt; font-weight: 800; }
   .grade-lbl { font-size: 7pt; }
   .graph-section { margin: 0 16px 10px; background: #f8fafc; border-radius: 8px; padding: 10px; }
-  .class-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 0 16px 10px; }
+  .class-stats { display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; margin: 0 16px 10px; }
   .cstat { background: #f8fafc; border-radius: 7px; padding: 8px; text-align: center; }
   .cstat-val { font-size: 12pt; font-weight: 800; color: #1e40af; }
   .cstat-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; }
@@ -428,7 +441,7 @@ export default function PrintPreview({
     <div class="student-avatar">${(s.firstName || '?')[0]}${(s.lastName || '?')[0]}</div>
     <div>
       <div class="student-name">${s.firstName} ${s.lastName?.toUpperCase()}</div>
-      <div class="student-meta">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;|&nbsp; Effectif: <strong>${classStudents.length}</strong> &nbsp;|&nbsp; ${yearLabel}</div>
+      <div class="student-meta">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;|&nbsp; Effectif: <strong>${classStudents.length}</strong> &nbsp;|&nbsp; ${yearLabel}${s.birthDate || s.birth_date ? ` &nbsp;|&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
     </div>
     <div class="student-stats">
       <div class="stat-pill"><div class="stat-val">${fmtAvg(sAvg)}</div><div class="stat-lbl">Moyenne</div></div>
@@ -450,6 +463,8 @@ export default function PrintPreview({
     <div class="cstat"><div class="cstat-val">${fmtAvg(classMax)}</div><div class="cstat-lbl">Meilleure</div></div>
     <div class="cstat"><div class="cstat-val">${fmtAvg(classMin)}</div><div class="cstat-lbl">Plus basse</div></div>
     <div class="cstat"><div class="cstat-val">${sTotalCoef}</div><div class="cstat-lbl">Total coeff.</div></div>
+    <div class="cstat" style="background:${absData.absents > 3 ? '#fef2f2' : '#f8fafc'};"><div class="cstat-val" style="color:${absData.absents > 3 ? '#dc2626' : '#1e40af'};">${absData.absents}</div><div class="cstat-lbl">Absences</div></div>
+    <div class="cstat"><div class="cstat-val" style="color:#d97706;">${absData.retards}</div><div class="cstat-lbl">Retards</div></div>
   </div>
 
   <div class="section">
@@ -457,15 +472,18 @@ export default function PrintPreview({
     ${rows}
   </div>
 
-  ${sGrades.length > 0 ? `
-  <div class="graph-section">
-    <div class="section-title" style="margin-bottom:6px;">Visualisation des notes</div>
-    <svg width="100%" height="158" viewBox="0 0 ${Math.max(320, 20 + sGrades.slice(0, 8).length * 36 + 30)} 158">
-      ${[0, 5, 10, 15, 20].map(v => `<line x1="15" y1="${130 - (v / 20) * 110}" x2="${20 + Math.min(sGrades.length, 8) * 36}" y2="${130 - (v / 20) * 110}" stroke="#e2e8f0" stroke-width="1"/>
-        <text x="10" y="${134 - (v / 20) * 110}" text-anchor="end" font-size="6.5" fill="#94a3b8">${v}</text>`).join('')}
-      ${svgBars}${classLine}
-    </svg>
-    <p style="font-size:6.5pt;color:#94a3b8;margin-top:3px;">— Ligne pointillée = moyenne de classe (${fmtAvg(classAverage)})</p>
+  ${strengths.length > 0 || weaknesses.length > 0 ? `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 16px 10px;">
+    ${strengths.length > 0 ? `
+    <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:8px 12px;">
+      <div style="font-size:7.5pt;font-weight:800;color:#166534;text-transform:uppercase;margin-bottom:5px;">💪 Points forts</div>
+      ${strengths.map(st => `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #bbf7d0;"><span style="font-weight:600;color:#166534;">${st.name}</span><span style="font-weight:800;color:#059669;">${st.value.toFixed(2)}</span></div>`).join('')}
+    </div>` : ''}
+    ${weaknesses.length > 0 ? `
+    <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;">
+      <div style="font-size:7.5pt;font-weight:800;color:#991b1b;text-transform:uppercase;margin-bottom:5px;">⚠️ À renforcer</div>
+      ${weaknesses.map(st => `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #fecaca;"><span style="font-weight:600;color:#991b1b;">${st.name}</span><span style="font-weight:800;color:#dc2626;">${st.value.toFixed(2)}</span></div>`).join('')}
+    </div>` : ''}
   </div>` : ''}
 
   ${generalAppreciation ? `
@@ -589,7 +607,7 @@ export default function PrintPreview({
   .avg-display { text-align: center; background: #1e40af; color: white; padding: 8px 16px; border-radius: 8px; }
   .avg-num { font-size: 18pt; font-weight: 900; line-height: 1; }
   .avg-label { font-size: 7pt; opacity: .8; }
-  .kpis { display: grid; grid-template-columns: repeat(5,1fr); border: 1.5px solid #e2e8f0; }
+  .kpis { display: grid; grid-template-columns: repeat(6,1fr); border: 1.5px solid #e2e8f0; }
   .kpi { padding: 7px; text-align: center; border-right: 1px solid #e2e8f0; }
   .kpi:last-child { border-right: none; }
   .kpi-val { font-size: 11pt; font-weight: 800; color: #1e40af; }
@@ -647,7 +665,7 @@ export default function PrintPreview({
   <div class="student-banner">
     <div>
       <div class="student-fullname">${s.firstName} ${s.lastName?.toUpperCase()}</div>
-      <div class="student-class">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;·&nbsp; Effectif: <strong>${classStudents.length}</strong> &nbsp;·&nbsp; Rang: <strong>${sRank}/${classStudents.length}</strong></div>
+      <div class="student-class">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;·&nbsp; Effectif: <strong>${classStudents.length}</strong> &nbsp;·&nbsp; Rang: <strong>${sRank}/${classStudents.length}</strong>${s.birthDate || s.birth_date ? ` &nbsp;·&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
     </div>
     <div class="avg-display">
       <div class="avg-num">${fmtAvg(sAvg)}</div>
@@ -661,6 +679,7 @@ export default function PrintPreview({
     <div class="kpi"><div class="kpi-val">${fmtAvg(classMin)}</div><div class="kpi-lbl">Min classe</div></div>
     <div class="kpi"><div class="kpi-val">${sTotalCoef}</div><div class="kpi-lbl">Coeff. total</div></div>
     <div class="kpi"><div class="kpi-val">${sTotalPts.toFixed(1)}</div><div class="kpi-lbl">Total pts</div></div>
+    <div class="kpi" style="background:${absData.absents > 3 ? '#fef2f2' : 'inherit'};"><div class="kpi-val" style="color:${absData.absents > 3 ? '#dc2626' : '#1e40af'};">${absData.absents}</div><div class="kpi-lbl">Absences</div><div style="font-size:6pt;color:#94a3b8;">${absData.retards} ret.</div></div>
   </div>
 
   <div class="body-grid">
@@ -844,7 +863,7 @@ export default function PrintPreview({
 
           <div className="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:bg-blue-50 transition-all group">
             <div className="flex items-center gap-2 mb-1"><span className="text-lg">📋</span><h4 className="font-bold text-gray-800 group-hover:text-blue-700">Modèle Officiel</h4></div>
-            <p className="text-xs text-gray-500 mb-3">Style ministère · Tableau avec Interro/Devoir/Compo/Bonus · Signatures · QR Code · 1 page A4</p>
+            <p className="text-xs text-gray-500 mb-3">Style ministère · Interro/Devoir/Compo/Bonus · Moy. classe par matière · Absences · Signatures · QR Code</p>
             <button onClick={() => { openPrint(generateModel1Html()); setShowPrintPreview(false); }}
               className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
               <Printer className="w-4 h-4" /> Imprimer ce modèle
@@ -853,7 +872,7 @@ export default function PrintPreview({
 
           <div className="border-2 border-gray-200 rounded-xl p-4 hover:border-emerald-400 hover:bg-emerald-50 transition-all group">
             <div className="flex items-center gap-2 mb-1"><span className="text-lg">📊</span><h4 className="font-bold text-gray-800 group-hover:text-emerald-700">Modèle Moderne</h4></div>
-            <p className="text-xs text-gray-500 mb-3">Gradient bleu · Barres de progression · Graphique SVG · QR Code · 1 page A4</p>
+            <p className="text-xs text-gray-500 mb-3">Gradient bleu · Barres de progression · Moy. classe par matière · Points forts/faibles · Absences · QR Code</p>
             <button onClick={() => { openPrint(generateModel2Html()); setShowPrintPreview(false); }}
               className="w-full bg-emerald-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
               <Printer className="w-4 h-4" /> Imprimer ce modèle
@@ -862,7 +881,7 @@ export default function PrintPreview({
 
           <div className="border-2 border-gray-200 rounded-xl p-4 hover:border-purple-400 hover:bg-purple-50 transition-all group">
             <div className="flex items-center gap-2 mb-1"><span className="text-lg">🏆</span><h4 className="font-bold text-gray-800 group-hover:text-purple-700">Modèle Premium</h4></div>
-            <p className="text-xs text-gray-500 mb-3">Couverture dégradée · KPIs · Évolution 3 trimestres · Points forts/faibles · QR Code · 1 page A4</p>
+            <p className="text-xs text-gray-500 mb-3">Couverture dégradée · KPIs + Absences · Évolution 3 trimestres · Points forts/faibles · Moy. classe par matière · QR Code</p>
             <button onClick={() => { openPrint(generateModel3Html()); setShowPrintPreview(false); }}
               className="w-full bg-purple-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2">
               <Printer className="w-4 h-4" /> Imprimer ce modèle
