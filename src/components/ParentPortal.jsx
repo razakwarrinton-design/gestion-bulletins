@@ -7,7 +7,7 @@ import {
     Trophy, KeyRound, Eye, EyeOff, ChevronDown, ChevronUp,
     Receipt, Wallet, LayoutDashboard, Calendar, UserX, Shield, Clock
 } from 'lucide-react';
-
+import DashboardKPIs from './DashboardKPIs';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
 const gradeLabel = (v) => v >= 16 ? 'Très Bien' : v >= 14 ? 'Bien' : v >= 12 ? 'Assez Bien' : v >= 10 ? 'Passable' : v >= 8 ? 'Insuffisant' : 'Très Insuffisant';
