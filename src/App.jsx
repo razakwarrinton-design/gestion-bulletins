@@ -96,13 +96,15 @@ const BulletinApp = () => {
     const [parentModalOpen, setParentModalOpen] = useState(false);
 
     // ── Données Supabase via hooks ───────────────────────────────────────────────
-    const [currentYear, setCurrentYear] = useState('2024-2025'); // déclaré avant useGrades
+    // ── Données Supabase via hooks ───────────────────────────────────────────────
+    const [currentYear, setCurrentYear] = useState('2024-2025');
 
-    const { classes, loading: isLoadingClasses, addClass, deleteClass } = useClasses();
-    const { students, loading: isLoadingStudents, addStudent, updateStudent, deleteStudent } = useStudents();
-    const { subjects, loading: isLoadingSubjects, addSubject, deleteSubject } = useSubjects();
-    // ✅ Charge les grades SEULEMENT si on en a besoin (lazy loading)
-    const shouldLoadGrades = ['grades', 'bulletins', 'statistics', 'analytics', 'ia-appreciations'].includes(currentView);
+    const { classes, loading: isLoadingClasses } = useClasses();
+    const { students, loading: isLoadingStudents } = useStudents();
+    const { subjects, loading: isLoadingSubjects } = useSubjects();
+
+    // ✅ Charge les grades si on en a besoin (y compris dashboard)
+    const shouldLoadGrades = ['dashboard', 'grades', 'bulletins', 'statistics', 'analytics', 'ia-appreciations'].includes(currentView);
     const { grades, loading: isLoadingGrades, updateGrade, getGrade } = useGrades(shouldLoadGrades ? currentYear : null);
 
     // ── Données persistées (useSupabaseState) ───────────────────────────────────
