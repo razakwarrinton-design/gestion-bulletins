@@ -50,12 +50,21 @@ export const setAppData = async (key, value) => {
 // Écouter les changements en temps réel
 export const subscribeToAppData = (key, callback) => {
   const subscription = supabase
-    .from('app_data')
-    .on('*', payload => {
-      if (payload.new.key === key) {
-        callback(JSON.parse(payload.new.value));
+    .channel(`app_data_${key}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'app_data',
+        filter: `key=eq.${key}`
+      },
+      (payload) => {
+        if (payload.new.key === key) {
+          callback(JSON.parse(payload.new.value));
+        }
       }
-    })
+    )
     .subscribe();
 
   return subscription;

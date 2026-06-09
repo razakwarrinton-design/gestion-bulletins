@@ -205,11 +205,15 @@ Tables créées dans Supabase:
 export function setupRealtimeListener() {
   // S'abonner aux changements de classes
   const subscription = supabase
-    .from('classes')
-    .on('*', payload => {
-      console.log('Changement détecté:', payload);
-      // Mettre à jour votre UI ici
-    })
+    .channel('classes_changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'classes' },
+      payload => {
+        console.log('Changement détecté:', payload);
+        // Mettre à jour votre UI ici
+      }
+    )
     .subscribe();
 
   // Nettoyage

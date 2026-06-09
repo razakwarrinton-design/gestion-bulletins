@@ -258,18 +258,22 @@ export const reportOperations = {
 export const realtimeOperations = {
   subscribeToGradeChanges(classId, callback) {
     const subscription = supabase
-      .from('grades')
-      .on('*', payload => {
-        if (payload.new) {
-          callback({ type: 'INSERT', data: payload.new });
+      .channel(`grades-${classId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'grades' },
+        payload => {
+          if (payload.new) {
+            callback({ type: 'INSERT', data: payload.new });
+          }
+          if (payload.old && !payload.new) {
+            callback({ type: 'DELETE', data: payload.old });
+          }
+          if (payload.new && payload.old) {
+            callback({ type: 'UPDATE', data: payload.new });
+          }
         }
-        if (payload.old && !payload.new) {
-          callback({ type: 'DELETE', data: payload.old });
-        }
-        if (payload.new && payload.old) {
-          callback({ type: 'UPDATE', data: payload.new });
-        }
-      })
+      )
       .subscribe();
 
     return subscription;
@@ -277,12 +281,16 @@ export const realtimeOperations = {
 
   subscribeToActivityLog(userId, callback) {
     const subscription = supabase
-      .from('activities')
-      .on('INSERT', payload => {
-        if (payload.new.user_name === userId) {
-          callback(payload.new);
+      .channel(`activities-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'activities' },
+        payload => {
+          if (payload.new.user_name === userId) {
+            callback(payload.new);
+          }
         }
-      })
+      )
       .subscribe();
 
     return subscription;
@@ -291,20 +299,28 @@ export const realtimeOperations = {
   async listenToClassUpdates(classId, onUpdate) {
     // Écouter les changements d'étudiants
     const studentsSubscription = supabase
-      .from('students')
-      .on('*', payload => {
-        if (payload.new?.class_id === classId) {
-          onUpdate({ type: 'STUDENT', data: payload.new });
+      .channel(`students-${classId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'students' },
+        payload => {
+          if (payload.new?.class_id === classId) {
+            onUpdate({ type: 'STUDENT', data: payload.new });
+          }
         }
-      })
+      )
       .subscribe();
 
     // Écouter les changements de notes
     const gradesSubscription = supabase
-      .from('grades')
-      .on('*', payload => {
-        onUpdate({ type: 'GRADE', data: payload.new });
-      })
+      .channel(`grades-${classId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'grades' },
+        payload => {
+          onUpdate({ type: 'GRADE', data: payload.new });
+        }
+      )
       .subscribe();
 
     return {
