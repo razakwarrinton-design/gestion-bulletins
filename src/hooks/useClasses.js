@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../config/supabase';
 
 export function useClasses() {
   const [classes, setClasses] = useState([]);
