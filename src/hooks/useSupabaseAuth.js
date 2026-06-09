@@ -101,17 +101,55 @@ export function useSupabaseAuth() {
 
   // Inscription avec email/mot de passe
   const signUp = async (email, password, firstName, lastName, role = 'secretaire') => {
-    // ... code existant ...
-
-    const { data, error } = await supabase.auth.signUp({ ...});
-    if (error) throw error;
-
-    // ✅ AJOUTE CES LIGNES
-    if (data.user) {
-      await loadUserProfile(data.user.id);
+    if (!supabaseConfigured) {
+      const message = 'Supabase non configuré. Impossible de s\'inscrire.';
+      setError(message);
+      return { success: false, error: message };
     }
 
-    return { success: true, user: data.user };
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            role,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert([
+            {
+              id: data.user.id,
+              email,
+              first_name: firstName,
+              last_name: lastName,
+              role,
+            },
+          ]);
+
+        if (profileError) throw profileError;
+        await loadUserProfile(data.user.id);
+      }
+
+      return { success: true, user: data.user };
+    } catch (err) {
+      console.error('Erreur d\'inscription:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Déconnexion
