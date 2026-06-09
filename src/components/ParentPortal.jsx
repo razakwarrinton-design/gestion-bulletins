@@ -1017,7 +1017,7 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
 
             {/* ── Vue d'ensemble ── */}
             {activeTab === 'dashboard' && selectedChild && (
-                <DashboardOverview
+                <DashboardKPIs
                     child={selectedChild}
                     calculateAverage={calculateAverage}
                     paymentStatus={paymentStatus}
