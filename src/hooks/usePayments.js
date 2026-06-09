@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from '../config/supabase';
 
 export function usePayments(academicYear = "2024-2025") {
   const [payments, setPayments] = useState([]);

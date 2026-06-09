@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../config/supabase';
 
 /**
  * Hook pour gérer le 2FA TOTP avec Supabase MFA
