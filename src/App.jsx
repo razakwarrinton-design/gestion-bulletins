@@ -174,8 +174,12 @@ const BulletinApp = () => {
 
     // ── Redirection automatique : un parent va directement à son espace ──────────
     useEffect(() => {
+        console.log('🔄 App: Checking role for redirection. CurrentUser:', currentUser);
         if (currentUser?.role === 'parent') {
+            console.log('✅ App: Parent detected! Redirecting to "parents" view...');
             setCurrentView('parents');
+        } else if (currentUser?.role) {
+            console.log('📋 App: User role is:', currentUser.role, '(not parent)');
         }
     }, [currentUser]);
 

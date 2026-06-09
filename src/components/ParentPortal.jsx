@@ -870,6 +870,14 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
     const showLocalNotif = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3500); };
 
     useEffect(() => {
+        console.log('👨‍👩‍👧 ParentPortal: Component mounted');
+        console.log('Current user:', currentUser);
+        console.log('Loading:', loading);
+        console.log('Children:', children);
+        console.log('Error:', error);
+    }, []);
+
+    useEffect(() => {
         if (children.length > 0 && !selectedChild) setSelectedChild(children[0]);
     }, [children]);
 
@@ -929,9 +937,15 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
     );
 
     if (error) return (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
-            <p className="text-red-700 font-semibold">Erreur de chargement</p>
-            <p className="text-red-500 text-sm mt-1">{error}</p>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+            <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                    <p className="text-red-700 font-semibold">Erreur de chargement</p>
+                    <p className="text-red-600 text-sm mt-1">{error}</p>
+                    <p className="text-red-500 text-xs mt-2">Console: Consultez les logs du navigateur pour plus de détails (F12)</p>
+                </div>
+            </div>
         </div>
     );
 
@@ -941,9 +955,14 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                 <GraduationCap className="w-10 h-10 text-blue-400" />
             </div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">Aucun élève associé</h3>
-            <p className="text-gray-500 max-w-sm mx-auto">
+            <p className="text-gray-500 max-w-sm mx-auto mb-4">
                 Aucun élève n'est encore lié à votre compte. Contactez l'administration pour associer vos enfants.
             </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-sm mx-auto text-left">
+                <p className="text-xs font-semibold text-blue-900 mb-2">ℹ️ Information technique</p>
+                <p className="text-xs text-blue-700">Parent ID: {currentUser?.id}</p>
+                <p className="text-xs text-blue-700 mt-1">Rôle: {currentUser?.role}</p>
+            </div>
         </div>
     );
 

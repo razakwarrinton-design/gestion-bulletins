@@ -21,6 +21,8 @@ export function useParent(currentUserId) {
     setLoading(true);
     setError(null);
     try {
+      console.log('📚 useParent: Fetching parent data for ID:', currentUserId);
+      
       // 1. Récupérer les élèves liés au parent
       const { data: links, error: linksError } = await supabase
         .from("parent_students")
@@ -35,7 +37,12 @@ export function useParent(currentUserId) {
         )
         .eq("parent_id", currentUserId);
 
-      if (linksError) throw linksError;
+      if (linksError) {
+        console.error('❌ useParent: Error fetching parent_students:', linksError);
+        throw linksError;
+      }
+      
+      console.log('✅ useParent: Found', links?.length || 0, 'linked students');
 
       const studentList = (links || []).map((l) => ({
         ...l.students,
@@ -45,6 +52,7 @@ export function useParent(currentUserId) {
         className: l.students.classes?.name || "N/A",
       }));
       setChildren(studentList);
+      console.log('✅ useParent: Mapped', studentList.length, 'students:', studentList);
 
       if (studentList.length === 0) {
         setLoading(false);
@@ -53,12 +61,20 @@ export function useParent(currentUserId) {
 
       // 2. Récupérer les notes de tous les enfants
       const studentIds = studentList.map((s) => s.id);
+      console.log('📝 useParent: Fetching grades for students:', studentIds);
+      
       const { data: gradesData, error: gradesError } = await supabase
         .from("grades")
         .select("*")
         .in("student_id", studentIds);
 
-      if (gradesError) throw gradesError;
+      if (gradesError) {
+        console.error('❌ useParent: Error fetching grades:', gradesError);
+        throw gradesError;
+      }
+      
+      console.log('✅ useParent: Found', gradesData?.length || 0, 'grades');
+      
       setGrades(
         (gradesData || []).map((g) => ({
           ...g,
@@ -68,15 +84,28 @@ export function useParent(currentUserId) {
       );
 
       // 3. Récupérer les matières
+      console.log('📚 useParent: Fetching subjects...');
+      
       const { data: subjectsData, error: subjectsError } = await supabase
         .from("subjects")
         .select("*")
         .order("name");
 
-      if (subjectsError) throw subjectsError;
+      if (subjectsError) {
+        console.error('❌ useParent: Error fetching subjects:', subjectsError);
+        throw subjectsError;
+      }
+      
+      console.log('✅ useParent: Found', subjectsData?.length || 0, 'subjects');
       setSubjects(subjectsData || []);
     } catch (err) {
-      console.error("Erreur useParent:", err);
+      console.error("❌ useParent: ERREUR:", err);
+      console.error("Error details:", {
+        message: err.message,
+        code: err.code,
+        status: err.status,
+        details: err.details,
+      });
       setError(err.message);
     } finally {
       setLoading(false);
