@@ -11,9 +11,10 @@ export function useStudents() {
 
   const fetchStudents = async () => {
     setLoading(true);
+    // ✅ Optimisation : sélectionne SEULEMENT les colonnes nécessaires
     const { data, error } = await supabase
       .from('students')
-      .select('*')
+      .select('id, first_name, last_name, class_id, created_at')
       .order('last_name');
     if (!error) {
       // Mapper snake_case → camelCase pour compatibilité avec le code existant
@@ -31,7 +32,7 @@ export function useStudents() {
     const { data, error } = await supabase
       .from('students')
       .insert({ first_name: firstName, last_name: lastName, class_id: classId })
-      .select()
+      .select('id, first_name, last_name, class_id, created_at')
       .single();
     if (error) throw error;
     const mapped = { ...data, firstName: data.first_name, lastName: data.last_name, classId: data.class_id };
@@ -44,7 +45,7 @@ export function useStudents() {
       .from('students')
       .update({ first_name: firstName, last_name: lastName, class_id: classId })
       .eq('id', id)
-      .select()
+      .select('id, first_name, last_name, class_id, created_at')
       .single();
     if (error) throw error;
     const mapped = { ...data, firstName: data.first_name, lastName: data.last_name, classId: data.class_id };

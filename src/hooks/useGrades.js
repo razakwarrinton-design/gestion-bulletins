@@ -1,20 +1,27 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-export function useGrades(academicYear = "2024-2025") {
+export function useGrades(academicYear = null) {
   const [grades, setGrades] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchGrades();
+    // ✅ OPTIMISATION : Ne charge QUE si academicYear est fourni
+    if (academicYear) {
+      fetchGrades();
+    }
   }, [academicYear]);
 
   const fetchGrades = async () => {
+    if (!academicYear) return;
+    
     setLoading(true);
+    // ✅ OPTIMISATION : sélectionne SEULEMENT les colonnes nécessaires
     const { data, error } = await supabase
       .from("grades")
-      .select("*")
+      .select("id, student_id, subject_id, trimester, academic_year, value, appreciation, interro, devoir, composition, teacher_name")
       .eq("academic_year", academicYear);
+    
     if (!error) {
       setGrades(data.map(mapGrade));
     }
@@ -43,6 +50,8 @@ export function useGrades(academicYear = "2024-2025") {
       appreciation,
       extra = {}, // { interro, devoir, composition, teacherName }
     ) => {
+      if (!academicYear) return;
+
       const { data, error } = await supabase
         .from("grades")
         .upsert(
@@ -65,7 +74,7 @@ export function useGrades(academicYear = "2024-2025") {
             onConflict: "student_id,subject_id,trimester,academic_year",
           },
         )
-        .select()
+        .select("id, student_id, subject_id, trimester, academic_year, value, appreciation, interro, devoir, composition, teacher_name")
         .single();
 
       if (error) {

@@ -11,9 +11,10 @@ export function useClasses() {
 
   const fetchClasses = async () => {
     setLoading(true);
+    // ✅ Optimisation : sélectionne SEULEMENT les colonnes nécessaires
     const { data, error } = await supabase
       .from('classes')
-      .select('*')
+      .select('id, name, level')
       .order('name');
     if (!error) setClasses(data);
     setLoading(false);
@@ -23,7 +24,7 @@ export function useClasses() {
     const { data, error } = await supabase
       .from('classes')
       .insert({ name, level: name })
-      .select()
+      .select('id, name, level')
       .single();
     if (error) throw error;
     setClasses(prev => [...prev, data]);

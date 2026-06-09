@@ -101,7 +101,9 @@ const BulletinApp = () => {
     const { classes, loading: isLoadingClasses, addClass, deleteClass } = useClasses();
     const { students, loading: isLoadingStudents, addStudent, updateStudent, deleteStudent } = useStudents();
     const { subjects, loading: isLoadingSubjects, addSubject, deleteSubject } = useSubjects();
-    const { grades, loading: isLoadingGrades, updateGrade, getGrade } = useGrades(currentYear);
+    // ✅ Charge les grades SEULEMENT si on en a besoin (lazy loading)
+    const shouldLoadGrades = ['grades', 'bulletins', 'statistics', 'analytics', 'ia-appreciations'].includes(currentView);
+    const { grades, loading: isLoadingGrades, updateGrade, getGrade } = useGrades(shouldLoadGrades ? currentYear : null);
 
     // ── Données persistées (useSupabaseState) ───────────────────────────────────
     const [schoolInfo, setSchoolInfo] = useSupabaseState('schoolInfo', {
