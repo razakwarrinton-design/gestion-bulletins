@@ -65,6 +65,7 @@ export function useSupabaseAuth() {
   };
 
   // Connexion avec email/mot de passe
+  // Connexion avec email/mot de passe
   const signIn = async (email, password) => {
     if (!supabaseConfigured) {
       const message = 'Supabase non configuré. Impossible de se connecter.';
@@ -83,6 +84,11 @@ export function useSupabaseAuth() {
 
       if (error) throw error;
 
+      // ✅ AJOUTE CES LIGNES : Charge le profil immédiatement
+      if (data.user) {
+        await loadUserProfile(data.user.id);
+      }
+
       return { success: true, user: data.user };
     } catch (err) {
       console.error('Erreur de connexion:', err);
@@ -95,38 +101,17 @@ export function useSupabaseAuth() {
 
   // Inscription avec email/mot de passe
   const signUp = async (email, password, firstName, lastName, role = 'secretaire') => {
-    if (!supabaseConfigured) {
-      const message = 'Supabase non configuré. Impossible de créer un compte.';
-      setError(message);
-      return { success: false, error: message };
+    // ... code existant ...
+
+    const { data, error } = await supabase.auth.signUp({ ...});
+    if (error) throw error;
+
+    // ✅ AJOUTE CES LIGNES
+    if (data.user) {
+      await loadUserProfile(data.user.id);
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            role: role,
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      return { success: true, user: data.user };
-    } catch (err) {
-      console.error('Erreur d\'inscription:', err);
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
-    }
+    return { success: true, user: data.user };
   };
 
   // Déconnexion
@@ -229,12 +214,12 @@ export function useSupabaseAuth() {
   // Formater l'utilisateur pour compatibilité avec l'ancien système
   const currentUser = profile
     ? {
-        id: profile.id,
-        email: profile.email,
-        firstName: profile.first_name,
-        lastName: profile.last_name,
-        role: profile.role,
-      }
+      id: profile.id,
+      email: profile.email,
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      role: profile.role,
+    }
     : null;
 
   return {
