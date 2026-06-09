@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../config/supabase';
 import { Sparkles, RefreshCw, Copy, Check, ChevronDown, ChevronUp, BookOpen, AlertTriangle, Award } from 'lucide-react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

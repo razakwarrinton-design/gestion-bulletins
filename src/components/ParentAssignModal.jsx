@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../config/supabase';
 
 export default function ParentAssignModal({ isOpen, onClose, students, classes, showNotification }) {
     const [tab, setTab] = useState('assign');
