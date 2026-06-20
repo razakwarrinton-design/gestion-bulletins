@@ -7,7 +7,7 @@ import {
     Trophy, KeyRound, Eye, EyeOff, ChevronDown, ChevronUp,
     Receipt, Wallet, LayoutDashboard, Calendar, UserX, Shield, Clock
 } from 'lucide-react';
-import DashboardKPIs from './DashboardKPIs';
+import ParentDashboard from './ParentDashboard';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
 const gradeLabel = (v) => v >= 16 ? 'Très Bien' : v >= 14 ? 'Bien' : v >= 12 ? 'Assez Bien' : v >= 10 ? 'Passable' : v >= 8 ? 'Insuffisant' : 'Très Insuffisant';
@@ -1003,8 +1003,8 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                     {children.map(child => (
                         <button key={child.id} onClick={() => setSelectedChild(child)}
                             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all border-2 ${selectedChild?.id === child.id
-                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                    : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300'
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300'
                                 }`}>
                             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
                                 {child.firstName?.[0]}
@@ -1036,12 +1036,13 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
 
             {/* ── Vue d'ensemble ── */}
             {activeTab === 'dashboard' && selectedChild && (
-                <DashboardKPIs
+                <ParentDashboard
                     child={selectedChild}
                     calculateAverage={calculateAverage}
                     paymentStatus={paymentStatus}
                     rankData={rankData}
                     onPrint={onPrint}
+                    getStudentGrades={getStudentGrades}
                 />
             )}
 
