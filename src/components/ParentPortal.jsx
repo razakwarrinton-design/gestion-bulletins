@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParent } from '../hooks/useParent';
 import { supabase } from '../config/supabase';
+import PaymentHistory from './PaymentHistory';
 import {
     GraduationCap, TrendingUp, BookOpen, Award,
     Printer, Lock, AlertTriangle, CheckCircle, CreditCard,
