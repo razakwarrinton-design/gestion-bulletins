@@ -1,0 +1,114 @@
+/* src/styles/darkmode.css - Variables et styles dark mode */
+
+:root {
+  /* Light mode colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #000000;
+  --text-secondary: #64748b;
+  --text-tertiary: #94a3b8;
+  --border-color: #e2e8f0;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --border-color: #334155;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+}
+
+/* Transition fluide */
+* {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* Elements de base */
+body.dark {
+  @apply bg-slate-900 text-slate-100;
+}
+
+/* Cards et conteneurs */
+.card {
+  @apply bg-white dark:bg-slate-800 rounded-lg shadow;
+}
+
+.panel {
+  @apply bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700;
+}
+
+/* Inputs et formulaires */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  @apply bg-white dark:bg-slate-700 text-black dark:text-white border-gray-300 dark:border-slate-600;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+  @apply dark:bg-slate-600 dark:border-blue-500;
+}
+
+/* Tables */
+table {
+  @apply dark:text-slate-300;
+}
+
+table thead {
+  @apply dark:bg-slate-700;
+}
+
+table tbody tr {
+  @apply dark:border-slate-700;
+}
+
+table tbody tr:hover {
+  @apply dark:bg-slate-700;
+}
+
+/* Modals et overlays */
+.modal-overlay {
+  @apply dark:bg-black/50;
+}
+
+.modal {
+  @apply dark:bg-slate-800;
+}
+
+/* Navigation */
+nav {
+  @apply dark:bg-slate-900 dark:border-slate-700;
+}
+
+/* Scrollbar personnalisée */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-slate-700;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 dark:bg-slate-500 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-600 dark:bg-slate-400;
+}
