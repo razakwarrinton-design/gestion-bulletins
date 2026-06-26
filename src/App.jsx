@@ -52,6 +52,7 @@ import DashboardKPIs from './components/DashboardKPIs';
 import LoginPage from './components/LoginPage';
 import { useDarkMode } from './hooks/useDarkMode';
 import DarkModeToggle from './components/DarkModeToggle';
+import LanguageToggle from './components/LanguageToggle';
 
 // ─── Sections de navigation ───────────────────────────────────────────────────
 const NAV_SECTIONS = [
@@ -1174,6 +1175,12 @@ const BulletinApp = () => {
 
                     {/* SyncStatus */}
                     <SyncStatus />
+
+                    {/* Language toggle */}
+                    <LanguageToggle />
+
+                    {/* Dark mode */}
+                    <DarkModeToggle isDark={isDark} toggle={toggleDark} />
 
                     {/* Dark mode */}
                     <DarkModeToggle isDark={isDark} toggle={toggleDark} />

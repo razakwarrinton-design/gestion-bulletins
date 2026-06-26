@@ -1,4 +1,4 @@
-/* src/styles/darkmode.css - Variables et styles dark mode */
+/* src/styles/darkmode.css - Variables et styles dark mode SANS @apply */
 
 :root {
   /* Light mode colors */
@@ -9,8 +9,6 @@
   --text-secondary: #64748b;
   --text-tertiary: #94a3b8;
   --border-color: #e2e8f0;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .dark {
@@ -21,11 +19,9 @@
   --text-secondary: #cbd5e1;
   --text-tertiary: #94a3b8;
   --border-color: #334155;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
 }
 
-/* Transition fluide */
+/* Transition fluide pour tous les éléments */
 * {
   transition:
     background-color 0.2s ease,
@@ -33,18 +29,26 @@
     border-color 0.2s ease;
 }
 
-/* Elements de base */
+/* Body dark */
+.dark body,
 body.dark {
-  @apply bg-slate-900 text-slate-100;
+  background-color: #0f172a;
+  color: #f1f5f9;
 }
 
 /* Cards et conteneurs */
+.dark .card,
 .card {
-  @apply bg-white dark:bg-slate-800 rounded-lg shadow;
+  background-color: var(--bg-primary);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.dark .panel,
 .panel {
-  @apply bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700;
+  background-color: var(--bg-primary);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
 }
 
 /* Inputs et formulaires */
@@ -53,7 +57,19 @@ input[type="email"],
 input[type="password"],
 textarea,
 select {
-  @apply bg-white dark:bg-slate-700 text-black dark:text-white border-gray-300 dark:border-slate-600;
+  background-color: #ffffff;
+  color: #000000;
+  border-color: #d1d5db;
+}
+
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark textarea,
+.dark select {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #475569;
 }
 
 input[type="text"]:focus,
@@ -61,38 +77,49 @@ input[type="email"]:focus,
 input[type="password"]:focus,
 textarea:focus,
 select:focus {
-  @apply dark:bg-slate-600 dark:border-blue-500;
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark textarea:focus,
+.dark select:focus {
+  background-color: #0f4c81;
+  border-color: #3b82f6;
 }
 
 /* Tables */
-table {
-  @apply dark:text-slate-300;
+.dark table {
+  color: #cbd5e1;
 }
 
-table thead {
-  @apply dark:bg-slate-700;
+.dark table thead {
+  background-color: #1e293b;
 }
 
-table tbody tr {
-  @apply dark:border-slate-700;
+.dark table tbody tr {
+  border-color: #475569;
 }
 
-table tbody tr:hover {
-  @apply dark:bg-slate-700;
-}
-
-/* Modals et overlays */
-.modal-overlay {
-  @apply dark:bg-black/50;
-}
-
-.modal {
-  @apply dark:bg-slate-800;
+.dark table tbody tr:hover {
+  background-color: #1e293b;
 }
 
 /* Navigation */
-nav {
-  @apply dark:bg-slate-900 dark:border-slate-700;
+.dark nav {
+  background-color: #0f172a;
+  border-color: #475569;
+}
+
+/* Links */
+.dark a {
+  color: #3b82f6;
+}
+
+.dark a:hover {
+  color: #60a5fa;
 }
 
 /* Scrollbar personnalisée */
@@ -102,13 +129,67 @@ nav {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-slate-700;
+  background-color: #f1f5f9;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background-color: #1e293b;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 dark:bg-slate-500 rounded-full;
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #475569;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-600 dark:bg-slate-400;
+  background-color: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+}
+
+/* Backgrounds génériques */
+.dark {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+/* Modals et overlays */
+.dark .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dark .modal {
+  background-color: #1e293b;
+}
+
+/* Boutons */
+.dark button {
+  transition: all 0.2s ease;
+}
+
+/* Badges et tags */
+.dark .badge,
+.dark .tag {
+  background-color: #334155;
+  color: #f1f5f9;
+}
+
+/* Text colors */
+.dark .text-gray-600 {
+  color: #cbd5e1;
+}
+
+.dark .text-gray-500 {
+  color: #94a3b8;
+}
+
+.dark .text-gray-400 {
+  color: #64748b;
 }
