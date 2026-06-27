@@ -1158,15 +1158,6 @@ const BulletinApp = () => {
                         })()}
                     </div>
 
-                    {/* Search */}
-                    <div className="hidden md:flex items-center gap-2 rounded-lg px-3 py-1.5 text-gray-400 text-[12px] min-w-[150px]"
-                        style={{ background: '#F0F5FF', border: '1px solid #DBEAFE' }}>
-                        <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        Rechercher...
-                    </div>
-
                     {/* Year badge */}
                     <div className="hidden md:flex items-center text-[11px] font-semibold text-blue-600 rounded-lg px-2.5 py-1.5"
                         style={{ background: '#EFF6FF', border: '1px solid #DBEAFE' }}>
@@ -1178,9 +1169,6 @@ const BulletinApp = () => {
 
                     {/* Language toggle */}
                     <LanguageToggle />
-
-                    {/* Dark mode */}
-                    <DarkModeToggle isDark={isDark} toggle={toggleDark} />
 
                     {/* Dark mode */}
                     <DarkModeToggle isDark={isDark} toggle={toggleDark} />
