@@ -53,6 +53,7 @@ import LoginPage from './components/LoginPage';
 import { useDarkMode } from './hooks/useDarkMode';
 import DarkModeToggle from './components/DarkModeToggle';
 import LanguageToggle from './components/LanguageToggle';
+import { useTranslation } from './hooks/useTranslation';
 
 // ─── Sections de navigation ───────────────────────────────────────────────────
 const NAV_SECTIONS = [
@@ -88,6 +89,7 @@ const BulletinApp = () => {
     // ── Authentification ────────────────────────────────────────────────────────
     const { currentUser, loading: authLoading, signIn, signUp, signOut, hasPermission, isAuthenticated } = useSupabaseAuth();
     const { isDark, toggle: toggleDark } = useDarkMode();
+    const { t } = useTranslation();
 
     // ── Navigation & UI ──────────────────────────────────────────────────────────
     const [currentView, setCurrentView] = useState('dashboard');
@@ -547,7 +549,7 @@ const BulletinApp = () => {
 
     const renderDashboard = () => (
         <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-800">Tableau de bord</h2>
+            <h2 className="text-3xl font-bold text-gray-800">{t('nav.dashboard')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div onClick={() => setCurrentView('classes')} className="bg-blue-50 rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer p-6">
                     <div className="flex items-center justify-between">
