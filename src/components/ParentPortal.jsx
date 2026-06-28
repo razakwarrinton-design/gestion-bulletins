@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParent } from '../hooks/useParent';
 import { supabase } from '../config/supabase';
 import PaymentHistory from './PaymentHistory';
+import PaymentModal from './PaymentModal';
 import {
     GraduationCap, TrendingUp, BookOpen, Award,
     Printer, Lock, AlertTriangle, CheckCircle, CreditCard,
@@ -205,6 +206,7 @@ function ChangePasswordSection({ onNotify }) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
     const handleSubmit = async () => {
         setError('');
@@ -1062,9 +1064,44 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
             )}
 
             {/* ── Paiements ── */}
+            {/* ── Paiements ── */}
             {activeTab === 'paiements' && selectedChild && (
-                <PaymentHistory child={selectedChild} />
+                <div className="space-y-6">
+                    {/* Bouton Payer */}
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-blue-900">Payer les frais scolaires</h3>
+                                <p className="text-blue-700 text-sm mt-1">Choisissez votre moyen de paiement</p>
+                            </div>
+                            <button
+                                onClick={() => setPaymentModalOpen(true)}
+                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors shadow-lg flex-shrink-0"
+                            >
+                                <CreditCard className="w-5 h-5" />
+                                💳 Payer maintenant
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Historique des paiements */}
+                    <PaymentHistory child={selectedChild} />
+                </div>
             )}
+
+            {/* Modal Paiement */}
+            <PaymentModal
+                isOpen={paymentModalOpen}
+                studentId={selectedChild?.id}
+                amount={50000}
+                description="Frais de scolarité - Trimestre 1"
+                onClose={() => setPaymentModalOpen(false)}
+                onSuccess={(result) => {
+                    console.log('✅ Paiement initié:', result);
+                    setNotification(`✅ Paiement initié ! Ref: ${result.reference}`);
+                    setTimeout(() => setNotification(null), 5000);
+                }}
+            />
 
             {/* ── Absences ── */}
             {activeTab === 'absences' && selectedChild && (
