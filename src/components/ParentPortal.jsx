@@ -867,6 +867,7 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
     const [rankData, setRankData] = useState({});
     const [notification, setNotification] = useState('');
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
     const { children, loading, error, calculateAverage, getStudentGrades } = useParent(currentUser?.id);
 
