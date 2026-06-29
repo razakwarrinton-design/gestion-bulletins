@@ -1,4 +1,4 @@
-// src/services/PaymentService.js - VERSION MISE À JOUR AVEC TOUS LES PROVIDERS
+// src/services/PaymentService.js - VERSION CORRIGÉE POUR TA STRUCTURE RÉELLE
 import { supabase } from "../config/supabase";
 import {
   createMobileMoneyProvider,
@@ -16,7 +16,7 @@ import {
 
 /**
  * Service centralisé pour gérer TOUS les paiements
- * Avec support complet des 7 providers
+ * ✅ ADAPTÉ À TA STRUCTURE RÉELLE (amount_paid, pas amount)
  */
 
 export class PaymentService {
@@ -128,11 +128,19 @@ export class PaymentService {
 
   /**
    * Initier un paiement
+   * ✅ Utilise ta structure réelle : amount_paid, fee_type_id, etc.
    */
   async initiatePayment(paymentData) {
     try {
-      const { studentId, amount, provider, description, phoneNumber, email } =
-        paymentData;
+      const {
+        studentId,
+        amount,
+        provider,
+        description,
+        phoneNumber,
+        email,
+        feeTypeId,
+      } = paymentData;
 
       // Valider les données
       if (!studentId || !amount || !provider) {
@@ -140,18 +148,21 @@ export class PaymentService {
       }
 
       // Créer un enregistrement de paiement en attente
+      // ✅ UTILISE LES COLONNES RÉELLES
       const paymentRecord = {
         student_id: studentId,
-        amount: parseFloat(amount),
+        amount_paid: parseFloat(amount),
+        fee_type_id: feeTypeId || null,
         provider,
         description: description || "Frais de scolarité",
         phone_number: phoneNumber,
         email,
-        status: "pending",
+        status: "pending", // pending, processing, completed, failed, cancelled
         reference: this.generatePaymentReference(),
         created_at: new Date().toISOString(),
         metadata: {
           initiatedAt: new Date().toISOString(),
+          description,
         },
       };
 
@@ -163,6 +174,8 @@ export class PaymentService {
         .single();
 
       if (error) throw error;
+
+      console.log("✅ Paiement créé en base:", data);
 
       // Appeler le provider approprié
       const providerResult = await this.callProvider(provider, {
@@ -323,7 +336,7 @@ export class PaymentService {
         failed: data.filter((p) => p.status === "failed").length,
         totalAmount: data
           .filter((p) => p.status === "completed")
-          .reduce((sum, p) => sum + p.amount, 0),
+          .reduce((sum, p) => sum + parseFloat(p.amount_paid || 0), 0),
       };
 
       return stats;
@@ -363,10 +376,10 @@ export class PaymentService {
       return {
         reference: payment.reference,
         date: new Date(payment.created_at).toLocaleDateString("fr-FR"),
-        amount: this.formatAmount(payment.amount),
+        amount: this.formatAmount(payment.amount_paid), // ✅ Utilise amount_paid
         provider: this.providers[payment.provider],
         status: payment.status,
-        description: payment.description,
+        description: payment.metadata?.description || payment.description,
       };
     } catch (error) {
       console.error("Erreur génération reçu:", error);
