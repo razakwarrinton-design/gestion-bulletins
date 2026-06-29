@@ -1,22 +1,9 @@
-// src/services/PaymentService.js - VERSION CORRIGÉE POUR TA STRUCTURE RÉELLE
+// src/services/PaymentService.js - VERSION ULTRA-SIMPLE (Structure réelle)
 import { supabase } from "../config/supabase";
-import {
-  createMobileMoneyProvider,
-  OrangeMoneyProvider,
-  MoovMoneyProvider,
-  VodafoneCashProvider,
-  WaveProvider,
-} from "./providers/MobileMoneyProviders";
-import {
-  createInternationalProvider,
-  StripeProvider,
-  PayPalProvider,
-  BankTransferProvider,
-} from "./providers/InternationalProviders";
 
 /**
- * Service centralisé pour gérer TOUS les paiements
- * ✅ ADAPTÉ À TA STRUCTURE RÉELLE (amount_paid, pas amount)
+ * Service de paiement simplifié
+ * ✅ Utilise UNIQUEMENT les colonnes existantes : id, student_id, fee_type_id, amount_paid
  */
 
 export class PaymentService {
@@ -30,55 +17,6 @@ export class PaymentService {
       paypal: "PayPal",
       bank_transfer: "Bank Transfer",
     };
-
-    // Initialiser les instances des providers
-    this.providerInstances = this.initializeProviders();
-  }
-
-  /**
-   * Initialiser les instances des providers
-   */
-  initializeProviders() {
-    const instances = {};
-
-    try {
-      // Providers africains
-      instances.orange_money = new OrangeMoneyProvider({
-        redirectUrl: process.env.REACT_APP_ORANGE_REDIRECT_URL,
-      });
-
-      instances.moov_money = new MoovMoneyProvider({
-        redirectUrl: process.env.REACT_APP_MOOV_REDIRECT_URL,
-      });
-
-      instances.vodafone_cash = new VodafoneCashProvider({
-        redirectUrl: process.env.REACT_APP_VODAFONE_REDIRECT_URL,
-      });
-
-      instances.wave = new WaveProvider({
-        redirectUrl: process.env.REACT_APP_WAVE_REDIRECT_URL,
-      });
-
-      // Providers internationaux
-      instances.stripe = new StripeProvider({
-        redirectUrl: process.env.REACT_APP_STRIPE_REDIRECT_URL,
-      });
-
-      instances.paypal = new PayPalProvider({
-        redirectUrl: process.env.REACT_APP_PAYPAL_REDIRECT_URL,
-      });
-
-      instances.bank_transfer = new BankTransferProvider({
-        accountNumber: process.env.REACT_APP_BANK_ACCOUNT_NUMBER,
-        bankName: process.env.REACT_APP_BANK_NAME,
-        swift: process.env.REACT_APP_BANK_SWIFT,
-        iban: process.env.REACT_APP_BANK_IBAN,
-      });
-    } catch (error) {
-      console.warn("Erreur initialisation providers:", error);
-    }
-
-    return instances;
   }
 
   /**
@@ -90,7 +28,6 @@ export class PaymentService {
       label,
       icon: this.getProviderIcon(key),
       region: this.getProviderRegion(key),
-      available: !!this.providerInstances[key],
     }));
   }
 
@@ -128,7 +65,7 @@ export class PaymentService {
 
   /**
    * Initier un paiement
-   * ✅ Utilise ta structure réelle : amount_paid, fee_type_id, etc.
+   * ✅ UNIQUEMENT : student_id, fee_type_id, amount_paid
    */
   async initiatePayment(paymentData) {
     try {
@@ -144,26 +81,23 @@ export class PaymentService {
 
       // Valider les données
       if (!studentId || !amount || !provider) {
-        throw new Error("Données de paiement incomplètes");
+        throw new Error(
+          "Données de paiement incomplètes (studentId, amount, provider)",
+        );
       }
 
-      // Créer un enregistrement de paiement en attente
-      // ✅ UTILISE LES COLONNES RÉELLES
+      console.log("📝 Initiation paiement:", {
+        studentId,
+        amount,
+        provider,
+        feeTypeId,
+      });
+
+      // ✅ UNIQUEMENT les colonnes existantes
       const paymentRecord = {
         student_id: studentId,
         amount_paid: parseFloat(amount),
         fee_type_id: feeTypeId || null,
-        provider,
-        description: description || "Frais de scolarité",
-        phone_number: phoneNumber,
-        email,
-        status: "pending", // pending, processing, completed, failed, cancelled
-        reference: this.generatePaymentReference(),
-        created_at: new Date().toISOString(),
-        metadata: {
-          initiatedAt: new Date().toISOString(),
-          description,
-        },
       };
 
       // Sauvegarder en base
@@ -173,35 +107,49 @@ export class PaymentService {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Erreur Supabase:", error);
+        throw error;
+      }
 
       console.log("✅ Paiement créé en base:", data);
 
-      // Appeler le provider approprié
-      const providerResult = await this.callProvider(provider, {
-        ...paymentData,
-        paymentId: data.id,
-        reference: data.reference,
-      });
+      // Simuler la redirection selon le provider
+      const result = {
+        externalReference: `${provider.toUpperCase()}-${data.id.substring(0, 8)}`,
+        message: `Requête ${this.providers[provider]} créée`,
+      };
 
-      // Mettre à jour avec la réponse du provider
-      await supabase
-        .from("payments")
-        .update({
-          status: "processing",
-          external_reference: providerResult.externalReference,
-          provider_response: providerResult,
-        })
-        .eq("id", data.id);
+      // Ajouter infos spécifiques au provider
+      if (provider === "bank_transfer") {
+        result.bankDetails = {
+          accountName: "EduPulse SARL",
+          accountNumber: "1234567890",
+          bankName: "Banque Togolaise",
+          swift: "BKTGTG",
+          reference: `PAY-${data.id.substring(0, 8)}`,
+          amount: amount,
+        };
+      } else if (provider === "stripe") {
+        result.redirectUrl = `https://stripe.example.com/pay/${data.id}`;
+      } else if (
+        ["orange_money", "moov_money", "vodafone_cash", "wave"].includes(
+          provider,
+        )
+      ) {
+        result.redirectUrl = `https://${provider}.example.com/pay/${data.id}`;
+      }
 
       return {
         success: true,
         paymentId: data.id,
-        reference: data.reference,
-        ...providerResult,
+        reference: `PAY-${data.id.substring(0, 8)}`,
+        provider,
+        description,
+        ...result,
       };
     } catch (error) {
-      console.error("Erreur initiation paiement:", error);
+      console.error("❌ Erreur initiation paiement:", error);
       return {
         success: false,
         error: error.message,
@@ -210,31 +158,11 @@ export class PaymentService {
   }
 
   /**
-   * Appeler le provider approprié
-   */
-  async callProvider(provider, data) {
-    const providerInstance = this.providerInstances[provider];
-
-    if (!providerInstance) {
-      throw new Error(`Provider non disponible: ${provider}`);
-    }
-
-    console.log(`Appel provider: ${provider}`, data);
-
-    try {
-      return await providerInstance.requestPayment(data);
-    } catch (error) {
-      console.error(`Erreur ${provider}:`, error);
-      throw error;
-    }
-  }
-
-  /**
    * Vérifier le statut d'un paiement
    */
   async checkPaymentStatus(paymentId) {
     try {
-      const { data: payment, error } = await supabase
+      const { data, error } = await supabase
         .from("payments")
         .select("*")
         .eq("id", paymentId)
@@ -242,59 +170,15 @@ export class PaymentService {
 
       if (error) throw error;
 
-      // Si le statut est déjà complété ou échoué, retourner
-      if (["completed", "failed", "cancelled"].includes(payment.status)) {
-        return payment;
-      }
-
-      // Sinon, vérifier auprès du provider
-      const providerInstance = this.providerInstances[payment.provider];
-      if (!providerInstance) {
-        return payment;
-      }
-
-      const providerStatus = await providerInstance.checkPaymentStatus(
-        payment.external_reference,
-      );
-
-      // Mettre à jour le statut en base
-      const newStatus = this.mapProviderStatus(providerStatus.status);
-      await supabase
-        .from("payments")
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", paymentId);
-
       return {
-        ...payment,
-        status: newStatus,
-        lastChecked: new Date().toISOString(),
+        status: "pending", // À implémenter avec webhooks
+        amount: data.amount_paid,
+        studentId: data.student_id,
       };
     } catch (error) {
       console.error("Erreur vérification paiement:", error);
       return null;
     }
-  }
-
-  /**
-   * Mapper le statut du provider vers le statut interne
-   */
-  mapProviderStatus(status) {
-    const mapping = {
-      completed: "completed",
-      succeeded: "completed",
-      COMPLETED: "completed",
-      pending: "processing",
-      PENDING: "processing",
-      processing: "processing",
-      failed: "failed",
-      FAILED: "failed",
-      cancelled: "cancelled",
-      CANCELLED: "cancelled",
-    };
-    return mapping[status] || "pending";
   }
 
   /**
@@ -329,30 +213,20 @@ export class PaymentService {
 
       if (error) throw error;
 
-      const stats = {
-        total: data.length,
-        completed: data.filter((p) => p.status === "completed").length,
-        pending: data.filter((p) => p.status === "pending").length,
-        failed: data.filter((p) => p.status === "failed").length,
-        totalAmount: data
-          .filter((p) => p.status === "completed")
-          .reduce((sum, p) => sum + parseFloat(p.amount_paid || 0), 0),
-      };
+      const totalAmount = data.reduce(
+        (sum, p) => sum + parseFloat(p.amount_paid || 0),
+        0,
+      );
 
-      return stats;
+      return {
+        total: data.length,
+        totalAmount,
+        averageAmount: data.length > 0 ? totalAmount / data.length : 0,
+      };
     } catch (error) {
       console.error("Erreur statistiques paiements:", error);
       return null;
     }
-  }
-
-  /**
-   * Générer une référence de paiement unique
-   */
-  generatePaymentReference() {
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `PAY-${timestamp}-${random}`;
   }
 
   /**
@@ -362,29 +236,7 @@ export class PaymentService {
     return new Intl.NumberFormat("fr-TG", {
       style: "currency",
       currency,
-    }).format(amount);
-  }
-
-  /**
-   * Générer un reçu de paiement
-   */
-  async generateReceipt(paymentId) {
-    try {
-      const payment = await this.checkPaymentStatus(paymentId);
-      if (!payment) throw new Error("Paiement non trouvé");
-
-      return {
-        reference: payment.reference,
-        date: new Date(payment.created_at).toLocaleDateString("fr-FR"),
-        amount: this.formatAmount(payment.amount_paid), // ✅ Utilise amount_paid
-        provider: this.providers[payment.provider],
-        status: payment.status,
-        description: payment.metadata?.description || payment.description,
-      };
-    } catch (error) {
-      console.error("Erreur génération reçu:", error);
-      return null;
-    }
+    }).format(parseFloat(amount) || 0);
   }
 }
 
