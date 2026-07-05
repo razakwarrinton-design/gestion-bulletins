@@ -18,13 +18,16 @@ export default function PaymentHistory({ child }) {
         try {
             const { data, error } = await supabase
                 .from('payments')
-                .select('*')
+                .select(`
+                    *,
+                    fee_type:fee_type_id(id, name)
+                `)
                 .eq('student_id', child.id)
                 .order('created_at', { ascending: false });
 
             if (!error && data) {
                 setPayments(data);
-                const total = data.reduce((sum, p) => sum + (p.amount || 0), 0);
+                const total = data.reduce((sum, p) => sum + (parseFloat(p.amount_paid) || 0), 0);
                 setTotalAmount(total);
             }
         } catch (err) {
@@ -32,6 +35,16 @@ export default function PaymentHistory({ child }) {
         } finally {
             setLoading(false);
         }
+    };
+
+    /**
+     * Formater un montant
+     */
+    const formatAmount = (amount) => {
+        return new Intl.NumberFormat('fr-TG', {
+            style: 'currency',
+            currency: 'XOF',
+        }).format(parseFloat(amount) || 0);
     };
 
     if (loading) {
@@ -50,7 +63,7 @@ export default function PaymentHistory({ child }) {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-gray-600 text-sm">Montant total payé</p>
-                            <p className="text-3xl font-bold text-blue-600">{totalAmount.toFixed(2)} FCFA</p>
+                            <p className="text-3xl font-bold text-blue-600">{formatAmount(totalAmount)}</p>
                         </div>
                         <DollarSign className="w-12 h-12 text-blue-400" />
                     </div>
@@ -88,7 +101,9 @@ export default function PaymentHistory({ child }) {
                                             <CreditCard className="w-5 h-5 text-green-600" />
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-gray-900">{payment.description || 'Frais de scolarité'}</p>
+                                            <p className="font-semibold text-gray-900">
+                                                {payment.fee_type?.name || 'Frais de scolarité'}
+                                            </p>
                                             <p className="text-sm text-gray-500 flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
                                                 {new Date(payment.created_at).toLocaleDateString('fr-FR')}
@@ -96,7 +111,7 @@ export default function PaymentHistory({ child }) {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-green-600">{(payment.amount || 0).toFixed(2)} FCFA</p>
+                                        <p className="font-bold text-green-600">{formatAmount(payment.amount_paid)}</p>
                                         <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                                             ✓ Payé
                                         </span>

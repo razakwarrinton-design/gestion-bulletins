@@ -54,6 +54,7 @@ import { useDarkMode } from './hooks/useDarkMode';
 import DarkModeToggle from './components/DarkModeToggle';
 import LanguageToggle from './components/LanguageToggle';
 import { useTranslation } from './hooks/useTranslation';
+import AdminPaymentsDashboard from './components/AdminPaymentsDashboard';
 
 // ─── Sections de navigation ───────────────────────────────────────────────────
 const NAV_SECTIONS = [
@@ -1480,6 +1481,7 @@ const BulletinApp = () => {
                                 currentUser={currentUser} schoolInfo={schoolInfo} currentYear={currentYear}
                             />
                         )}
+                        {currentView === 'admin-payments' && <AdminPaymentsDashboard />}
                         {currentView === 'absences' && (
                             <AbsenceManager
                                 students={students}
@@ -1496,6 +1498,12 @@ const BulletinApp = () => {
                                 updateGrade={updateGrade}
                             />
                         )}
+                        <button
+                            onClick={() => setCurrentView('admin-payments')}
+                            className="..."
+                        >
+                            💳 Gestion des paiements
+                        </button>
                     </div>
                 </main>
             </div>
