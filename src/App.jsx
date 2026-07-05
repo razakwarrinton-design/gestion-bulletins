@@ -79,6 +79,7 @@ const NAV_ITEMS = [
     { view: 'ia-appreciations', label: 'IA Appréciations', Icon: Bot, section: 'avance', roles: ['admin', 'professeur'] },
     { view: 'importexport', label: 'Import/Export', Icon: FolderUp, section: 'gestion', roles: ['admin', 'secretaire'] },
     { view: 'gestion-parents', label: 'Gestion parents', Icon: UsersRound, section: 'gestion', roles: ['admin'] },
+    { view: 'admin-payments', label: 'Gestion des paiements', Icon: CreditCard, section: 'gestion', roles: ['admin', 'secretaire'] },
     { view: 'settings', label: 'Paramètres', Icon: Settings, section: 'gestion', roles: ['admin'] },
     { view: 'parents', label: 'Espace Parents', Icon: UserCheck, section: 'gestion', roles: ['parent'] },
 ];
@@ -1490,12 +1491,6 @@ const BulletinApp = () => {
                                 updateGrade={updateGrade}
                             />
                         )}
-                        <button
-                            onClick={() => setCurrentView('admin-payments')}
-                            className="..."
-                        >
-                            💳 Gestion des paiements
-                        </button>
                     </div>
                 </main>
             </div>
