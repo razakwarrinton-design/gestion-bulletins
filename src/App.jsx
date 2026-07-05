@@ -45,7 +45,6 @@ import {
 } from './components/Skeleton';
 import ParentPortal from './components/ParentPortal';
 import ParentAssignModal from './components/ParentAssignModal';
-import PaymentManager from './components/PaymentManager';
 import AIAppreciations from './components/AIAppreciations';
 import AbsenceManager from './components/AbsenceManager';
 import DashboardKPIs from './components/DashboardKPIs';
@@ -80,7 +79,6 @@ const NAV_ITEMS = [
     { view: 'ia-appreciations', label: 'IA Appréciations', Icon: Bot, section: 'avance', roles: ['admin', 'professeur'] },
     { view: 'importexport', label: 'Import/Export', Icon: FolderUp, section: 'gestion', roles: ['admin', 'secretaire'] },
     { view: 'gestion-parents', label: 'Gestion parents', Icon: UsersRound, section: 'gestion', roles: ['admin'] },
-    { view: 'paiements', label: 'Paiements', Icon: CreditCard, section: 'gestion', roles: ['admin', 'secretaire'] },
     { view: 'settings', label: 'Paramètres', Icon: Settings, section: 'gestion', roles: ['admin'] },
     { view: 'parents', label: 'Espace Parents', Icon: UserCheck, section: 'gestion', roles: ['parent'] },
 ];
@@ -1474,12 +1472,6 @@ const BulletinApp = () => {
                                     )}
                                 </div>
                             </div>
-                        )}
-                        {currentView === 'paiements' && (
-                            <PaymentManager
-                                students={students} classes={classes}
-                                currentUser={currentUser} schoolInfo={schoolInfo} currentYear={currentYear}
-                            />
                         )}
                         {currentView === 'admin-payments' && <AdminPaymentsDashboard />}
                         {currentView === 'absences' && (
