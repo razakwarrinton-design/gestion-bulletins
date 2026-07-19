@@ -8,8 +8,7 @@ import {
 import {
     GraduationCap, Users, BookOpen, TrendingUp, TrendingDown,
     Award, AlertTriangle, CheckCircle, Clock, Star,
-    BarChart3, Activity, Target, Pencil, FileText,
-    CreditCard, ChartBar, UserPlus, Send, Trophy, Flame
+    BarChart3, Activity, Target, Pencil, FileText, ChartBar, UserPlus, Send, Trophy, Flame
 } from 'lucide-react';
 
 const fmt = (n) => parseFloat(n || 0).toFixed(2);
@@ -182,7 +181,6 @@ export default function DashboardKPIs({
     const quickActions = [
         { icon: Pencil, label: 'Saisir notes', view: 'grades', iconColor: '#d97706', bg: '#fef3c7', border: '#fde68a', roles: ['admin', 'professeur'] },
         { icon: FileText, label: 'Bulletins', view: 'bulletins', iconColor: '#059669', bg: '#dcfce7', border: '#bbf7d0', roles: ['admin', 'professeur', 'secretaire'] },
-        { icon: CreditCard, label: 'Paiements', view: 'paiements', iconColor: '#2563eb', bg: '#dbeafe', border: '#bfdbfe', roles: ['admin', 'secretaire'] },
         { icon: BarChart3, label: 'Statistiques', view: 'statistics', iconColor: '#7c3aed', bg: '#ede9fe', border: '#ddd6fe', roles: ['admin', 'professeur'] },
     ].filter(item => !currentUser || item.roles.includes(currentUser.role));
 
