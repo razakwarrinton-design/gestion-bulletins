@@ -157,13 +157,7 @@ export default function AdminPaymentsDashboard() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <div className="animate-spin">⏳ Chargement...</div>
-            </div>
-        );
-    }
+
 
     return (
         <div className="space-y-6 p-6 bg-gray-50 rounded-xl">
