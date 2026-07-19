@@ -83,6 +83,14 @@ export default function AdminPaymentsDashboard() {
         } catch (error) {
             alert(`❌ Erreur: ${error.message}`);
         }
+        // Envoyer SMS de validation
+        const { smsService } = require('../services/SMSService');
+        await smsService.notifyPaymentValidated(
+            selectedPayment.student?.phoneNumber, // Si available
+            selectedPayment.student?.first_name,
+            selectedPayment.amount_paid,
+            selectedPayment.student?.first_name
+        );
     };
 
     /**
@@ -197,8 +205,8 @@ export default function AdminPaymentsDashboard() {
                             key={status}
                             onClick={() => setFilterStatus(status)}
                             className={`px-4 py-2 rounded-lg font-medium transition ${filterStatus === status
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
                                 }`}
                         >
                             {status === 'all' ? '📋 Tous' : status === 'pending' ? '⏳ En attente' : status === 'completed' ? '✅ Complétés' : '❌ Échoués'}

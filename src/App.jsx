@@ -54,6 +54,7 @@ import DarkModeToggle from './components/DarkModeToggle';
 import LanguageToggle from './components/LanguageToggle';
 import { useTranslation } from './hooks/useTranslation';
 import AdminPaymentsDashboard from './components/AdminPaymentsDashboard';
+import SMSDashboard from './components/SMSDashboard';
 
 // ─── Sections de navigation ───────────────────────────────────────────────────
 const NAV_SECTIONS = [
@@ -82,6 +83,7 @@ const NAV_ITEMS = [
     { view: 'admin-payments', label: 'Gestion des paiements', Icon: CreditCard, section: 'gestion', roles: ['admin', 'secretaire'] },
     { view: 'settings', label: 'Paramètres', Icon: Settings, section: 'gestion', roles: ['admin'] },
     { view: 'parents', label: 'Espace Parents', Icon: UserCheck, section: 'gestion', roles: ['parent'] },
+    { view: 'sms-dashboard', label: 'SMS', Icon: MessageSquare, section: 'gestion', roles: ['admin'] },
 ];
 
 // ─── Composant principal ──────────────────────────────────────────────────────
@@ -1326,6 +1328,7 @@ const BulletinApp = () => {
                                 onSignIn={handleLogin} onSignUp={handleRegister} loading={authLoading}
                             />
                         )}
+                        {currentView === 'sms-dashboard' && <SMSDashboard />}
                         {currentView === 'parents' && (
                             <ParentPortal
                                 currentUser={currentUser}

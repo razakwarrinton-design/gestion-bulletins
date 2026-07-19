@@ -155,6 +155,16 @@ export class PaymentService {
         error: error.message,
       };
     }
+    // Envoyer SMS au parent
+    if (paymentData.parentPhone) {
+      const { smsService } = require("../services/SMSService");
+      await smsService.notifyPaymentCreated(
+        paymentData.parentPhone,
+        paymentData.parentName,
+        amount,
+        `PAY-${data.id.substring(0, 8)}`,
+      );
+    }
   }
 
   /**
