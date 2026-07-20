@@ -55,6 +55,7 @@ import LanguageToggle from './components/LanguageToggle';
 import { useTranslation } from './hooks/useTranslation';
 import AdminPaymentsDashboard from './components/AdminPaymentsDashboard';
 import SMSDashboard from './components/SMSDashboard';
+import ChatWindow from './components/ChatWindow';
 
 // ─── Sections de navigation ───────────────────────────────────────────────────
 const NAV_SECTIONS = [
@@ -84,6 +85,7 @@ const NAV_ITEMS = [
     { view: 'settings', label: 'Paramètres', Icon: Settings, section: 'gestion', roles: ['admin'] },
     { view: 'parents', label: 'Espace Parents', Icon: UserCheck, section: 'gestion', roles: ['parent'] },
     { view: 'sms-dashboard', label: 'SMS', Icon: MessageSquare, section: 'gestion', roles: ['admin'] },
+    { view: 'chat', label: 'Chat', Icon: MessageCircle, section: 'gestion', roles: ['parent', 'teacher', 'admin'] },
 ];
 
 // ─── Composant principal ──────────────────────────────────────────────────────
@@ -99,8 +101,8 @@ const BulletinApp = () => {
     const [showAlert, setShowAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
     const [parentModalOpen, setParentModalOpen] = useState(false);
+    const [chatUser, setChatUser] = useState(null); // Utilisateur de chat
 
-    // ── Données Supabase via hooks ───────────────────────────────────────────────
     // ── Données Supabase via hooks ───────────────────────────────────────────────
     const [currentYear, setCurrentYear] = useState('2024-2025');
 
@@ -1329,6 +1331,14 @@ const BulletinApp = () => {
                             />
                         )}
                         {currentView === 'sms-dashboard' && <SMSDashboard />}
+                        {currentView === 'chat' && chatUser && (
+                            <ChatWindow
+                                conversationId={chatUser.conversationId}
+                                otherUser={chatUser.otherUser}
+                                currentUser={currentUser}
+                                onClose={() => setChatUser(null)}
+                            />
+                        )}
                         {currentView === 'parents' && (
                             <ParentPortal
                                 currentUser={currentUser}
