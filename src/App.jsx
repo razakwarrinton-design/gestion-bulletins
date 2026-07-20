@@ -12,7 +12,7 @@ import {
     Printer, BarChart3, Upload, FileDown, Settings, Image, Menu, X,
     LogOut, UserCircle, Shield, LayoutDashboard, Pencil, Calendar,
     Star, TrendingUp, FolderUp, UserCheck, UsersRound, CreditCard,
-    Bot, CheckCircle, BarChart2, ChevronRight, ClipboardList, MessageSquare,
+    Bot, CheckCircle, BarChart2, ChevronRight, ClipboardList, MessageSquare, MessageCircle,
 } from 'lucide-react';
 import { supabase } from './config/supabase';
 import LoginModalSupabase from './components/LoginModalSupabase';
