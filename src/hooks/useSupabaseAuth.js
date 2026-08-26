@@ -100,7 +100,11 @@ export function useSupabaseAuth() {
   };
 
   // Inscription avec email/mot de passe
-  const signUp = async (email, password, firstName, lastName, role = 'secretaire') => {
+  // Note sécurité : le rôle n'est jamais choisi ici. Le profil (avec le rôle
+  // 'secretaire' forcé côté base) est créé automatiquement par le trigger SQL
+  // handle_new_user() — voir supabase-security-rls.sql. Un admin doit ensuite
+  // élever le rôle manuellement si nécessaire.
+  const signUp = async (email, password, firstName, lastName) => {
     if (!supabaseConfigured) {
       const message = 'Supabase non configuré. Impossible de s\'inscrire.';
       setError(message);
@@ -118,7 +122,6 @@ export function useSupabaseAuth() {
           data: {
             first_name: firstName,
             last_name: lastName,
-            role,
           },
         },
       });
@@ -126,19 +129,6 @@ export function useSupabaseAuth() {
       if (error) throw error;
 
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert([
-            {
-              id: data.user.id,
-              email,
-              first_name: firstName,
-              last_name: lastName,
-              role,
-            },
-          ]);
-
-        if (profileError) throw profileError;
         await loadUserProfile(data.user.id);
       }
 

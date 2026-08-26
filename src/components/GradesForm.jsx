@@ -404,7 +404,7 @@ export default function GradesForm({
           <div style={{ display: 'flex', gap: 6 }}>
             {['1', '2', '3'].map(t => (
               <button key={t} onClick={() => setSelectedTrimester(t)} style={{
-                flex: 1, padding: '9px 0', borderRadius: 10, border: 'none',
+                flex: 1, padding: '9px 0', borderRadius: 10,
                 fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
                 background: selectedTrimester === t ? '#2563EB' : '#EFF6FF',
                 color: selectedTrimester === t ? '#fff' : '#2563EB',

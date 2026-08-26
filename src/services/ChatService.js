@@ -61,6 +61,26 @@ export class ChatService {
   }
 
   /**
+   * Lister les utilisateurs d'un rôle donné (annuaire pour démarrer une conversation :
+   * un parent liste les professeurs/admin, un professeur liste les parents, etc.)
+   */
+  async listUsersByRole(role) {
+    try {
+      const { data, error } = await supabase
+        .from("user_profiles")
+        .select("id, first_name, last_name, email, role")
+        .eq("role", role)
+        .order("last_name");
+
+      if (error) throw error;
+      return { success: true, users: data || [] };
+    } catch (error) {
+      console.error(`❌ Erreur annuaire (rôle ${role}):`, error);
+      return { success: false, error: error.message, users: [] };
+    }
+  }
+
+  /**
    * Générer un ID de conversation stable
    */
   generateConversationId(userId1, userId2) {
@@ -187,6 +207,32 @@ export class ChatService {
       return { success: true, conversations: data || [] };
     } catch (error) {
       console.error("❌ Erreur conversations:", error);
+      return { success: false, error: error.message, conversations: [] };
+    }
+  }
+
+  /**
+   * Récupérer TOUTES les conversations (vue admin uniquement — le RLS de la table
+   * `conversations` limite cette requête aux admins, voir CHAT_TABLES.sql)
+   */
+  async getAllConversations() {
+    try {
+      const { data, error } = await supabase
+        .from("conversations")
+        .select(
+          `
+          *,
+          user1:user1_id(id, first_name, last_name, email, role),
+          user2:user2_id(id, first_name, last_name, email, role)
+        `,
+        )
+        .order("updated_at", { ascending: false });
+
+      if (error) throw error;
+
+      return { success: true, conversations: data || [] };
+    } catch (error) {
+      console.error("❌ Erreur récupération de toutes les conversations:", error);
       return { success: false, error: error.message, conversations: [] };
     }
   }

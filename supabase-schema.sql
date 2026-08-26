@@ -102,17 +102,11 @@ CREATE TABLE IF NOT EXISTS grades (
   UNIQUE(student_id, subject_id, trimester)
 );
 
--- Table des utilisateurs
-CREATE TABLE IF NOT EXISTS users (
-  id BIGSERIAL PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL,
-  first_name TEXT,
-  last_name TEXT,
-  role TEXT CHECK (role IN ('admin', 'professeur', 'secretaire')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- NOTE : pas de table `users` maison ici. L'authentification passe par Supabase Auth
+-- (auth.users) + la table `user_profiles` créée dans supabase-security-rls.sql, qui
+-- gère les mots de passe de façon sécurisée (hash côté Supabase). Une table `users`
+-- avec mot de passe en TEXT en clair existait ici auparavant — supprimée, voir la
+-- section 12 de supabase-security-rls.sql pour le nettoyage si tu l'avais déjà créée.
 
 -- Table des activités (logs)
 CREATE TABLE IF NOT EXISTS activities (
@@ -137,38 +131,36 @@ ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE grades ENABLE ROW LEVEL SECURITY;
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
 
--- Politiques pour toutes les tables (accès public pour le moment)
-DO $$ 
+-- ⚠️ Politiques temporaires "accès public" pour permettre l'insertion des données de
+-- démo ci-dessous juste après la création des tables. Elles sont immédiatement
+-- resserrées par supabase-security-rls.sql (section 10) qu'il FAUT exécuter juste
+-- après ce script — ne restez jamais en production avec ces policies USING(true).
+DO $$
 DECLARE
   t TEXT;
 BEGIN
-  FOR t IN 
-    SELECT tablename FROM pg_tables 
-    WHERE schemaname = 'public' 
-    AND tablename IN ('classes', 'students', 'subjects', 'grades', 'users', 'activities')
+  FOR t IN
+    SELECT tablename FROM pg_tables
+    WHERE schemaname = 'public'
+    AND tablename IN ('classes', 'students', 'subjects', 'grades', 'activities')
   LOOP
     EXECUTE format('CREATE POLICY "Permettre tout pour %I" ON %I FOR ALL USING (true) WITH CHECK (true)', t, t);
   END LOOP;
 END $$;
 
 -- 6. INSERTION DE DONNÉES PAR DÉFAUT
-
--- Insérer l'utilisateur admin par défaut
-INSERT INTO users (email, password, first_name, last_name, role)
-VALUES ('admin@ecole.com', 'admin123', 'Admin', 'Système', 'admin')
-ON CONFLICT (email) DO NOTHING;
+-- Le premier compte admin se crée via Supabase Auth (Authentication → Users → Add user),
+-- pas ici en clair — voir les instructions post-installation de supabase-security-rls.sql.
 
 -- Insérer les données initiales dans app_data
 INSERT INTO app_data (key, value)
-VALUES 
+VALUES
   ('classes', '[]'::jsonb),
   ('students', '[]'::jsonb),
   ('subjects', '[]'::jsonb),
   ('grades', '[]'::jsonb),
-  ('users', '[{"id":1,"email":"admin@ecole.com","password":"admin123","role":"admin","firstName":"Admin","lastName":"Système"}]'::jsonb),
   ('schoolInfo', '{"name":"ÉTABLISSEMENT SCOLAIRE","address":"Adresse de l''établissement","phone":"+33 XXX XXX XXX","email":"contact@ecole.com"}'::jsonb),
   ('appColors', '{"primary":"#2563eb","secondary":"#10b981","accent":"#f59e0b"}'::jsonb),
   ('activities', '[]'::jsonb),

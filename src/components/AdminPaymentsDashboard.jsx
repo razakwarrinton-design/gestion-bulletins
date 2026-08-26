@@ -1,6 +1,7 @@
 // src/components/AdminPaymentsDashboard.jsx
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../config/supabase';
+import { smsService } from '../services/SMSService';
 import { CheckCircle, Clock, XCircle, Eye } from 'lucide-react';
 
 /**
@@ -77,20 +78,24 @@ export default function AdminPaymentsDashboard() {
 
             if (error) throw error;
 
+            // Envoyer SMS de validation (best-effort : ne doit pas faire échouer la validation déjà enregistrée)
+            try {
+                await smsService.notifyPaymentValidated(
+                    selectedPayment?.student?.phoneNumber, // Si available
+                    selectedPayment?.student?.first_name,
+                    selectedPayment?.amount_paid,
+                    selectedPayment?.student?.first_name
+                );
+            } catch (smsError) {
+                console.error('❌ Erreur envoi SMS validation:', smsError);
+            }
+
             alert('✅ Paiement marqué comme complété !');
             loadPayments();
             setSelectedPayment(null);
         } catch (error) {
             alert(`❌ Erreur: ${error.message}`);
         }
-        // Envoyer SMS de validation
-        const { smsService } = require('../services/SMSService');
-        await smsService.notifyPaymentValidated(
-            selectedPayment.student?.phoneNumber, // Si available
-            selectedPayment.student?.first_name,
-            selectedPayment.amount_paid,
-            selectedPayment.student?.first_name
-        );
     };
 
     /**

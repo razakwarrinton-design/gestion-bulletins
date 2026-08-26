@@ -48,15 +48,18 @@ CREATE POLICY "Permettre mise à jour pour tous" ON app_data FOR UPDATE USING (t
 CREATE POLICY "Permettre suppression pour tous" ON app_data FOR DELETE USING (true);
 
 -- 4. INSERTION DE DONNÉES PAR DÉFAUT
+-- Le premier compte admin se crée via Supabase Auth (Authentication → Users → Add user),
+-- pas dans app_data en clair — voir les instructions post-installation de
+-- supabase-security-rls.sql (qu'il FAUT exécuter juste après ce script pour resserrer
+-- le RLS, laissé volontairement ouvert ici pour permettre cette insertion).
 
 -- Insérer les données initiales dans app_data
 INSERT INTO app_data (key, value)
-VALUES 
+VALUES
   ('classes', '[]'::jsonb),
   ('students', '[]'::jsonb),
   ('subjects', '[]'::jsonb),
   ('grades', '[]'::jsonb),
-  ('users', '[{"id":1,"email":"admin@ecole.com","password":"admin123","role":"admin","firstName":"Admin","lastName":"Système"}]'::jsonb),
   ('schoolInfo', '{"name":"ÉTABLISSEMENT SCOLAIRE","address":"Adresse de l''établissement","phone":"+33 XXX XXX XXX","email":"contact@ecole.com"}'::jsonb),
   ('appColors', '{"primary":"#2563eb","secondary":"#10b981","accent":"#f59e0b"}'::jsonb),
   ('activities', '[]'::jsonb),

@@ -1,5 +1,5 @@
 // src/hooks/useChat.js
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { chatService } from "../services/ChatService";
 
 export function useChat() {
@@ -17,6 +17,26 @@ export function useChat() {
       setLoading(true);
       setError(null);
       const result = await chatService.getUserConversations(userId);
+      if (result.success) {
+        setConversations(result.conversations);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Charger TOUTES les conversations (vue admin)
+   */
+  const loadAllConversations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await chatService.getAllConversations();
       if (result.success) {
         setConversations(result.conversations);
       } else {
@@ -113,6 +133,7 @@ export function useChat() {
     loading,
     error,
     loadConversations,
+    loadAllConversations,
     openConversation,
     sendMessage,
     startConversation,

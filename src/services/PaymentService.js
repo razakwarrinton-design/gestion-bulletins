@@ -1,5 +1,6 @@
 // src/services/PaymentService.js - VERSION ULTRA-SIMPLE (Structure réelle)
 import { supabase } from "../config/supabase";
+import { smsService } from "./SMSService";
 
 /**
  * Service de paiement simplifié
@@ -140,6 +141,20 @@ export class PaymentService {
         result.redirectUrl = `https://${provider}.example.com/pay/${data.id}`;
       }
 
+      // Envoyer SMS au parent (best-effort : ne doit pas faire échouer le paiement déjà enregistré)
+      if (paymentData.parentPhone) {
+        try {
+          await smsService.notifyPaymentCreated(
+            paymentData.parentPhone,
+            paymentData.parentName,
+            amount,
+            `PAY-${data.id.substring(0, 8)}`,
+          );
+        } catch (smsError) {
+          console.error("❌ Erreur envoi SMS paiement:", smsError);
+        }
+      }
+
       return {
         success: true,
         paymentId: data.id,
@@ -154,16 +169,6 @@ export class PaymentService {
         success: false,
         error: error.message,
       };
-    }
-    // Envoyer SMS au parent
-    if (paymentData.parentPhone) {
-      const { smsService } = require("../services/SMSService");
-      await smsService.notifyPaymentCreated(
-        paymentData.parentPhone,
-        paymentData.parentName,
-        amount,
-        `PAY-${data.id.substring(0, 8)}`,
-      );
     }
   }
 

@@ -14,7 +14,6 @@ export default function LoginModalSupabase({
     const [password, setPassword] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [role, setRole] = useState('secretaire');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
 
@@ -23,7 +22,9 @@ export default function LoginModalSupabase({
         setError('');
         if (isRegister) {
             if (password.length < 6) { setError('Le mot de passe doit contenir au moins 6 caractères'); return; }
-            const result = await onSignUp(email, password, firstName, lastName, role);
+            // Les nouveaux comptes sont toujours créés avec le rôle "secrétaire" (le moins privilégié) :
+            // c'est un admin existant qui doit ensuite promouvoir le compte si besoin.
+            const result = await onSignUp(email, password, firstName, lastName);
             if (result.success) setShowLoginModal(false);
             else setError(result.error || 'Erreur lors de la création du compte');
         } else {
@@ -33,7 +34,7 @@ export default function LoginModalSupabase({
         }
     };
 
-    const resetForm = () => { setEmail(''); setPassword(''); setFirstName(''); setLastName(''); setRole('secretaire'); setError(''); };
+    const resetForm = () => { setEmail(''); setPassword(''); setFirstName(''); setLastName(''); setError(''); };
     const toggleMode = () => { setIsRegister(!isRegister); resetForm(); };
 
     /* ── Shared input style ─────────────────────────────────────── */
@@ -88,15 +89,10 @@ export default function LoginModalSupabase({
                                     className={inputCls} placeholder="Dupont" disabled={loading} />
                             </div>
                         </div>
-                        <div>
-                            <label className={labelCls}>Rôle</label>
-                            <select value={role} onChange={e => setRole(e.target.value)}
-                                className={inputCls} disabled={loading}>
-                                <option value="secretaire">💼 Secrétaire</option>
-                                <option value="professeur">👨‍🏫 Professeur</option>
-                                <option value="admin">🛡️ Administrateur</option>
-                            </select>
-                        </div>
+                        <p className="text-xs text-gray-400 -mt-1">
+                            Votre compte sera créé avec le rôle Secrétaire. Un administrateur pourra
+                            ensuite vous attribuer un rôle plus élevé si nécessaire.
+                        </p>
                     </>
                 )}
 

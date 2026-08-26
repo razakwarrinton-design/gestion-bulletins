@@ -56,6 +56,9 @@ import { useTranslation } from './hooks/useTranslation';
 import AdminPaymentsDashboard from './components/AdminPaymentsDashboard';
 import SMSDashboard from './components/SMSDashboard';
 import ChatWindow from './components/ChatWindow';
+import ParentChatDashboard from './components/ParentChatDashboard';
+import ProfesseurChatDashboard from './components/ProfesseurChatDashboard';
+import AdminChatDashboard from './components/AdminChatDashboard';
 
 // ─── Sections de navigation ───────────────────────────────────────────────────
 const NAV_SECTIONS = [
@@ -85,7 +88,7 @@ const NAV_ITEMS = [
     { view: 'settings', label: 'Paramètres', Icon: Settings, section: 'gestion', roles: ['admin'] },
     { view: 'parents', label: 'Espace Parents', Icon: UserCheck, section: 'gestion', roles: ['parent'] },
     { view: 'sms-dashboard', label: 'SMS', Icon: MessageSquare, section: 'gestion', roles: ['admin'] },
-    { view: 'chat', label: 'Chat', Icon: MessageCircle, section: 'gestion', roles: ['parent', 'teacher', 'admin'] },
+    { view: 'chat', label: 'Chat', Icon: MessageCircle, section: 'gestion', roles: ['parent', 'professeur', 'admin'] },
 ];
 
 // ─── Composant principal ──────────────────────────────────────────────────────
@@ -106,9 +109,9 @@ const BulletinApp = () => {
     // ── Données Supabase via hooks ───────────────────────────────────────────────
     const [currentYear, setCurrentYear] = useState('2024-2025');
 
-    const { classes, loading: isLoadingClasses } = useClasses();
-    const { students, loading: isLoadingStudents } = useStudents();
-    const { subjects, loading: isLoadingSubjects } = useSubjects();
+    const { classes, loading: isLoadingClasses, addClass, deleteClass } = useClasses();
+    const { students, loading: isLoadingStudents, addStudent, updateStudent, deleteStudent } = useStudents();
+    const { subjects, loading: isLoadingSubjects, addSubject, deleteSubject } = useSubjects();
 
     // ✅ Charge les grades si on en a besoin (y compris dashboard)
     const shouldLoadGrades = ['dashboard', 'grades', 'bulletins', 'statistics', 'analytics', 'ia-appreciations'].includes(currentView);
@@ -379,10 +382,10 @@ const BulletinApp = () => {
         );
     };
 
-    const handleRegister = async (email, password, firstName, lastName, role) => {
-        const result = await signUp(email, password, firstName, lastName, role);
+    const handleRegister = async (email, password, firstName, lastName) => {
+        const result = await signUp(email, password, firstName, lastName);
         if (result.success) {
-            logActivity('Création de compte', `Nouvel utilisateur: ${firstName} ${lastName} (${role})`);
+            logActivity('Création de compte', `Nouvel utilisateur: ${firstName} ${lastName} (secretaire)`);
             showNotification('Compte créé avec succès !');
         }
         return result;
@@ -626,7 +629,7 @@ const BulletinApp = () => {
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Gestion des classes</h2>
-                {currentUser?.role !== 'secretaire' && (
+                {currentUser?.role === 'admin' && (
                     <button onClick={handleAddClass} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors">
                         <Plus className="w-4 h-4" />
                         <span>Ajouter une classe</span>
@@ -641,9 +644,11 @@ const BulletinApp = () => {
                                 <h3 className="text-xl font-bold">{cls.name}</h3>
                                 <p className="text-gray-600">{students.filter(s => s.classId === cls.id).length} élève(s)</p>
                             </div>
-                            <button onClick={() => handleDeleteClass(cls)} className="text-red-600 hover:text-red-800 transition-colors">
-                                <Trash2 className="w-5 h-5" />
-                            </button>
+                            {currentUser?.role === 'admin' && (
+                                <button onClick={() => handleDeleteClass(cls)} className="text-red-600 hover:text-red-800 transition-colors">
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -655,7 +660,7 @@ const BulletinApp = () => {
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Gestion des matières</h2>
-                {currentUser?.role !== 'secretaire' && (
+                {currentUser?.role === 'admin' && (
                     <button onClick={handleAddSubject} className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-purple-700 transition-colors">
                         <Plus className="w-4 h-4" />
                         <span>Ajouter une matière</span>
@@ -677,9 +682,11 @@ const BulletinApp = () => {
                                 <td className="px-6 py-4 whitespace-nowrap font-medium">{subject.name}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">{subject.coefficient}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <button onClick={() => handleDeleteSubject(subject)} className="text-red-600 hover:text-red-800 transition-colors">
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
+                                    {currentUser?.role === 'admin' && (
+                                        <button onClick={() => handleDeleteSubject(subject)} className="text-red-600 hover:text-red-800 transition-colors">
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
@@ -1331,13 +1338,30 @@ const BulletinApp = () => {
                             />
                         )}
                         {currentView === 'sms-dashboard' && <SMSDashboard />}
-                        {currentView === 'chat' && chatUser && (
-                            <ChatWindow
-                                conversationId={chatUser.conversationId}
-                                otherUser={chatUser.otherUser}
-                                currentUser={currentUser}
-                                onClose={() => setChatUser(null)}
-                            />
+                        {currentView === 'chat' && (
+                            chatUser ? (
+                                <ChatWindow
+                                    conversationId={chatUser.conversationId}
+                                    otherUser={chatUser.otherUser}
+                                    currentUser={currentUser}
+                                    onClose={() => setChatUser(null)}
+                                />
+                            ) : currentUser?.role === 'admin' ? (
+                                <AdminChatDashboard
+                                    currentUser={currentUser}
+                                    onOpenChat={(conversationId, otherUser) => setChatUser({ conversationId, otherUser })}
+                                />
+                            ) : currentUser?.role === 'professeur' ? (
+                                <ProfesseurChatDashboard
+                                    currentUser={currentUser}
+                                    onOpenChat={(conversationId, otherUser) => setChatUser({ conversationId, otherUser })}
+                                />
+                            ) : (
+                                <ParentChatDashboard
+                                    currentUser={currentUser}
+                                    onOpenChat={(conversationId, otherUser) => setChatUser({ conversationId, otherUser })}
+                                />
+                            )
                         )}
                         {currentView === 'parents' && (
                             <ParentPortal
