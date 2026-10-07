@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { currentAcademicYear } from '../utils/studentUtils';
+import { MENTION_LEVELS, getMentionLevel, countByMention } from '../utils/mentions';
 import {
     LineChart, Line, BarChart, Bar, RadarChart, Radar,
     PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -16,13 +17,9 @@ const fmt = (n) => parseFloat(n || 0).toFixed(2);
 const fmtPct = (n) => `${parseFloat(n || 0).toFixed(1)}%`;
 
 const getMention = (v) => {
-    const n = parseFloat(v);
-    if (n >= 16) return { text: 'Très Bien', color: '#059669', bg: '#dcfce7' };
-    if (n >= 14) return { text: 'Bien', color: '#2563eb', bg: '#dbeafe' };
-    if (n >= 12) return { text: 'Assez Bien', color: '#7c3aed', bg: '#ede9fe' };
-    if (n >= 10) return { text: 'Passable', color: '#d97706', bg: '#fef3c7' };
-    if (n >= 8) return { text: 'Insuffisant', color: '#ea580c', bg: '#ffedd5' };
-    return { text: 'Très Insuf.', color: '#dc2626', bg: '#fee2e2' };
+    // Une valeur non numérique garde l'affichage « Très Insuf. » d'avant
+    const level = getMentionLevel(v) ?? MENTION_LEVELS[MENTION_LEVELS.length - 1];
+    return { text: level.short, color: level.color, bg: level.bg };
 };
 
 /* ─── KPI Card ─────────────────────────────────────────────── */
@@ -120,14 +117,9 @@ export default function DashboardKPIs({
         const excellRate = allAverages.length ? (allAverages.filter(a => a >= 14).length / allAverages.length) * 100 : 0;
         const failRate = allAverages.length ? (allAverages.filter(a => a < 8).length / allAverages.length) * 100 : 0;
 
-        const mentionDist = [
-            { name: 'Très Bien', value: allAverages.filter(a => a >= 16).length, color: '#059669' },
-            { name: 'Bien', value: allAverages.filter(a => a >= 14 && a < 16).length, color: '#2563eb' },
-            { name: 'Assez Bien', value: allAverages.filter(a => a >= 12 && a < 14).length, color: '#7c3aed' },
-            { name: 'Passable', value: allAverages.filter(a => a >= 10 && a < 12).length, color: '#d97706' },
-            { name: 'Insuffisant', value: allAverages.filter(a => a >= 8 && a < 10).length, color: '#ea580c' },
-            { name: 'Très Insuf.', value: allAverages.filter(a => a < 8).length, color: '#dc2626' },
-        ].filter(m => m.value > 0);
+        const mentionDist = countByMention(allAverages)
+            .map(level => ({ name: level.short, value: level.count, color: level.color }))
+            .filter(m => m.value > 0);
 
         const topStudents = students
             .map(s => ({ student: s, avg: parseFloat(calculateAverage(s.id, selectedTrimester)) || 0 }))

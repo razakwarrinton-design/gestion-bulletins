@@ -18,6 +18,20 @@ export function calculateAverage(studentId, trimester, grades, subjects) {
   return totalCoef > 0 ? (totalPoints / totalCoef).toFixed(2) : 0;
 }
 
+/** L'élève a-t-il au moins une note saisie (0 compris) pour ce trimestre ? Une note vide ne compte pas. */
+export function hasGrade(studentId, trimester, grades) {
+  return grades.some(g =>
+    g.studentId === studentId &&
+    g.trimester === trimester &&
+    g.value !== '' && g.value !== null && g.value !== undefined &&
+    !Number.isNaN(parseFloat(g.value))
+  );
+}
+
+/**
+ * Distinction du conseil de classe affichée sur le bulletin (moyenne générale).
+ * Mêmes seuils que l'échelle de mentions de utils/mentions.js (16 / 14 / 12 / 10).
+ */
 export function getMention(average) {
   const avg = parseFloat(average);
   if (isNaN(avg)) return { text: 'N/A', color: '#6b7280' };
@@ -35,15 +49,8 @@ export function getMention(average) {
  * Renvoie { rank: 0, outOf } si l'élève n'a pas de note.
  */
 export function getClassRank(studentId, trimester, classmates, grades, subjects) {
-  const hasGrade = (id) => grades.some(g =>
-    g.studentId === id &&
-    g.trimester === trimester &&
-    g.value !== '' && g.value !== null && g.value !== undefined &&
-    !Number.isNaN(parseFloat(g.value))
-  );
-
   const ranked = classmates
-    .filter(s => hasGrade(s.id))
+    .filter(s => hasGrade(s.id, trimester, grades))
     .map(s => ({ id: s.id, average: parseFloat(calculateAverage(s.id, trimester, grades, subjects)) || 0 }));
 
   const me = ranked.find(r => r.id === studentId);

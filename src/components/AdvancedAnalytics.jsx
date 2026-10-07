@@ -1,6 +1,8 @@
 import React from 'react';
 import { BarChart3, TrendingDown, AlertCircle, Award } from 'lucide-react';
 import { calculateClassStats, calculateStudentRank, isAtRisk } from '../utils/calculUtils';
+import { hasGrade } from '../utils/grades';
+import { countByMention } from '../utils/mentions';
 
 /**
  * Composant: Analyse avancée des performances
@@ -22,8 +24,10 @@ export default function AdvancedAnalytics({
   // Calculer les statistiques
   const stats = calculateClassStats(classStudents, selectedTrimester, grades, subjects);
 
-  // Élèves et leurs scores
+  // Élèves ayant au moins une note ce trimestre et leurs scores : un élève sans note n'est ni
+  // « en difficulté » ni compté dans la répartition (avant, il apparaissait avec 0,00/20).
   const studentScores = classStudents
+    .filter(student => hasGrade(student.id, selectedTrimester, grades))
     .map(student => {
       const average = calculateTrimesterAverage(student.id, selectedTrimester, grades, subjects);
       const rank = calculateStudentRank(student.id, selectedTrimester, classStudents, grades, subjects);
@@ -41,15 +45,11 @@ export default function AdvancedAnalytics({
   // Élèves en risque
   const atRiskStudents = studentScores.filter(s => s.atRisk);
 
-  // Distribution des notes
-  const distribution = {
-    excellent: studentScores.filter(s => s.average >= 18).length,
-    veryGood: studentScores.filter(s => s.average >= 16 && s.average < 18).length,
-    good: studentScores.filter(s => s.average >= 14 && s.average < 16).length,
-    decent: studentScores.filter(s => s.average >= 12 && s.average < 14).length,
-    acceptable: studentScores.filter(s => s.average >= 10 && s.average < 12).length,
-    poor: studentScores.filter(s => s.average < 10).length
-  };
+  // Répartition par mention (échelle unique, voir utils/mentions.js)
+  const distribution = countByMention(studentScores.map(s => s.average));
+  const gradedCount = studentScores.length;
+  const percent = (count) => (gradedCount ? Math.round((count / gradedCount) * 100) : 0);
+  const goodOrBetter = distribution.filter(level => level.min >= 14).reduce((sum, level) => sum + level.count, 0);
 
   return (
     <div className="space-y-6">
@@ -94,65 +94,17 @@ export default function AdvancedAnalytics({
         <h4 className="font-bold mb-4">📊 Distribution des mentions</h4>
         
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-lg">🌟</span>
+          {distribution.map(level => (
+            <div key={level.label} className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: level.bg }}>
+                <span className="text-lg">{level.icon}</span>
+              </div>
+              <div>
+                <p className="text-xs text-gray-600">{level.label}</p>
+                <p className="text-lg font-bold">{level.count}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-gray-600">Excellent (≥18)</p>
-              <p className="text-lg font-bold">{distribution.excellent}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-              <span className="text-lg">⭐</span>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600">Très bien (16-17)</p>
-              <p className="text-lg font-bold">{distribution.veryGood}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-lg">👍</span>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600">Bien (14-15)</p>
-              <p className="text-lg font-bold">{distribution.good}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-              <span className="text-lg">👌</span>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600">Assez bien (12-13)</p>
-              <p className="text-lg font-bold">{distribution.decent}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-              <span className="text-lg">⚠️</span>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600">Acceptable (10-11)</p>
-              <p className="text-lg font-bold">{distribution.acceptable}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-red-200 rounded-full flex items-center justify-center">
-              <span className="text-lg">❌</span>
-            </div>
-            <div>
-              <p className="text-xs text-gray-600">Insuffisant (&lt;10)</p>
-              <p className="text-lg font-bold">{distribution.poor}</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -226,7 +178,8 @@ export default function AdvancedAnalytics({
                 const subjectGrades = grades.filter(g =>
                   g.studentId === s.id &&
                   g.subjectId === subject.id &&
-                  g.trimester === selectedTrimester
+                  g.trimester === selectedTrimester &&
+                  g.value != null
                 );
                 if (subjectGrades.length === 0) return 0;
                 return subjectGrades.reduce((sum, g) => sum + g.value, 0) / subjectGrades.length;
@@ -270,14 +223,14 @@ export default function AdvancedAnalytics({
           <div className="flex justify-between items-center">
             <span>% d'élèves avec mention bien ou mieux</span>
             <span className="font-bold text-blue-600">
-              {Math.round((distribution.excellent + distribution.veryGood + distribution.good) / classStudents.length * 100)}%
+              {percent(goodOrBetter)}%
             </span>
           </div>
           
           <div className="flex justify-between items-center">
             <span>% d'élèves en difficulté</span>
             <span className="font-bold text-red-600">
-              {Math.round(atRiskStudents.length / classStudents.length * 100)}%
+              {percent(atRiskStudents.length)}%
             </span>
           </div>
           

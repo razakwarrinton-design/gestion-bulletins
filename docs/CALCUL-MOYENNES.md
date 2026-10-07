@@ -49,14 +49,36 @@ Moyenne_Trimestre = Σ(Moyenne_Matière × Coefficient_Matière) / Σ(Coefficien
 ```
 
 ### Conditions
-- Les matières avec moyenne 0 (pas de notes) ne sont pas incluses
-- Les coefficients sont cumulés seulement pour les matières notées
+- **Une seule formule pour toute l'application** : bulletins, tableau de bord, analyse de classe et portail parents utilisent `calculateAverage` (`src/utils/grades.js`). `src/utils/calculUtils.js` s'appuie dessus et ne recalcule rien.
+- Une note **non saisie** (vide) est ignorée ; une note de **0 compte**.
+- Une matière de coefficient **0** ne compte pas ; un coefficient absent vaut 0 aussi (la base le fixe à 1 par défaut).
+- Les coefficients sont cumulés seulement pour les matières notées.
 
 ### Exemple détaillé
 
 Élève avec ces matières et coefficients:
 | Matière | Coefficient | Moyenne | Produit |
 |---------|------------|---------|---------|
+| Français | 3 | 14.00 | 42.00 |
+| Mathématiques | 4 | 15.50 | 62.00 |
+| Anglais | 2 | 13.00 | 26.00 |
+| Histoire-Géo | 2 | 12.00 | 24.00 |
+| SVT | 2 | 14.00 | 28.00 |
+| **Total** | **13** | | **182.00** |
+
+```
+Moyenne_Trimestre = 182.00 / 13 = 14.00
+```
+
+### Implémentation
+```javascript
+// src/utils/grades.js
+export function calculateAverage(studentId, trimester, grades, subjects) {
+  // Σ(note × coefficient) / Σ(coefficient), notes vides ignorées
+}
+```
+
+---------|------------|---------|---------|
 | Français | 3 | 14.00 | 42.00 |
 | Mathématiques | 4 | 15.50 | 62.00 |
 | Anglais | 2 | 13.00 | 26.00 |
@@ -99,7 +121,7 @@ Moyenne_Année = (Moyenne_T1 + Moyenne_T2 + Moyenne_T3) / Nombre de trimestres a
 ```
 
 ### Conditions
-- Seuls les trimestres avec au moins une matière notée sont comptabilisés
+- Seuls les trimestres où l'élève a au moins une note saisie sont comptabilisés (un trimestre dont la moyenne vaut réellement 0 compte)
 - Si seulement T1 et T3 ont des notes, la moyenne = (T1 + T3) / 2
 - Si un trimestre n'a aucune note, il n'est pas inclus
 
@@ -119,13 +141,7 @@ const calculateYearlyAverage = (studentId, grades, subjects) => {
   const avg2 = calculateTrimesterAverage(studentId, '2', grades, subjects);
   const avg3 = calculateTrimesterAverage(studentId, '3', grades, subjects);
 
-  const validAverages = [avg1, avg2, avg3].filter(a => a > 0);
-  
-  if (validAverages.length === 0) return 0;
-  
-  return Math.round(
-    (validAverages.reduce((a, b) => a + b, 0) / validAverages.length) * 100
-  ) / 100;
+  // trimestres où l'élève a au moins une note (hasGrade), puis moyenne de leurs moyennes
 };
 ```
 
@@ -133,10 +149,32 @@ const calculateYearlyAverage = (studentId, grades, subjects) => {
 
 ## 4️⃣ Mentions et Appréciations
 
-### Système de Mentions
+### Échelle unique (`src/utils/mentions.js`)
 
-| Mention | Note minimum | Note maximum | Couleur | Symbole |
-|---------|-------------|-------------|--------|---------|
+La même échelle est utilisée partout : saisie des notes, tableau de bord, analyse de classe, portail parents, bulletin imprimé (mention par matière).
+
+| Mention | À partir de | Couleur |
+|---------|-------------|---------|
+| Très Bien | 16 | vert |
+| Bien | 14 | bleu |
+| Assez Bien | 12 | violet |
+| Passable | 10 | orange |
+| Insuffisant | 8 | orange foncé |
+| Très Insuffisant | moins de 8 | rouge |
+
+### Distinction du conseil de classe (bulletin)
+
+La moyenne générale du bulletin porte une distinction au vocabulaire différent mais aux **mêmes seuils** (`getMention` dans `src/utils/grades.js`) :
+
+| Distinction | À partir de |
+|-------------|-------------|
+| Félicitations | 16 |
+| Tableau d'honneur | 14 |
+| Encouragements | 12 |
+| Passable | 10 |
+| Insuffisant | moins de 10 |
+
+---------|-------------|-------------|--------|---------|
 | Excellent | 18 | 20 | 🟢 Vert | 🌟 |
 | Très bien | 16 | 17.99 | 🔵 Bleu | ⭐ |
 | Bien | 14 | 15.99 | 🔵 Bleu clair | 👍 |
@@ -162,7 +200,7 @@ const getMentionDetails = (average) => {
 
 ### Formule
 ```
-Rang = Position de l'élève quand les moyennes sont triées décroissant
+Rang = 1 + nombre d'élèves ayant une moyenne strictement supérieure (les ex æquo partagent le même rang)
 Percentile = (1 - Rang/Total) × 100
 ```
 
@@ -175,29 +213,18 @@ Percentile = (1 - 8/30) × 100 = 73.33%
 
 Cela signifie que 73% de la classe a une note inférieure.
 
+Seuls les élèves ayant au moins une note saisie ce trimestre sont classés ; un élève sans note n'a ni rang ni centile.
+
 ### Implémentation
-```javascript
-const calculateStudentRank = (studentId, trimester, students, grades, subjects) => {
-  const averages = students
-    .map(s => ({
-      id: s.id,
-      average: calculateTrimesterAverage(s.id, trimester, grades, subjects)
-    }))
-    .filter(a => a.average > 0)
-    .sort((a, b) => b.average - a.average);
-
-  const rank = averages.findIndex(a => a.id === studentId) + 1;
-  const percentile = Math.round((1 - rank / averages.length) * 100);
-
-  return { rank, outOf: averages.length, percentile };
-};
-```
+`getClassRank` dans `src/utils/grades.js` ; `calculateStudentRank` (`src/utils/calculUtils.js`) en déduit le centile.
 
 ---
 
 ## 6️⃣ Statistiques de Classe
 
 ### Mesures calculées
+
+Les statistiques portent sur les élèves ayant au moins une note ce trimestre (un élève sans note n'est pas compté comme 0).
 
 #### Moyenne arithmétique
 ```
@@ -342,7 +369,7 @@ Mention = Pas de mention
 
 ### Matière sans coefficient
 ```
-Coefficient par défaut = 1
+La base fixe le coefficient à 1 par défaut ; un coefficient 0 exclut la matière du calcul
 ```
 
 ### Classe sans élèves
@@ -363,6 +390,7 @@ Les trimestres vides ne comptent pas pour la moyenne annuelle
 | Date | Modification | Impact |
 |------|-------------|--------|
 | 2025-02-01 | Création document | Initial |
+| 2026-10 | Moteur de calcul et échelle de mentions uniques | Les écrans affichent les mêmes moyennes et mentions que le bulletin |
 | | Définition formules | - |
 | | Exemples concrets | - |
 

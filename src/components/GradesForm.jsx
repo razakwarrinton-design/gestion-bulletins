@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Save, CheckCircle, ChevronDown, ChevronUp, User, Pen, Star, Bell, Send } from 'lucide-react';
 import { supabase } from '../config/supabase';
+import { getMentionLevel } from '../utils/mentions';
 
 // ─── Hook debounce ────────────────────────────────────────────────────────────
 function useDebounce(value, delay) {
@@ -15,7 +16,7 @@ function useDebounce(value, delay) {
 // ─── Couleur selon la note ────────────────────────────────────────────────────
 const noteColor = v => v === '' ? '#E2E8F0' : isNaN(+v) ? '#FCA5A5' : +v < 8 ? '#FCA5A5' : +v < 10 ? '#FCD34D' : +v < 14 ? '#93C5FD' : '#6EE7B7';
 const noteTxtCol = v => +v < 8 ? '#DC2626' : +v < 10 ? '#D97706' : +v < 14 ? '#2563EB' : '#059669';
-const mention = v => +v >= 16 ? 'Très Bien' : +v >= 14 ? 'Bien' : +v >= 12 ? 'Assez Bien' : +v >= 10 ? 'Passable' : +v >= 8 ? 'Insuffisant' : 'Très Insuf.';
+const mention = v => getMentionLevel(v)?.short ?? '';
 
 // ─── Calcul note finale depuis interro/devoir/compo (sans bonus) ─────────────
 // Pondération : Interro ×1 · Devoir ×2 · Composition ×3

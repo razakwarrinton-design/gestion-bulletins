@@ -5,11 +5,11 @@ import {
   calculateYearlyAverage,
   calculateStudentRank,
   calculateClassStats,
-  getMentionDetails,
   isValidGrade,
   formatGrade,
   isAtRisk,
 } from './calculUtils';
+import { calculateAverage } from './grades';
 
 const subjects = [
   { id: 'math', coefficient: 4 },
@@ -120,16 +120,54 @@ describe('calculateClassStats', () => {
   });
 });
 
-describe('getMentionDetails', () => {
-  it.each([
-    [18, 'Excellent'],
-    [16, 'Très bien'],
-    [14, 'Bien'],
-    [12, 'Assez bien'],
-    [10, 'Acceptable'],
-    [9.99, 'Insuffisant'],
-  ])('moyenne %s → %s', (average, text) => {
-    expect(getMentionDetails(average).text).toBe(text);
+describe('cohérence avec les bulletins (utils/grades)', () => {
+  const rows = [
+    grade('s1', 'math', 15), grade('s1', 'fr', 10),
+    grade('s2', 'math', 0), grade('s2', 'fr', 12),
+    grade('s3', 'math', null), grade('s3', 'fr', 9),
+    grade('s4', 'math', ''),
+  ];
+
+  it.each(['s1', 's2', 's3', 's4'])('même moyenne que le bulletin pour %s', (id) => {
+    expect(calculateTrimesterAverage(id, '1', rows, subjects))
+      .toBe(parseFloat(calculateAverage(id, '1', rows, subjects)) || 0);
+  });
+
+  it('une note vide n\'est pas comptée comme 0', () => {
+    // seule la note de français compte : 9, pas (0*4 + 9*3) / 7 = 3.86
+    expect(calculateTrimesterAverage('s3', '1', rows, subjects)).toBe(9);
+    expect(calculateSubjectAverage(rows, 's3', 'math', '1')).toBe(0);
+  });
+
+  it('une matière de coefficient 0 ne compte pas (et non coefficient 1)', () => {
+    const withZero = [{ id: 'math', coefficient: 0 }, { id: 'fr', coefficient: 3 }];
+    expect(calculateTrimesterAverage('s1', '1', rows, withZero)).toBe(10);
+  });
+
+  it('les ex æquo partagent le même rang', () => {
+    const tied = [grade('a', 'math', 14), grade('b', 'math', 14), grade('c', 'math', 9)];
+    const students = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+    expect(calculateStudentRank('a', '1', students, tied, subjects).rank).toBe(1);
+    expect(calculateStudentRank('b', '1', students, tied, subjects).rank).toBe(1);
+    expect(calculateStudentRank('c', '1', students, tied, subjects).rank).toBe(3);
+  });
+
+  it('un élève dont la note est vide n\'est pas classé', () => {
+    const students = [{ id: 's1' }, { id: 's4' }];
+    expect(calculateStudentRank('s4', '1', students, rows, subjects).rank).toBe(0);
+    expect(calculateStudentRank('s1', '1', students, rows, subjects).outOf).toBe(1);
+  });
+
+  it('les statistiques de classe excluent les élèves sans note mais gardent une vraie moyenne de 0', () => {
+    const students = [{ id: 'z1' }, { id: 'z2' }, { id: 'z3' }];
+    const marks = [grade('z1', 'math', 0), grade('z2', 'math', 10)];
+    const stats = calculateClassStats(students, '1', marks, subjects);
+    expect(stats).toMatchObject({ count: 2, mean: 5, min: 0, max: 10 });
+  });
+
+  it('la moyenne annuelle compte un trimestre à 0 mais pas un trimestre vide', () => {
+    const marks = [grade('s1', 'math', 0, '1'), grade('s1', 'math', 12, '2')];
+    expect(calculateYearlyAverage('s1', marks, subjects)).toBe(6);
   });
 });
 

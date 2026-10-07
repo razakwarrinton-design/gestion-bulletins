@@ -1,15 +1,13 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { TrendingUp, Award, BookOpen, CheckCircle } from 'lucide-react';
+import { getMentionLevel } from '../utils/mentions';
 
 const getMention = (avg) => {
     const v = parseFloat(avg);
     if (isNaN(v) || v === 0) return { text: '—', color: '#9ca3af' };
-    if (v >= 16) return { text: 'Très Bien', color: '#059669' };
-    if (v >= 14) return { text: 'Bien', color: '#2563eb' };
-    if (v >= 12) return { text: 'Assez Bien', color: '#7c3aed' };
-    if (v >= 10) return { text: 'Passable', color: '#d97706' };
-    return { text: 'Insuffisant', color: '#dc2626' };
+    const level = getMentionLevel(v);
+    return { text: level.label, color: level.color };
 };
 
 export default function ParentDashboard({ child, calculateAverage, paymentStatus, rankData, onPrint, getStudentGrades }) {

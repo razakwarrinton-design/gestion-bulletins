@@ -1,18 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { supabase } from '../config/supabase';
 import { sameId } from '../utils/ids';
+import { getMentionLevel } from '../utils/mentions';
 import { Sparkles, RefreshCw, Copy, Check, ChevronDown, ChevronUp, BookOpen, AlertTriangle, Award } from 'lucide-react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
-const getMentionText = (v) => {
-    if (v >= 16) return 'Très Bien';
-    if (v >= 14) return 'Bien';
-    if (v >= 12) return 'Assez Bien';
-    if (v >= 10) return 'Passable';
-    if (v >= 8) return 'Insuffisant';
-    return 'Très Insuffisant';
-};
+const getMentionText = (v) => getMentionLevel(v)?.label ?? '';
 
 // ── Appel Edge Function Supabase ──────────────────────────────────────────────
 async function generateAppreciation(student, grades, subjects, trimester, classAverage) {

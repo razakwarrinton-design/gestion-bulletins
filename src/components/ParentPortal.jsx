@@ -10,18 +10,16 @@ import {
     Receipt, Wallet, LayoutDashboard, Calendar, UserX, Shield, Clock
 } from 'lucide-react';
 import ParentDashboard from './ParentDashboard';
+import { getMentionLevel } from '../utils/mentions';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
-const gradeLabel = (v) => v >= 16 ? 'Très Bien' : v >= 14 ? 'Bien' : v >= 12 ? 'Assez Bien' : v >= 10 ? 'Passable' : v >= 8 ? 'Insuffisant' : 'Très Insuffisant';
+const gradeLabel = (v) => getMentionLevel(v)?.label ?? '';
 
 const getMention = (avg) => {
     const v = parseFloat(avg);
     if (isNaN(v) || v === 0) return { text: '—', color: '#9ca3af' };
-    if (v >= 16) return { text: 'Très Bien', color: '#059669' };
-    if (v >= 14) return { text: 'Bien', color: '#2563eb' };
-    if (v >= 12) return { text: 'Assez Bien', color: '#7c3aed' };
-    if (v >= 10) return { text: 'Passable', color: '#d97706' };
-    return { text: 'Insuffisant', color: '#dc2626' };
+    const level = getMentionLevel(v);
+    return { text: level.label, color: level.color };
 };
 
 const getStatus = (avg) => {
