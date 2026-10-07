@@ -1,11 +1,12 @@
-import * as XLSX from 'xlsx';
+// La bibliothèque xlsx est lourde : elle n'est téléchargée qu'au premier export ou import.
+const loadXlsx = () => import('xlsx');
 
 export const createExcelHandlers = ({
     students, classes, subjects, selectedClass, selectedTrimester,
     getGrade, calculateAverage, getMention,
     addClass, addStudent, updateGrade, showNotification,
 }) => {
-    const exportClassGrades = () => {
+    const exportClassGrades = async () => {
         if (!selectedClass) { showNotification('Veuillez sélectionner une classe'); return; }
         const classStudents = students.filter(s => s.classId === selectedClass);
         const className = classes.find(c => c.id === selectedClass)?.name || 'Classe';
@@ -19,6 +20,7 @@ export const createExcelHandlers = ({
             row.push(calculateAverage(student.id, selectedTrimester));
             data.push(row);
         });
+        const XLSX = await loadXlsx();
         const ws = XLSX.utils.aoa_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `Trimestre ${selectedTrimester}`);
@@ -26,7 +28,7 @@ export const createExcelHandlers = ({
         showNotification('Fichier Excel exporté !');
     };
 
-    const exportRanking = () => {
+    const exportRanking = async () => {
         if (!selectedClass) { showNotification('Veuillez sélectionner une classe'); return; }
         const classStudents = students.filter(s => s.classId === selectedClass);
         const className = classes.find(c => c.id === selectedClass)?.name || 'Classe';
@@ -38,6 +40,7 @@ export const createExcelHandlers = ({
             const mention = getMention(item.average);
             data.push([index + 1, item.student.lastName, item.student.firstName, item.average, mention.text]);
         });
+        const XLSX = await loadXlsx();
         const ws = XLSX.utils.aoa_to_sheet(data);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Classement');
@@ -51,6 +54,7 @@ export const createExcelHandlers = ({
         const reader = new FileReader();
         reader.onload = async (e) => {
             const data = new Uint8Array(e.target.result);
+            const XLSX = await loadXlsx();
             const workbook = XLSX.read(data, { type: 'array' });
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
@@ -76,8 +80,9 @@ export const createExcelHandlers = ({
         const file = event.target.files[0];
         if (!file || !selectedClass) { showNotification('Veuillez sélectionner une classe d\'abord'); return; }
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             const data = new Uint8Array(e.target.result);
+            const XLSX = await loadXlsx();
             const workbook = XLSX.read(data, { type: 'array' });
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const jsonData = XLSX.utils.sheet_to_json(worksheet);

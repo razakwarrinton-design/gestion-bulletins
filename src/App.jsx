@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useSupabaseState } from './hooks/useSupabaseState';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import {
@@ -6,14 +6,6 @@ import {
     getMention as getMentionUtil,
     getClassRank as getClassRankUtil,
 } from './utils/grades';
-import LoginModalSupabase from './components/LoginModalSupabase';
-import PrintPreview from './components/PrintPreview';
-import StudentsList from './components/StudentsList';
-import GradesForm from './components/GradesForm';
-import SettingsPanel from './components/Settings';
-import AcademicYearManager from './components/AcademicYearManager';
-import AppreciationManager from './components/AppreciationManager';
-import AdvancedAnalytics from './components/AdvancedAnalytics';
 import * as calculUtils from './utils/calculUtils';
 import { useClasses } from './hooks/useClasses';
 import { useStudents } from './hooks/useStudents';
@@ -31,19 +23,9 @@ import {
     BulletinsSkeleton,
     Spinner
 } from './components/Skeleton';
-import ParentPortal from './components/ParentPortal';
 import ParentAssignModal from './components/ParentAssignModal';
-import AIAppreciations from './components/AIAppreciations';
-import AbsenceManager from './components/AbsenceManager';
-import DashboardKPIs from './components/DashboardKPIs';
 import LoginPage from './components/LoginPage';
 import { useDarkMode } from './hooks/useDarkMode';
-import AdminPaymentsDashboard from './components/AdminPaymentsDashboard';
-import SMSDashboard from './components/SMSDashboard';
-import ChatWindow from './components/ChatWindow';
-import ParentChatDashboard from './components/ParentChatDashboard';
-import ProfesseurChatDashboard from './components/ProfesseurChatDashboard';
-import AdminChatDashboard from './components/AdminChatDashboard';
 import MFAChallenge from './components/MFAChallenge';
 import BulletinTemplatePicker from './components/BulletinTemplatePicker';
 import { NAV_ITEMS } from './config/navigation';
@@ -54,13 +36,33 @@ import Topbar from './layout/Topbar';
 import Toast from './layout/Toast';
 import ClassesView from './views/ClassesView';
 import SubjectsView from './views/SubjectsView';
-import BulletinsView from './views/BulletinsView';
-import StatisticsView from './views/StatisticsView';
-import ImportExportView from './views/ImportExportView';
-import ParentsManagementView from './views/ParentsManagementView';
-import UsersManager from './components/UsersManager';
 import { resolveId } from './utils/ids';
 import PendingApproval from './components/PendingApproval';
+
+// Écrans chargés à la demande : le premier affichage reste léger (réseaux mobiles lents).
+const LoginModalSupabase = lazy(() => import('./components/LoginModalSupabase'));
+const PrintPreview = lazy(() => import('./components/PrintPreview'));
+const StudentsList = lazy(() => import('./components/StudentsList'));
+const GradesForm = lazy(() => import('./components/GradesForm'));
+const SettingsPanel = lazy(() => import('./components/Settings'));
+const AcademicYearManager = lazy(() => import('./components/AcademicYearManager'));
+const AppreciationManager = lazy(() => import('./components/AppreciationManager'));
+const AdvancedAnalytics = lazy(() => import('./components/AdvancedAnalytics'));
+const ParentPortal = lazy(() => import('./components/ParentPortal'));
+const AIAppreciations = lazy(() => import('./components/AIAppreciations'));
+const AbsenceManager = lazy(() => import('./components/AbsenceManager'));
+const DashboardKPIs = lazy(() => import('./components/DashboardKPIs'));
+const AdminPaymentsDashboard = lazy(() => import('./components/AdminPaymentsDashboard'));
+const SMSDashboard = lazy(() => import('./components/SMSDashboard'));
+const ChatWindow = lazy(() => import('./components/ChatWindow'));
+const ParentChatDashboard = lazy(() => import('./components/ParentChatDashboard'));
+const ProfesseurChatDashboard = lazy(() => import('./components/ProfesseurChatDashboard'));
+const AdminChatDashboard = lazy(() => import('./components/AdminChatDashboard'));
+const UsersManager = lazy(() => import('./components/UsersManager'));
+const StatisticsView = lazy(() => import('./views/StatisticsView'));
+const ImportExportView = lazy(() => import('./views/ImportExportView'));
+const ParentsManagementView = lazy(() => import('./views/ParentsManagementView'));
+const BulletinsView = lazy(() => import('./views/BulletinsView'));
 
 const MAX_ACTIVITIES = 200;
 
@@ -456,6 +458,7 @@ const BulletinApp = () => {
                     )}
 
                     {showPrintPreview && (
+                        <Suspense fallback={null}>
                         <PrintPreview
                             printStudent={printStudent}
                             setShowPrintPreview={setShowPrintPreview}
@@ -472,10 +475,12 @@ const BulletinApp = () => {
                             getMention={getMention}
                             bulletinTemplate={selectedBulletinTemplate}
                         />
+                        </Suspense>
                     )}
 
                     {/* ── Views ─────────────────────────────────────────────────────── */}
                     <div className="bg-white rounded-2xl shadow-sm p-6 min-h-full" style={{ border: '1px solid #EFF6FF' }}>
+                        <Suspense fallback={<Spinner text="Chargement..." />}>
 
                         {currentView === 'dashboard' && (isLoadingClasses || isLoadingStudents || isLoadingSubjects
                             ? <DashboardSkeleton />
@@ -643,6 +648,7 @@ const BulletinApp = () => {
                                 updateGrade={updateGrade}
                             />
                         )}
+                        </Suspense>
                     </div>
                 </main>
             </div>
