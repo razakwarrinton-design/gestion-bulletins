@@ -14,7 +14,7 @@ export default function ClassModal({ isOpen, onClose, onSave }) {
       await onSave(name.trim());
       setName('');
       onClose();
-    } catch (e) {
+    } catch {
       setError('Erreur lors de l\'ajout. Réessaie.');
     } finally {
       setLoading(false);

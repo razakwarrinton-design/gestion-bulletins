@@ -22,7 +22,7 @@ export default function SubjectModal({ isOpen, onClose, onSave }) {
     try {
       await onSave(name.trim(), parseFloat(coefficient));
       setName(''); setCoef('1'); onClose();
-    } catch (e) {
+    } catch {
       setErrors({ general: 'Erreur lors de l\'ajout. Réessaie.' });
     } finally {
       setLoading(false);

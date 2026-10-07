@@ -28,18 +28,18 @@ export default function SyncStatus() {
         // Essayer de se connecter à Supabase
         try {
           const { supabase } = await import('../config/supabase');
-          const { data, error } = await supabase
+          const { error } = await supabase
             .from('app_data')
             .select('key')
             .limit(1);
           
           setIsConnected(!error);
           setUsesFallback(false);
-        } catch (err) {
+        } catch {
           setIsConnected(false);
           setUsesFallback(true);
         }
-      } catch (err) {
+      } catch {
         setIsConnected(false);
         setUsesFallback(true);
       } finally {

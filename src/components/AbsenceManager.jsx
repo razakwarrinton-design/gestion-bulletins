@@ -455,7 +455,6 @@ export default function AbsenceManager({ classes, students, subjects, currentUse
                     ) : (
                         <div className="divide-y divide-gray-50">
                             {statsParEleve.map((s, i) => {
-                                const total = s.absents + s.retards;
                                 const risk = s.absents >= 5 || s.injustifies >= 3;
                                 return (
                                     <div key={i} className={`flex items-center gap-4 px-5 py-3.5 ${risk ? 'bg-red-50/50' : 'hover:bg-gray-50'} transition-colors`}>

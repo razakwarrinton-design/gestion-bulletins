@@ -206,7 +206,6 @@ function ChangePasswordSection({ onNotify }) {
     const [showConfirm, setShowConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
     const handleSubmit = async () => {
         setError('');
@@ -360,8 +359,6 @@ function EvolutionTrimestrielle({ child, currentTrimester, calculateAverage, get
 
     const availableTrims = avgs.filter(d => d.hasData);
     if (availableTrims.length < 2) return null; // pas assez de données
-
-    const maxVal = Math.max(...availableTrims.map(d => d.value), 1);
 
     // Évolution par matière : on compare chaque trimestre disponible
     const subjectEvolution = (() => {

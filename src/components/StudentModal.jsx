@@ -69,7 +69,7 @@ export default function StudentModal({ isOpen, onClose, onSave, classes, student
         emergencyRelation: emergencyRelation || null,
       });
       onClose();
-    } catch (e) {
+    } catch {
       setErrors({ general: 'Erreur lors de l\'enregistrement. Réessaie.' });
     } finally {
       setLoading(false);

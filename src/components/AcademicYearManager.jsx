@@ -19,7 +19,7 @@ export default function AcademicYearManager({
   showNotification
 }) {
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState(null);
+  const [, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     year: '',
     startDate: '',

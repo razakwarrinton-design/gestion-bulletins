@@ -435,7 +435,6 @@ export default function GradesForm({
       {selectedClass && classStudents.map(student => {
         const avg = calculateAverage(student.id, selectedTrimester);
         const ment = getMention(avg);
-        const avgNum = parseFloat(avg) || 0;
 
         return (
           <div key={student.id} style={{

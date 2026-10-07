@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BarChart3, TrendingDown, AlertCircle, Award } from 'lucide-react';
 import { calculateClassStats, calculateStudentRank, isAtRisk } from '../utils/calculUtils';
 

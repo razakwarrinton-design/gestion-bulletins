@@ -19,7 +19,7 @@ export default function AppreciationManager({
   setAppreciations
 }) {
   const [activeTab, setActiveTab] = useState('teacher'); // 'teacher' ou 'council'
-  const [editingId, setEditingId] = useState(null);
+  const [, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     studentId: '',
     subjectId: '',

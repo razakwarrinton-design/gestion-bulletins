@@ -98,7 +98,6 @@ export const exportStudentsToCSV = (students, classes) => {
 // Import depuis CSV
 export const importStudentsFromCSV = (csv) => {
   const lines = csv.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
   
   const students = lines.slice(1).map(line => {
     const values = line.split(',').map(v => v.replace(/"/g, ''));

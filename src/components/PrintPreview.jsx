@@ -76,10 +76,6 @@ function PrintPreviewInner({
   const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
   const gradeLabel = (v) => v >= 16 ? 'Très Bien' : v >= 14 ? 'Bien' : v >= 12 ? 'Assez Bien' : v >= 10 ? 'Passable' : v >= 8 ? 'Insuffisant' : 'Très Insuffisant';
 
-  const t1Avg = parseFloat(calculateAverage(student.id, '1')) || 0;
-  const t2Avg = parseFloat(calculateAverage(student.id, '2')) || 0;
-  const t3Avg = parseFloat(calculateAverage(student.id, '3')) || 0;
-
   const sortedGrades = [...studentGrades].filter(g => g.value != null).sort((a, b) => b.value - a.value);
   const half = Math.max(1, Math.floor(sortedGrades.length / 2));
   const strengths = sortedGrades.slice(0, Math.min(3, half)).map(g => ({ name: subjects.find(s => s.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));

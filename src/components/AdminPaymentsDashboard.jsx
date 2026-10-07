@@ -10,7 +10,7 @@ import { CheckCircle, Clock, XCircle, Eye } from 'lucide-react';
  */
 export default function AdminPaymentsDashboard() {
     const [payments, setPayments] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
     const [stats, setStats] = useState({
         total: 0,
         pending: 0,

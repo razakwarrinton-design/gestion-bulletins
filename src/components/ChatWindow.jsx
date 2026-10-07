@@ -4,7 +4,7 @@ import { Send, X, Phone, Info } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
 
 export default function ChatWindow({ conversationId, otherUser, currentUser, onClose }) {
-    const { messages, sendMessage, loading, markAsRead } = useChat();
+    const { messages, sendMessage, markAsRead } = useChat();
     const [messageText, setMessageText] = useState('');
     const [sending, setSending] = useState(false);
 
