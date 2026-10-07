@@ -59,6 +59,7 @@ import StatisticsView from './views/StatisticsView';
 import ImportExportView from './views/ImportExportView';
 import ParentsManagementView from './views/ParentsManagementView';
 import UsersManager from './components/UsersManager';
+import { resolveId } from './utils/ids';
 import PendingApproval from './components/PendingApproval';
 
 const MAX_ACTIVITIES = 200;
@@ -133,7 +134,10 @@ const BulletinApp = () => {
     const [schoolLogo, setSchoolLogo] = useSupabaseState('schoolLogo', null);
 
     // ── Sélections ───────────────────────────────────────────────────────────────
-    const [selectedClass, setSelectedClass] = useState(null);
+    const [selectedClass, setSelectedClassState] = useState(null);
+    // Un <select> renvoie du texte alors que les identifiants de classe peuvent être des nombres :
+    // on retrouve l'identifiant d'origine pour que les comparaisons strictes (===) restent vraies.
+    const setSelectedClass = (value) => setSelectedClassState(resolveId(classes, value));
     const [selectedTrimester, setSelectedTrimester] = useState('1');
 
     // ── Impression ───────────────────────────────────────────────────────────────

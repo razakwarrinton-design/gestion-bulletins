@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../config/supabase';
+import { sameId } from '../utils/ids';
 import {
     ClipboardList, Plus, Check, X, Search, Filter,
     AlertTriangle, Clock, UserX, ChevronDown, RefreshCw,
@@ -110,7 +111,7 @@ export default function AbsenceManager({ classes, students, subjects, currentUse
     // ── Absences filtrées ──
     const filteredAbsences = useMemo(() => absences.filter(a => {
         const name = `${a.students?.first_name} ${a.students?.last_name}`.toLowerCase();
-        if (filterClass && a.students?.class_id !== filterClass) return false;
+        if (filterClass && !sameId(a.students?.class_id, filterClass)) return false;
         if (filterType && a.type !== filterType) return false;
         if (filterDate && a.date !== filterDate) return false;
         if (filterSearch && !name.includes(filterSearch.toLowerCase())) return false;

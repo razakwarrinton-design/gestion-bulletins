@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { supabase } from '../config/supabase';
+import { sameId } from '../utils/ids';
 import { Sparkles, RefreshCw, Copy, Check, ChevronDown, ChevronUp, BookOpen, AlertTriangle, Award } from 'lucide-react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -194,7 +195,7 @@ export default function AIAppreciations({
     const [genProgress, setGenProgress] = useState(0);
 
     const classStudents = filterClass
-        ? students.filter(s => (s.classId || s.class_id) === filterClass)
+        ? students.filter(s => sameId(s.classId || s.class_id, filterClass))
         : students;
 
     const classAverages = classStudents
