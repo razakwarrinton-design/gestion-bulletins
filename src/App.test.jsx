@@ -131,6 +131,9 @@ describe('application : accès selon l\'état du compte', () => {
   });
 });
 
+// Les écrans sont transformés à la demande par Vite : lent quand tous les fichiers de test tournent en parallèle.
+const LAZY_TIMEOUT = 40000;
+
 describe('application : écrans chargés à la demande', () => {
   it('ouvre Utilisateurs (chargé à la demande) et la page Classes', async () => {
     signedIn('admin');
@@ -139,11 +142,11 @@ describe('application : écrans chargés à la demande', () => {
     await waitForNav();
     fireEvent.click(nav().getByText('Utilisateurs'));
     // le composant est téléchargé à la demande, puis charge la liste (vide ici)
-    expect(await screen.findByText('Aucun utilisateur', {}, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByText('Aucun utilisateur', {}, { timeout: 20000 })).toBeTruthy();
 
     fireEvent.click(nav().getByText('Classes'));
-    expect(await screen.findByText('Gestion des classes', {}, { timeout: 5000 })).toBeTruthy();
-  });
+    expect(await screen.findByText('Gestion des classes', {}, { timeout: 20000 })).toBeTruthy();
+  }, LAZY_TIMEOUT);
 
   it('ouvre les écrans lourds sans plantage (graphiques, import/export, absences)', async () => {
     signedIn('admin');
@@ -152,9 +155,9 @@ describe('application : écrans chargés à la demande', () => {
     for (const label of ['Statistiques', 'Import/Export', 'Absences', 'Bulletins', 'Gestion parents', 'Analyse avancée']) {
       fireEvent.click(nav().getByText(label));
       // l'écran est téléchargé à la demande puis s'affiche : le menu reste là, sans page blanche
-      await waitFor(() => expect(nav().getByText('Classes')).toBeTruthy(), { timeout: 5000 });
+      await waitFor(() => expect(nav().getByText('Classes')).toBeTruthy(), { timeout: 20000 });
       await new Promise((r) => setTimeout(r, 50));
     }
     expect(document.querySelector('main').textContent.length).toBeGreaterThan(0);
-  });
+  }, LAZY_TIMEOUT);
 });

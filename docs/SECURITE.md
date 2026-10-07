@@ -30,7 +30,8 @@ Exécuter dans l'éditeur SQL de Supabase, **dans cet ordre** :
 3. `sql/CHAT_TABLES.sql`
 4. `sql/students-profile.sql`
 5. `sql/payments-online.sql`
-6. **`sql/security-hardening.sql`** (toujours en dernier ; ré-exécutable)
+6. `sql/bulletin-access.sql`
+7. **`sql/security-hardening.sql`** (toujours en dernier ; ré-exécutable)
 
 Puis créer le premier administrateur : *Authentication → Users → Add user* (mot de passe fort et unique),
 et le promouvoir :

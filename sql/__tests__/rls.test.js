@@ -12,6 +12,7 @@ const SCRIPTS = [
   'CHAT_TABLES.sql',
   'students-profile.sql',
   'payments-online.sql',
+  'bulletin-access.sql',
   ...(BASELINE ? [] : ['security-hardening.sql']),
 ];
 
@@ -277,6 +278,39 @@ describe('durcissement des fonctions et vues', () => {
     for (const table of ['students', 'grades', 'absences', 'app_data', 'user_profiles', 'payments']) {
       expect(await rows(null, `SELECT * FROM ${table}`)).toEqual([]);
     }
+  });
+});
+
+describe('accès au bulletin selon le paiement', () => {
+  const access = async (id) => (await rows(ADMIN, `SELECT bulletin_access FROM students WHERE id = ${id}`))[0].bulletin_access;
+
+  it("un paiement terminé débloque le bulletin, l'élève sans paiement reste bloqué", async () => {
+    expect(await access(1)).toBe(true);
+    expect(await access(3)).toBe(false);
+  });
+
+  it('un paiement en attente ou échoué ne débloque rien', async () => {
+    await db.exec(`INSERT INTO payments (student_id, amount_paid, status, provider) VALUES
+      (3, 5000, 'pending', 'fedapay'), (3, 5000, 'failed', 'fedapay')`);
+    expect(await access(3)).toBe(false);
+  });
+
+  it("un solde dû non couvert garde le bulletin bloqué, jusqu'au paiement complet", async () => {
+    await db.exec(`INSERT INTO payments (student_id, amount_paid, amount_due, status, provider)
+      VALUES (3, 4000, 10000, 'completed', 'fedapay')`);
+    expect(await access(3)).toBe(false);
+    await db.exec(`INSERT INTO payments (student_id, amount_paid, status, provider)
+      VALUES (3, 6000, 'completed', 'fedapay')`);
+    expect(await access(3)).toBe(true);
+  });
+
+  it("un parent lit l'état de son enfant mais ne peut pas se débloquer lui-même", async () => {
+    const own = await rows(PARENT_X, 'SELECT id, bulletin_access FROM students');
+    expect(own.map((r) => [Number(r.id), r.bulletin_access])).toEqual([[1, true]]);
+    await db.exec('UPDATE students SET bulletin_access = false WHERE id = 1');
+    await run(PARENT_X, 'UPDATE students SET bulletin_access = true WHERE id = 1');
+    expect(await access(1)).toBe(false);
+    await db.exec('UPDATE students SET bulletin_access = true WHERE id = 1');
   });
 });
 
