@@ -14,9 +14,10 @@ export default function AppreciationManager({
   classes,
   selectedClass,
   selectedTrimester,
-  showNotification
+  showNotification,
+  appreciations = [],
+  setAppreciations
 }) {
-  const [appreciations, setAppreciations] = useState([]);
   const [activeTab, setActiveTab] = useState('teacher'); // 'teacher' ou 'council'
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -49,14 +50,14 @@ export default function AppreciationManager({
       createdAt: new Date().toISOString()
     };
 
-    setAppreciations([...appreciations, newAppreciation]);
+    setAppreciations(prev => [...prev, newAppreciation]);
     showNotification('Appréciation enregistrée');
     resetForm();
   };
 
   const handleDelete = (id) => {
     if (window.confirm('Supprimer cette appréciation ?')) {
-      setAppreciations(appreciations.filter(a => a.id !== id));
+      setAppreciations(prev => prev.filter(a => a.id !== id));
       showNotification('Appréciation supprimée');
     }
   };

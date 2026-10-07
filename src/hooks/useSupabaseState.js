@@ -1,18 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../config/supabase';
 
 /**
- * Hook personnalisé pour synchroniser les données avec Supabase
- * Remplace useLocalStorageState pour une persistence dans le cloud
- * 
+ * Hook de persistance clé/valeur dans la table Supabase `app_data`
+ * (repli sur localStorage quand le client Supabase n'est pas configuré).
+ *
+ * La valeur est stockée sous forme de chaîne JSON dans la colonne jsonb : ce format
+ * est conservé tel quel pour rester compatible avec les données existantes.
+ *
  * @param {string} key - Clé d'identification des données
- * @param {any} defaultValue - Valeur par défaut si pas de données
- * @returns {[any, function, boolean]} - [données, fonction de mise à jour, isLoading]
+ * @param {any} defaultValue - Valeur par défaut si rien n'est stocké
+ * @returns {[any, function, boolean]} [valeur, mettreÀJour, enChargement]
+ *   mettreÀJour accepte une valeur OU une fonction `(précédent) => suivant`, comme setState.
+ *   Si la sauvegarde échoue, la valeur précédente est restaurée.
  */
 export function useSupabaseState(key, defaultValue) {
   const [data, setData] = useState(defaultValue);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
+
+  // Dernière valeur connue, toujours à jour (contrairement à `data` dans une closure) :
+  // permet d'enchaîner plusieurs mises à jour sans perdre la précédente.
+  const latest = useRef(defaultValue);
+  // Les écritures partent l'une après l'autre : l'ordre d'arrivée en base est celui des appels.
+  const writeQueue = useRef(Promise.resolve());
+
+  const apply = (value) => {
+    latest.current = value;
+    setData(value);
+  };
 
   // Charger les données depuis Supabase au montage
   useEffect(() => {
@@ -21,11 +37,7 @@ export function useSupabaseState(key, defaultValue) {
         setIsLoading(true);
         if (!supabase) {
           const localData = localStorage.getItem(key);
-          if (localData) {
-            setData(JSON.parse(localData));
-          } else {
-            setData(defaultValue);
-          }
+          apply(localData ? JSON.parse(localData) : defaultValue);
           return;
         }
 
@@ -39,17 +51,11 @@ export function useSupabaseState(key, defaultValue) {
           throw err; // PGRST116 = pas de lignes
         }
 
-        if (result) {
-          const parsedValue = JSON.parse(result.value);
-          setData(parsedValue);
-        } else {
-          setData(defaultValue);
-        }
+        apply(result ? JSON.parse(result.value) : defaultValue);
       } catch (err) {
         console.error(`Erreur au chargement de ${key}:`, err);
         setError(err);
-        // Utilise la valeur par défaut en cas d'erreur
-        setData(defaultValue);
+        apply(defaultValue);
       } finally {
         setIsLoading(false);
       }
@@ -58,24 +64,18 @@ export function useSupabaseState(key, defaultValue) {
     loadData();
 
     if (!supabase) {
-      return;
+      return undefined;
     }
 
-    // S'abonner aux changements en temps réel (nouvelle API Supabase v2)
+    // Changements en temps réel (autres utilisateurs / onglets)
     const channel = supabase
       .channel(`app_data_${key}`)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'app_data',
-          filter: `key=eq.${key}`
-        },
+        { event: '*', schema: 'public', table: 'app_data', filter: `key=eq.${key}` },
         (payload) => {
           if (payload.new?.key === key) {
-            const parsedValue = JSON.parse(payload.new.value);
-            setData(parsedValue);
+            apply(JSON.parse(payload.new.value));
           }
         }
       )
@@ -84,119 +84,37 @@ export function useSupabaseState(key, defaultValue) {
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  // Fonction de mise à jour qui sauvegarde dans Supabase et met à jour l'état local
-  const updateData = async (newValue) => {
-    try {
-      // Mise à jour immédiate de l'état local (optimistic update)
-      setData(newValue);
+  const updateData = (valueOrUpdater) => {
+    const previous = latest.current;
+    const next = typeof valueOrUpdater === 'function' ? valueOrUpdater(previous) : valueOrUpdater;
 
-      if (!supabase) {
-        localStorage.setItem(key, JSON.stringify(newValue));
-        return;
-      }
+    // Mise à jour immédiate de l'interface (optimiste)
+    apply(next);
 
-      // Sauvegarde dans Supabase
-      const { error } = await supabase
-        .from('app_data')
-        .upsert({
-          key,
-          value: JSON.stringify(newValue),
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) {
-        throw error;
-      }
-    } catch (err) {
-      console.error(`Erreur lors de la sauvegarde de ${key}:`, err);
-      setError(err);
-      // Revert aux données précédentes en cas d'erreur
-      // La vraie synchronisation se fera via le subscription
-    }
-  };
-
-  return [data, updateData, isLoading];
-}
-
-/**
- * Hook alternatif avec localStorage comme fallback
- * En cas d'indisponibilité de Supabase, utilise localStorage
- */
-export function useSupabaseStateWithFallback(key, defaultValue) {
-  const [data, setData] = useState(defaultValue);
-  const [isLoading, setIsLoading] = useState(true);
-  const [usesFallback, setUsesFallback] = useState(false);
-
-  useEffect(() => {
-    const loadData = async () => {
+    const save = async () => {
       try {
-        setIsLoading(true);
-        
-        // Essayer de charger depuis Supabase
-        const { data: result, error } = await supabase
+        if (!supabase) {
+          localStorage.setItem(key, JSON.stringify(next));
+          return;
+        }
+        const { error } = await supabase
           .from('app_data')
-          .select('value')
-          .eq('key', key)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          throw error;
-        }
-
-        if (result) {
-          setData(JSON.parse(result.value));
-        } else {
-          // Essayer localStorage comme fallback
-          const localData = localStorage.getItem(key);
-          if (localData) {
-            setData(JSON.parse(localData));
-            setUsesFallback(true);
-          } else {
-            setData(defaultValue);
-          }
-        }
+          .upsert({ key, value: JSON.stringify(next), updated_at: new Date().toISOString() });
+        if (error) throw error;
       } catch (err) {
-        console.warn(`Impossible d'accéder à Supabase, utilisation de localStorage pour ${key}`);
-        
-        // Fallback sur localStorage
-        const localData = localStorage.getItem(key);
-        if (localData) {
-          setData(JSON.parse(localData));
-        } else {
-          setData(defaultValue);
-        }
-        setUsesFallback(true);
-      } finally {
-        setIsLoading(false);
+        console.error(`Erreur lors de la sauvegarde de ${key}:`, err);
+        setError(err);
+        // Restaurer la valeur précédente, sauf si une mise à jour plus récente est déjà passée
+        if (latest.current === next) apply(previous);
       }
     };
 
-    loadData();
-  }, [key]);
-
-  const updateData = async (newValue) => {
-    setData(newValue);
-
-    // Toujours sauvegarder en local aussi
-    localStorage.setItem(key, JSON.stringify(newValue));
-
-    // Essayer de sauvegarder dans Supabase
-    try {
-      await supabase
-        .from('app_data')
-        .upsert({
-          key,
-          value: JSON.stringify(newValue),
-          updated_at: new Date().toISOString()
-        });
-      setUsesFallback(false);
-    } catch (err) {
-      console.warn(`Synchronisation Supabase échouée pour ${key}, données sauvegardées localement`);
-      setUsesFallback(true);
-    }
+    writeQueue.current = writeQueue.current.then(save);
+    return writeQueue.current;
   };
 
-  return [data, updateData, isLoading, usesFallback];
+  return [data, updateData, isLoading];
 }

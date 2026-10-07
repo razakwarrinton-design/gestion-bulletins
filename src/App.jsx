@@ -59,6 +59,8 @@ import StatisticsView from './views/StatisticsView';
 import ImportExportView from './views/ImportExportView';
 import ParentsManagementView from './views/ParentsManagementView';
 
+const MAX_ACTIVITIES = 200;
+
 // ─── Composant principal ──────────────────────────────────────────────────────
 const BulletinApp = () => {
     // ── Authentification ────────────────────────────────────────────────────────
@@ -183,7 +185,8 @@ const BulletinApp = () => {
             action,
             details
         };
-        setActivities(prev => [newActivity, ...prev]);
+        // Journal borné : sans limite, la valeur stockée (et rechargée à chaque ouverture) grossit sans fin
+        setActivities(prev => [newActivity, ...prev].slice(0, MAX_ACTIVITIES));
     };
 
     const openConfirm = (title, message, onConfirm) => {
