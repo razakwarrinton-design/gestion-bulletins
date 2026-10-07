@@ -1,16 +1,64 @@
-# React + Vite
+# Gestion des Bulletins
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Application web de gestion scolaire : notes, moyennes, bulletins imprimables, suivi des absences et paiements, portail parents.
 
-Currently, two official plugins are available:
+**Stack :** React 19 · Vite · Tailwind CSS 4 · Supabase (auth, base de données, RLS) · Recharts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Démarrage
 
-## React Compiler
+```bash
+npm install
+cp .env.example .env.local   # puis renseigner les clés Supabase
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Commande | Rôle |
+|---|---|
+| `npm run dev` | Serveur de développement |
+| `npm run build` | Build de production |
+| `npm test` | Tests unitaires (Vitest) |
+| `npm run lint` | ESLint |
 
-## Expanding the ESLint configuration
+## Fonctionnalités
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Classes, élèves, matières et coefficients
+- Saisie des notes, moyennes pondérées, mentions, classement
+- Bulletins imprimables, appréciations (enseignant, conseil de classe, assistant IA)
+- Absences, paiements (frais de scolarité), SMS, messagerie
+- Rôles : Admin, Professeur, Secrétaire, Parent (double authentification disponible)
+- Portail parents, mode sombre, interface multilingue, PWA
+
+## Structure
+
+```
+src/
+  components/   Écrans et composants (GradesForm, PrintPreview, ParentPortal…)
+  hooks/        Accès aux données et état (useGrades, useStudents, useSupabaseAuth…)
+  services/     Paiements, SMS, chat
+  utils/        Calculs de moyennes, mentions, élèves (testés)
+  config/       Client Supabase
+sql/            Schéma Supabase, politiques RLS, tables du chat
+docs/           Guides de configuration, déploiement, sécurité, roadmap
+supabase/       Fonctions edge
+```
+
+## Base de données
+
+Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
+1. `sql/supabase-schema.sql`
+2. `sql/supabase-security-rls.sql`
+3. `sql/CHAT_TABLES.sql`
+
+Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURATION.md) et
+[docs/SECURITE-RLS-RESUME.md](docs/SECURITE-RLS-RESUME.md).
+
+## Calcul des moyennes
+
+La moyenne d'un trimestre est la moyenne des notes pondérées par le coefficient de chaque matière.
+Une note non saisie est ignorée ; une note de 0 compte. Voir [docs/CALCUL-MOYENNES.md](docs/CALCUL-MOYENNES.md).
+
+## Documentation
+
+- [Déploiement](docs/DEPLOYMENT-GUIDE.md)
+- [Portail parents](docs/SETUP-PARENT-PORTAL.md)
+- [Roadmap](docs/ROADMAP.md) · [Plan d'amélioration](docs/PLAN-AMELIORATIONS.md)

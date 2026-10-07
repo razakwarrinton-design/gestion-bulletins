@@ -213,7 +213,7 @@ export class ChatService {
 
   /**
    * Récupérer TOUTES les conversations (vue admin uniquement — le RLS de la table
-   * `conversations` limite cette requête aux admins, voir CHAT_TABLES.sql)
+   * `conversations` limite cette requête aux admins, voir sql/CHAT_TABLES.sql)
    */
   async getAllConversations() {
     try {

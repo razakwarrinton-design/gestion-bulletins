@@ -4,7 +4,7 @@
 
 | Fichier | Description |
 |---------|-------------|
-| `supabase-security-rls.sql` | Script SQL complet pour RLS et authentification |
+| `sql/supabase-security-rls.sql` | Script SQL complet pour RLS et authentification |
 | `src/hooks/useSupabaseAuth.js` | Hook React pour l'authentification Supabase |
 | `src/components/LoginModalSupabase.jsx` | Modal de connexion/inscription moderne |
 | `GUIDE-AUTHENTIFICATION-SUPABASE.md` | Guide complet étape par étape |
@@ -59,7 +59,7 @@ const {
    - Authentication → Providers → Email (toggle ON)
 
 2. **Exécuter le script SQL**
-   - SQL Editor → Copier `supabase-security-rls.sql` → Run
+   - SQL Editor → Copier `sql/supabase-security-rls.sql` → Run
 
 3. **Créer les utilisateurs de test**
    - Authentication → Users → Add user
@@ -264,7 +264,7 @@ SELECT * FROM pg_policies WHERE tablename = 'app_data';
 
 **Cause** : Les politiques RLS ne sont pas correctement configurées.
 
-**Solution** : Réexécuter le script `supabase-security-rls.sql`
+**Solution** : Réexécuter le script `sql/supabase-security-rls.sql`
 
 ### L'utilisateur ne peut pas se connecter
 
@@ -280,7 +280,7 @@ SELECT * FROM pg_policies WHERE tablename = 'app_data';
 ## 📚 Ressources
 
 - **Guide complet** : `GUIDE-AUTHENTIFICATION-SUPABASE.md`
-- **Script SQL** : `supabase-security-rls.sql`
+- **Script SQL** : `sql/supabase-security-rls.sql`
 - **Hook Auth** : `src/hooks/useSupabaseAuth.js`
 - **Modal Login** : `src/components/LoginModalSupabase.jsx`
 

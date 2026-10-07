@@ -133,7 +133,7 @@ Ce document planifie toutes les améliorations de l'application dans un ordre lo
 - ✅ Notifications email automatiques
 
 **Modifications** :
-- `supabase-security-rls.sql` - Ajouter rôle "parent"
+- `sql/supabase-security-rls.sql` - Ajouter rôle "parent"
 - `src/components/ParentDashboard.jsx` (nouveau)
 - `src/hooks/useSupabaseAuth.js` - Support rôle parent
 

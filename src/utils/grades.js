@@ -7,8 +7,10 @@ export function calculateAverage(studentId, trimester, grades, subjects) {
 
   studentGrades.forEach(grade => {
     const subject = subjects.find(s => s.id === grade.subjectId);
-    if (subject) {
-      totalPoints += (parseFloat(grade.value) || 0) * (subject.coefficient || 0);
+    const value = parseFloat(grade.value);
+    // Une note non saisie (vide, null) ne doit pas compter comme 0
+    if (subject && !Number.isNaN(value)) {
+      totalPoints += value * (subject.coefficient || 0);
       totalCoef += subject.coefficient || 0;
     }
   });

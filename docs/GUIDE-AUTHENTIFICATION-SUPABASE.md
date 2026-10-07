@@ -33,7 +33,7 @@ Ce guide vous explique comment activer l'authentification Supabase et renforcer 
 
 1. **Allez dans "SQL Editor"** (icône `</>` dans le menu)
 2. **Cliquez sur "+ New query"**
-3. **Ouvrez le fichier** `supabase-security-rls.sql`
+3. **Ouvrez le fichier** `sql/supabase-security-rls.sql`
 4. **Copiez tout le contenu** (Ctrl+A puis Ctrl+C)
 5. **Collez-le** dans l'éditeur SQL
 6. **Cliquez sur "Run"** (ou Ctrl+Enter)

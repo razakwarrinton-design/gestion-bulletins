@@ -56,7 +56,7 @@ VITE_SUPABASE_ANON_KEY=votre-cle-anon-ici
 
 1. Dans Supabase, allez dans **SQL Editor** (icône `</>` dans le menu)
 2. Cliquez sur **New query**
-3. **Copiez tout le contenu** du fichier `supabase-schema.sql`
+3. **Copiez tout le contenu** du fichier `sql/supabase-schema.sql`
 4. **Collez-le** dans l'éditeur SQL
 5. **Cliquez sur** "Run" (ou appuyez sur `Ctrl+Enter`)
 6. **Vérifiez** qu'il n'y a pas d'erreurs dans la console
@@ -167,7 +167,7 @@ CREATE POLICY "Seuls admins peuvent supprimer" ON app_data
 - Vérifiez que le fichier `.env.local` est à la racine du projet
 
 ### Erreur : "relation app_data does not exist"
-- Relancez le script SQL `supabase-schema.sql`
+- Relancez le script SQL `sql/supabase-schema.sql`
 - Vérifiez que vous êtes bien dans le bon projet Supabase
 
 ### Les données ne se synchronisent pas

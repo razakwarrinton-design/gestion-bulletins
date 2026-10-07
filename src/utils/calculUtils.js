@@ -47,7 +47,14 @@ export const calculateTrimesterAverage = (studentId, trimester, grades, subjects
     const subjectAverage = calculateSubjectAverage(grades, studentId, subject.id, trimester, subjects);
     const coefficient = subject.coefficient || 1;
 
-    if (subjectAverage > 0) {
+    // Une matière est comptée dès qu'elle a une note, même 0
+    const hasGrade = grades.some(g =>
+      g.studentId === studentId &&
+      g.subjectId === subject.id &&
+      g.trimester === trimester
+    );
+
+    if (hasGrade) {
       totalWeightedScore += subjectAverage * coefficient;
       totalCoefficient += coefficient;
     }
@@ -117,17 +124,19 @@ export const getMentionDetails = (average) => {
  * @returns {Object} {rank, outOf, percentile}
  */
 export const calculateStudentRank = (studentId, trimester, students, grades, subjects) => {
+  // Seuls les élèves ayant au moins une note sont classés (une moyenne de 0 est valable)
   const averages = students
+    .filter(s => grades.some(g => g.studentId === s.id && g.trimester === trimester))
     .map(s => ({
       id: s.id,
       average: calculateTrimesterAverage(s.id, trimester, grades, subjects)
     }))
-    .filter(a => a.average > 0)
     .sort((a, b) => b.average - a.average);
 
   const rank = averages.findIndex(a => a.id === studentId) + 1;
   const outOf = averages.length;
-  const percentile = Math.round((1 - rank / outOf) * 100);
+  // Élève sans note (ou classe vide) : pas de centile
+  const percentile = rank === 0 ? null : Math.round((1 - rank / outOf) * 100);
 
   return { rank, outOf, percentile };
 };

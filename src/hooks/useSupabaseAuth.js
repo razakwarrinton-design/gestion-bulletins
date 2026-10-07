@@ -102,7 +102,7 @@ export function useSupabaseAuth() {
   // Inscription avec email/mot de passe
   // Note sécurité : le rôle n'est jamais choisi ici. Le profil (avec le rôle
   // 'secretaire' forcé côté base) est créé automatiquement par le trigger SQL
-  // handle_new_user() — voir supabase-security-rls.sql. Un admin doit ensuite
+  // handle_new_user() — voir sql/supabase-security-rls.sql. Un admin doit ensuite
   // élever le rôle manuellement si nécessaire.
   const signUp = async (email, password, firstName, lastName) => {
     if (!supabaseConfigured) {
