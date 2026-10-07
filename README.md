@@ -56,6 +56,11 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 7. `sql/bulletin-access.sql` : accès des parents au bulletin (débloqué automatiquement par un paiement terminé)
 8. **`sql/security-hardening.sql`** : règles d'accès (un parent ne voit que ses enfants, comptes inscrits « en attente » jusqu'à validation). **Obligatoire avant toute mise en service**, voir [docs/SECURITE.md](docs/SECURITE.md)
 
+Ensuite, créer le premier administrateur (voir [docs/SECURITE.md](docs/SECURITE.md)). Les autres comptes s'inscrivent
+eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*.
+
+Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURATION.md).
+
 ## Fonctions Edge (Supabase)
 
 | Fonction | Rôle | Secrets à définir |
@@ -68,11 +73,6 @@ Déploiement : `supabase functions deploy <nom>`. Tant que `send-sms` n'est pas 
 d'un SMS échoue avec un message explicite (aucun envoi n'est plus simulé). Les boutons « Générer avec IA »
 (`generate-appreciation`) et « Notifier les parents » (`notify-parents`) appellent des fonctions qui ne sont
 pas encore dans ce dépôt.
-
-Ensuite, créer le premier administrateur (voir [docs/SECURITE.md](docs/SECURITE.md)). Les autres comptes s'inscrivent
-eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*.
-
-Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURATION.md).
 
 ## Calcul des moyennes
 
