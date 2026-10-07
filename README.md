@@ -52,9 +52,12 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 3. `sql/CHAT_TABLES.sql`
 4. `sql/students-profile.sql` : profil élève (contact d'urgence, date de naissance…), nécessaire pour enregistrer ces champs et pour l'envoi WhatsApp
 5. `sql/payments-online.sql` : paiements Mobile Money (voir [docs/PAIEMENTS.md](docs/PAIEMENTS.md))
+6. **`sql/security-hardening.sql`** : règles d'accès (un parent ne voit que ses enfants, comptes inscrits « en attente » jusqu'à validation). **Obligatoire avant toute mise en service**, voir [docs/SECURITE.md](docs/SECURITE.md)
 
-Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURATION.md) et
-[docs/SECURITE-RLS-RESUME.md](docs/SECURITE-RLS-RESUME.md).
+Ensuite, créer le premier administrateur (voir [docs/SECURITE.md](docs/SECURITE.md)). Les autres comptes s'inscrivent
+eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*.
+
+Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURATION.md).
 
 ## Calcul des moyennes
 

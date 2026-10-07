@@ -27,37 +27,15 @@ export default function Settings({
                         Gestion des utilisateurs
                     </h3>
 
-                    <button
-                        onClick={() => {
-                            const email = prompt('Email du nouvel utilisateur:');
-                            if (!email) return;
-
-                            const password = prompt('Mot de passe:');
-                            if (!password) return;
-
-                            const firstName = prompt('Prénom:');
-                            if (!firstName) return;
-
-                            const lastName = prompt('Nom:');
-                            if (!lastName) return;
-
-                            const role = prompt('Rôle (professeur/admin):', 'professeur');
-
-                            if (role === 'professeur' || role === 'admin') {
-                                handleRegister(email, password, firstName, lastName, role);
-                            } else {
-                                alert('Rôle invalide. Utilisez "professeur" ou "admin"');
-                            }
-                        }}
-                        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors mb-4 flex items-center space-x-2"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>Créer un compte Professeur/Admin</span>
-                    </button>
+                    <p className="text-sm text-gray-700 mb-4">
+                        Les nouveaux comptes s'inscrivent depuis la page de connexion et restent <strong>en attente</strong> :
+                        ils n'accèdent à aucune donnée tant que vous ne leur avez pas attribué un rôle dans le menu
+                        <strong> Utilisateurs</strong>.
+                    </p>
 
                     <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                         <p className="text-sm text-blue-800">
-                            <strong>Note :</strong> Avec l'authentification Supabase, les utilisateurs sont maintenant gérés dans Authentication → Users dans votre dashboard Supabase.
+                            <strong>Note :</strong> les comptes sont stockés dans Supabase (Authentication → Users). Vous pouvez y supprimer un compte ou réinitialiser un mot de passe.
                             <br />
                             <a
                                 href="https://supabase.com/dashboard"

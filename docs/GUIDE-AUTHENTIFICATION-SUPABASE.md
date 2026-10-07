@@ -57,58 +57,27 @@ Ce guide vous explique comment activer l'authentification Supabase et renforcer 
 1. **Allez dans "Authentication" → "Users"**
 2. **Cliquez sur "Add user" → "Create new user"**
 
-#### Créer l'utilisateur Admin :
+#### Créer le premier administrateur
 
-```
-Email: admin@ecole.com
-Password: Admin@2024 (ou votre choix)
-Auto Confirm User: ✅ ON
-```
+1. Renseignez l'e-mail de l'administrateur et **un mot de passe fort et unique** (ne réutilisez jamais
+   un mot de passe d'exemple), cochez **Auto Confirm User**, puis **Create user**.
+2. Le compte est créé avec le rôle `en_attente` : les métadonnées envoyées à l'inscription ne peuvent
+   **pas** donner un rôle (c'est voulu : sinon n'importe qui pourrait s'inscrire en administrateur).
+   Promouvez-le dans l'éditeur SQL :
 
-Cliquez sur **"User Metadata"** et ajoutez ce JSON :
-```json
-{
-  "first_name": "Admin",
-  "last_name": "Système",
-  "role": "admin"
-}
+```sql
+UPDATE user_profiles SET role = 'admin' WHERE email = 'votre-adresse@exemple.com';
 ```
 
-Cliquez sur **"Create user"**
+#### Créer les autres comptes (professeurs, secrétaires)
 
-#### Créer l'utilisateur Professeur :
+Chaque personne s'inscrit elle-même depuis la page de connexion (« Créer un compte »). Son compte reste
+**en attente** et n'accède à aucune donnée. L'administrateur le valide ensuite dans le menu
+**Utilisateurs** de l'application en choisissant son rôle.
 
-```
-Email: prof@ecole.com
-Password: Prof@2024
-Auto Confirm User: ✅ ON
-```
+Les comptes **parents** se créent depuis « Gestion parents » (réservé à l'administrateur).
 
-User Metadata :
-```json
-{
-  "first_name": "Jean",
-  "last_name": "Professeur",
-  "role": "professeur"
-}
-```
-
-#### Créer l'utilisateur Secrétaire :
-
-```
-Email: secret@ecole.com
-Password: Secret@2024
-Auto Confirm User: ✅ ON
-```
-
-User Metadata :
-```json
-{
-  "first_name": "Marie",
-  "last_name": "Secrétaire",
-  "role": "secretaire"
-}
-```
+> Voir [SECURITE.md](SECURITE.md) pour le détail des protections et les réglages Supabase recommandés.
 
 ---
 

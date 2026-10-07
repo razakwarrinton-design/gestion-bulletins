@@ -19,14 +19,13 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
     const [password, setPassword] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [role, setRole] = useState('secretaire');
     const [showPass, setShowPass] = useState(false);
     const [error, setError] = useState('');
 
     const resetForm = () => {
         setEmail(''); setPassword('');
         setFirstName(''); setLastName('');
-        setRole('secretaire'); setError('');
+        setError('');
     };
 
     const switchMode = (register) => {
@@ -48,7 +47,7 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
                 setError('Le mot de passe doit contenir au moins 6 caractères');
                 return;
             }
-            const res = await onSignUp(email, password, firstName, lastName, role);
+            const res = await onSignUp(email, password, firstName, lastName);
             if (!res.success) setError(res.error || 'Erreur lors de la création du compte');
         } else {
             const res = await onSignIn(email, password);
@@ -225,18 +224,10 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
                                         />
                                     </div>
                                 </div>
-                                <div style={{ marginBottom: 14 }}>
-                                    <label style={lbl}>Rôle</label>
-                                    <select style={{ ...inp }} value={role}
-                                        onChange={e => setRole(e.target.value)} disabled={loading}
-                                        onFocus={e => { e.target.style.borderColor = '#2563EB'; e.target.style.background = '#fff'; }}
-                                        onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.background = '#F8FAFF'; }}
-                                    >
-                                        <option value="secretaire">💼 Secrétaire</option>
-                                        <option value="professeur">👨‍🏫 Professeur</option>
-                                        <option value="admin">🛡️ Administrateur</option>
-                                    </select>
-                                </div>
+                                <p style={{ fontSize: 12, color: '#64748B', background: '#F1F5F9', borderRadius: 8, padding: '8px 10px', marginBottom: 14 }}>
+                                    Après l'inscription, votre compte devra être validé par l'administrateur de l'établissement
+                                    avant de pouvoir accéder à l'application.
+                                </p>
                             </>
                         )}
 

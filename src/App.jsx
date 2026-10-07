@@ -58,6 +58,8 @@ import BulletinsView from './views/BulletinsView';
 import StatisticsView from './views/StatisticsView';
 import ImportExportView from './views/ImportExportView';
 import ParentsManagementView from './views/ParentsManagementView';
+import UsersManager from './components/UsersManager';
+import PendingApproval from './components/PendingApproval';
 
 const MAX_ACTIVITIES = 200;
 
@@ -406,6 +408,17 @@ const BulletinApp = () => {
         );
     }
 
+    // Compte créé mais pas encore validé par un administrateur : aucun accès aux données
+    if (currentUser.role === 'en_attente') {
+        return (
+            <PendingApproval
+                currentUser={currentUser}
+                onRefresh={() => window.location.reload()}
+                onSignOut={signOut}
+            />
+        );
+    }
+
     return (
         <div className="flex h-screen overflow-hidden" style={{ background: '#F0F5FF' }}>
 
@@ -566,6 +579,9 @@ const BulletinApp = () => {
                                 setShowLoginModal={setShowLoginModal}
                                 onSignIn={handleLogin} onSignUp={handleRegister} loading={authLoading}
                             />
+                        )}
+                        {currentView === 'users' && (
+                            <UsersManager currentUser={currentUser} showNotification={showNotification} />
                         )}
                         {currentView === 'sms-dashboard' && <SMSDashboard />}
                         {currentView === 'chat' && (

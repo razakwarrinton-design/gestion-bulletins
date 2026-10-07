@@ -2,11 +2,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 
+// Ligne renvoyée par la fonction SQL child_class_rank (null = fonction indisponible : repli local)
+const server = vi.hoisted(() => ({ row: null }));
+
 vi.mock('../config/supabase', () => ({
   supabase: {
     from: () => ({
       select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }),
     }),
+    rpc: () => Promise.resolve({ data: server.row ? [server.row] : [], error: null }),
   },
 }));
 
@@ -39,6 +43,7 @@ const baseProps = (overrides = {}) => ({
 
 let opened;
 beforeEach(() => {
+  server.row = null;
   opened = { html: '', document: { write: (h) => { opened.html += h; }, close() {} }, print: vi.fn(), close: vi.fn() };
   vi.spyOn(window, 'open').mockReturnValue(opened);
   vi.useFakeTimers();
@@ -67,6 +72,29 @@ describe('PrintPreview', () => {
     expect(window.open).toHaveBeenCalled();
     expect(opened.html).toContain('Koffi');
     expect(opened.html).toContain('Collège Test');
+  });
+});
+
+describe('PrintPreview : rang et statistiques de classe', () => {
+  const printAndRead = async () => {
+    render(<PrintPreview {...baseProps()} />);
+    await act(async () => { await Promise.resolve(); }); // laisse la réponse de la base arriver
+    act(() => {
+      window.dispatchEvent(new CustomEvent('print-bulletin', { detail: { template: 'model1' } }));
+    });
+    return new DOMParser().parseFromString(opened.html, 'text/html').body.textContent.replace(/\s+/g, ' ');
+  };
+
+  it('utilise le rang et les statistiques fournis par la base (cas d\'un parent qui ne lit que son enfant)', async () => {
+    server.row = { rank: 2, total: 28, class_average: '11.50', class_max: '17.00', class_min: '4.00' };
+    const text = await printAndRead();
+    expect(text).toContain('2 / 28');
+    expect(text).toContain('11.50');
+  });
+
+  it('retombe sur le calcul local quand la base ne répond pas', async () => {
+    const text = await printAndRead();
+    expect(text).toContain('1 / 2'); // élève 1 sur 2 élèves de la classe
   });
 });
 

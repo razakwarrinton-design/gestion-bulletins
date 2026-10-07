@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Printer, X, Users, ChevronDown } from 'lucide-react';
 import { supabase } from '../config/supabase';
 import { prepareBulletinHtml } from '../utils/printSecurity';
@@ -16,6 +16,7 @@ function PrintPreviewInner({
   const [absData, setAbsData] = useState({ absents: 0, retards: 0, injustifies: 0 });
 
   const student = printStudent;
+  const [serverRank, setServerRank] = useState(null);
 
   // Charger les absences de l'élève
   useEffect(() => {
@@ -33,6 +34,20 @@ function PrintPreviewInner({
       });
   }, [student?.id]);
 
+  // Rang et statistiques de classe calculés par la base (fonction child_class_rank) : un parent ne
+  // lit que ses propres enfants et ne peut pas les calculer à partir des notes de la classe.
+  useEffect(() => {
+    if (!student?.id) return undefined;
+    let cancelled = false;
+    Promise.resolve(supabase.rpc('child_class_rank', { p_student: student.id, p_trimester: selectedTrimester }))
+      .then(({ data, error }) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!cancelled) setServerRank(!error && row ? row : null);
+      })
+      .catch(() => { if (!cancelled) setServerRank(null); });
+    return () => { cancelled = true; };
+  }, [student?.id, selectedTrimester]);
+
   const average = parseFloat(calculateAverage(student.id, selectedTrimester)) || 0;
   const studentGrades = grades.filter(g => (g.studentId || g.student_id) === student.id && g.trimester === selectedTrimester);
   const classInfo = classes.find(c => c.id === (student.classId || student.class_id));
@@ -42,12 +57,18 @@ function PrintPreviewInner({
   const ranking = classStudents
     .map(s => ({ student: s, average: parseFloat(calculateAverage(s.id, selectedTrimester)) || 0 }))
     .sort((a, b) => b.average - a.average);
-  const studentRank = ranking.findIndex(r => r.student.id === student.id) + 1 || '-';
+  const localRank = ranking.findIndex(r => r.student.id === student.id) + 1 || '-';
 
   const classAverages = classStudents.map(s => parseFloat(calculateAverage(s.id, selectedTrimester)) || 0).filter(a => a > 0);
-  const classAverage = classAverages.length ? classAverages.reduce((a, b) => a + b, 0) / classAverages.length : 0;
-  const classMax = classAverages.length ? Math.max(...classAverages) : 0;
-  const classMin = classAverages.length ? Math.min(...classAverages) : 0;
+  const localClassAverage = classAverages.length ? classAverages.reduce((a, b) => a + b, 0) / classAverages.length : 0;
+  const localClassMax = classAverages.length ? Math.max(...classAverages) : 0;
+  const localClassMin = classAverages.length ? Math.min(...classAverages) : 0;
+
+  const studentRank = serverRank ? serverRank.rank : localRank;
+  const classTotal = serverRank ? serverRank.total : classStudents.length;
+  const classAverage = serverRank ? Number(serverRank.class_average) : localClassAverage;
+  const classMax = serverRank ? Number(serverRank.class_max) : localClassMax;
+  const classMin = serverRank ? Number(serverRank.class_min) : localClassMin;
 
   const totalCoef = studentGrades.reduce((sum, g) => sum + (subjects.find(s => s.id === (g.subjectId || g.subject_id))?.coefficient || 0), 0);
   const totalPoints = studentGrades.reduce((sum, g) => {
@@ -250,13 +271,13 @@ function PrintPreviewInner({
       <div class="info-row"><div class="info-label">Nom</div><div class="info-value">${s.lastName?.toUpperCase()}</div></div>
       <div class="info-row"><div class="info-label">Prénom</div><div class="info-value">${s.firstName}</div></div>
       <div class="info-row"><div class="info-label">Classe</div><div class="info-value">${classInfo?.name || 'N/A'}</div></div>
-      <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">${classStudents.length} élèves</div></div>
-      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">${sRank} / ${classStudents.length}</div></div>
+      <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">${classTotal} élèves</div></div>
+      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">${sRank} / ${classTotal}</div></div>
       <div class="info-row"><div class="info-label">Trimestre</div><div class="info-value">${trimLabel}</div></div>
       ${s.birthDate || s.birth_date ? `<div class="info-row"><div class="info-label">Date de naissance</div><div class="info-value">${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</div></div>` : ''}
       <div class="info-row"><div class="info-label">Absences</div><div class="info-value" style="color:${absData.absents > 3 ? '#dc2626' : '#374151'};">${absData.absents} abs. · ${absData.retards} ret. · ${absData.injustifies} injust.</div></div>
     </div>
-    <div style="flex-shrink:0;">${qrCodeImg(s, sAvg, sRank, classStudents.length)}</div>
+    <div style="flex-shrink:0;">${qrCodeImg(s, sAvg, sRank, classTotal)}</div>
   </div>
 
   <table>
@@ -290,7 +311,7 @@ function PrintPreviewInner({
   <div class="results-band">
     <div class="result-cell"><div class="result-label">Moy. générale</div><div class="result-value">${fmtAvg(sAvg)}<span style="font-size:8pt;">/20</span></div></div>
     <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">${fmtAvg(classAverage)}</div></div>
-    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">${sRank}<span style="font-size:8pt;">/${classStudents.length}</span></div></div>
+    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">${sRank}<span style="font-size:8pt;">/${classTotal}</span></div></div>
     <div class="result-cell"><div class="result-label">Mention</div><div class="result-value" style="font-size:9.5pt;color:${sMention.color || '#1e40af'};">${sMention.text}</div></div>
     <div class="result-cell"><div class="result-label">Décision</div><div class="result-value" style="font-size:9.5pt;color:${sStatus.color};">${sStatus.text}</div></div>
     <div class="result-cell" style="background:${absData.absents > 3 ? '#fef2f2' : '#f8fafc'}"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:${absData.absents > 3 ? '#dc2626' : '#374151'};">${absData.absents}<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">${absData.retards} retard${absData.retards > 1 ? 's' : ''}</div></div>
@@ -438,12 +459,12 @@ function PrintPreviewInner({
     <div class="student-avatar">${(s.firstName || '?')[0]}${(s.lastName || '?')[0]}</div>
     <div>
       <div class="student-name">${s.firstName} ${s.lastName?.toUpperCase()}</div>
-      <div class="student-meta">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;|&nbsp; Effectif: <strong>${classStudents.length}</strong> &nbsp;|&nbsp; ${yearLabel}${s.birthDate || s.birth_date ? ` &nbsp;|&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
+      <div class="student-meta">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;|&nbsp; Effectif: <strong>${classTotal}</strong> &nbsp;|&nbsp; ${yearLabel}${s.birthDate || s.birth_date ? ` &nbsp;|&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
     </div>
     <div class="student-stats">
       <div class="stat-pill"><div class="stat-val">${fmtAvg(sAvg)}</div><div class="stat-lbl">Moyenne</div></div>
       <div class="stat-pill"><div class="stat-val">${sRank}</div><div class="stat-lbl">Rang</div></div>
-      ${qrCodeImg(s, sAvg, sRank, classStudents.length)}
+      ${qrCodeImg(s, sAvg, sRank, classTotal)}
     </div>
   </div>
 
@@ -654,7 +675,7 @@ function PrintPreviewInner({
           <div class="cover-badge-trim">${trimLabel}</div>
           <div style="font-size:7pt;opacity:.6;margin-top:2px;">Bulletin scolaire</div>
         </div>
-        ${qrCodeImg(s, sAvg, sRank, classStudents.length)}
+        ${qrCodeImg(s, sAvg, sRank, classTotal)}
       </div>
     </div>
   </div>
@@ -662,7 +683,7 @@ function PrintPreviewInner({
   <div class="student-banner">
     <div>
       <div class="student-fullname">${s.firstName} ${s.lastName?.toUpperCase()}</div>
-      <div class="student-class">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;·&nbsp; Effectif: <strong>${classStudents.length}</strong> &nbsp;·&nbsp; Rang: <strong>${sRank}/${classStudents.length}</strong>${s.birthDate || s.birth_date ? ` &nbsp;·&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
+      <div class="student-class">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;·&nbsp; Effectif: <strong>${classTotal}</strong> &nbsp;·&nbsp; Rang: <strong>${sRank}/${classTotal}</strong>${s.birthDate || s.birth_date ? ` &nbsp;·&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
     </div>
     <div class="avg-display">
       <div class="avg-num">${fmtAvg(sAvg)}</div>
@@ -798,15 +819,21 @@ function PrintPreviewInner({
   };
 
   // ── Bugfix useEffect ──────────────────────────────────────────────────────
+  // L'écouteur est enregistré une seule fois mais appelle toujours la version la plus récente de
+  // la fonction d'impression : sinon il imprimait avec les valeurs du premier rendu (rang et
+  // statistiques de classe encore absents, appréciation générale pas encore saisie).
+  const printLatest = useRef(null);
   useEffect(() => {
-    const handler = (e) => {
-      const tmpl = e?.detail?.template || bulletinTemplate;
-      const html = buildHtml(tmpl, student, studentGrades, average, studentRank, studentStatus, mention, totalCoef, totalPoints);
+    printLatest.current = (template) => {
+      const html = buildHtml(template || bulletinTemplate, student, studentGrades, average, studentRank, studentStatus, mention, totalCoef, totalPoints);
       if (html) openPrint(html);
     };
+  });
+  useEffect(() => {
+    const handler = (e) => printLatest.current?.(e?.detail?.template);
     window.addEventListener('print-bulletin', handler);
     return () => window.removeEventListener('print-bulletin', handler);
-  }, [bulletinTemplate, generalAppreciation]);
+  }, []);
 
   // ════════════════════════════════════════════════════════════════════════════
   // UI MODAL
@@ -832,7 +859,7 @@ function PrintPreviewInner({
               <div className="text-xs text-gray-400 uppercase font-semibold">Moyenne</div>
             </div>
             <div className="bg-white rounded-xl p-3 shadow-sm">
-              <div className="text-2xl font-black text-indigo-600">{studentRank}/{classStudents.length}</div>
+              <div className="text-2xl font-black text-indigo-600">{studentRank}/{classTotal}</div>
               <div className="text-xs text-gray-400 uppercase font-semibold">Rang</div>
             </div>
             <div className="bg-white rounded-xl p-3 shadow-sm">

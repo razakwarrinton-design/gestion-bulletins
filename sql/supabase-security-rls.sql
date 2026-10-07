@@ -255,15 +255,10 @@ GRANT SELECT ON v_users TO authenticated;
 --    Authentication → Providers → Email (Enable)
 
 -- 2. Créer le premier utilisateur admin via l'interface Supabase :
---    Authentication → Users → Add user
---    Email: admin@ecole.com
---    Password: (choisir un mot de passe fort)
---    User Metadata (JSON):
---    {
---      "first_name": "Admin",
---      "last_name": "Système",
---      "role": "admin"
---    }
+--    Authentication → Users → Add user (mot de passe fort et unique), puis le promouvoir :
+--      UPDATE user_profiles SET role = 'admin' WHERE email = 'votre-adresse@exemple.com';
+--    (Les métadonnées d'inscription ne peuvent PAS donner un rôle : le déclencheur le refuse.)
+--    Puis exécuter sql/security-hardening.sql.
 
 -- 3. Tester les politiques en vous connectant avec cet utilisateur
 

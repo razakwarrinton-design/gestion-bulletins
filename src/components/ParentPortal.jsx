@@ -907,25 +907,16 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
         if (!selectedChild) return;
         const key = `${selectedChild.id}_${selectedTrimester}`;
         if (rankData[key]) return;
+        // Le rang est calculé côté base (fonction child_class_rank) : un parent ne peut pas lire les
+        // notes des autres élèves, la fonction ne renvoie que le rang et l'effectif de la classe.
         const fetchRank = async () => {
-            const { data: rows } = await supabase
-                .from('grades')
-                .select('student_id, value, subjects(coefficient), students!inner(class_id)')
-                .eq('trimester', selectedTrimester)
-                .eq('students.class_id', selectedChild.classId);
-            if (!rows) return;
-            const byStudent = {};
-            rows.forEach(r => {
-                const coef = r.subjects?.coefficient || 1;
-                if (!byStudent[r.student_id]) byStudent[r.student_id] = { total: 0, coefSum: 0 };
-                byStudent[r.student_id].total += (r.value || 0) * coef;
-                byStudent[r.student_id].coefSum += coef;
+            const { data, error } = await supabase.rpc('child_class_rank', {
+                p_student: selectedChild.id,
+                p_trimester: selectedTrimester,
             });
-            const sorted = Object.entries(byStudent)
-                .map(([id, d]) => ({ id, avg: d.coefSum > 0 ? d.total / d.coefSum : 0 }))
-                .sort((a, b) => b.avg - a.avg);
-            const idx = sorted.findIndex(e => e.id === selectedChild.id);
-            if (idx !== -1) setRankData(prev => ({ ...prev, [key]: { rang: idx + 1, total: sorted.length } }));
+            const row = Array.isArray(data) ? data[0] : data;
+            if (error || !row) return;
+            setRankData(prev => ({ ...prev, [key]: { rang: row.rank, total: row.total } }));
         };
         fetchRank();
     }, [selectedChild, selectedTrimester]);

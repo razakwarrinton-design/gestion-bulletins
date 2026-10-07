@@ -1,3 +1,6 @@
+> ⚠️ Ce document décrit l'installation d'origine. Les règles d'accès actuelles sont celles de
+> `sql/security-hardening.sql` (à exécuter en dernier) : voir [SECURITE.md](SECURITE.md).
+
 # 🔐 Sécurité RLS et Authentification - Récapitulatif
 
 ## ✅ Fichiers créés
