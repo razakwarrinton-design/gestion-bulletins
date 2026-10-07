@@ -1,0 +1,160 @@
+// @vitest-environment jsdom
+//
+// Test d'intégration de l'application complète : connexion simulée, rôles, navigation et chargement à
+// la demande des écrans. Le faux Supabase répond avec des listes vides, sauf pour la session et le
+// profil de l'utilisateur connecté.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
+
+const auth = vi.hoisted(() => ({ session: null, profile: null }));
+
+vi.mock('./config/supabase', () => {
+  const query = (table) => {
+    const q = new Proxy(function () {}, {
+      get: (_t, prop) => {
+        if (prop === 'then') {
+          return (resolve, reject) => Promise.resolve({ data: [], error: null }).then(resolve, reject);
+        }
+        if (prop === 'single' || prop === 'maybeSingle') {
+          return () => Promise.resolve(
+            table === 'user_profiles' && auth.profile
+              ? { data: auth.profile, error: null }
+              : { data: null, error: { code: 'PGRST116', message: 'no rows' } },
+          );
+        }
+        return () => q;
+      },
+      apply: () => q,
+    });
+    return q;
+  };
+  const channel = () => ({ on() { return this; }, subscribe() { return this; }, unsubscribe() {} });
+  return {
+    supabaseConfigured: true,
+    supabase: {
+      from: (table) => query(table),
+      rpc: () => query('rpc'),
+      channel,
+      removeChannel() {},
+      functions: { invoke: async () => ({ data: null, error: null }) },
+      auth: {
+        getSession: async () => ({ data: { session: auth.session }, error: null }),
+        getUser: async () => ({ data: { user: auth.session?.user ?? null }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+        signOut: async () => ({ error: null }),
+        signInWithPassword: async () => ({ data: {}, error: null }),
+        mfa: {
+          listFactors: async () => ({ data: { totp: [], all: [] }, error: null }),
+          getAuthenticatorAssuranceLevel: async () => ({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null }),
+        },
+      },
+    },
+  };
+});
+
+import App from './App';
+
+// Entrée du menu latéral (un même libellé apparaît aussi dans le titre de page et les cartes du tableau de bord)
+const nav = () => within(document.querySelector('nav'));
+const waitForNav = () => waitFor(() => expect(document.querySelector('nav')).not.toBeNull());
+
+const profile = (role) => ({
+  id: 'u1', email: 'awa@ecole.test', first_name: 'Awa', last_name: 'Kossi', role,
+});
+const signedIn = (role) => {
+  auth.session = { user: { id: 'u1', email: 'awa@ecole.test' } };
+  auth.profile = profile(role);
+};
+
+beforeEach(() => {
+  auth.session = null;
+  auth.profile = null;
+  window.matchMedia = window.matchMedia || (() => ({
+    matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
+  }));
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+});
+afterEach(cleanup);
+
+describe('application : accès selon l\'état du compte', () => {
+  it('sans session : affiche la page de connexion', async () => {
+    render(<App />);
+    expect(await screen.findByText(/Bon retour/)).toBeTruthy();
+    expect(screen.queryByText('Classes')).toBeNull();
+  });
+
+  it('inscription publique : plus de choix de rôle, et un message d\'attente', async () => {
+    render(<App />);
+    fireEvent.click((await screen.findAllByText('Créer un compte'))[0]);
+    expect(await screen.findByText(/devra être validé par l'administrateur/)).toBeTruthy();
+    expect(screen.queryByText('Rôle')).toBeNull();
+    expect(screen.queryByText(/Administrateur/)).toBeNull();
+  });
+
+  it('compte en attente : écran de validation, aucune navigation', async () => {
+    signedIn('en_attente');
+    render(<App />);
+    expect(await screen.findByText('Compte en attente de validation')).toBeTruthy();
+    expect(screen.queryByText('Classes')).toBeNull();
+    expect(screen.queryByText('Tableau de bord')).toBeNull();
+  });
+
+  it('administrateur : navigation complète, y compris « Utilisateurs »', async () => {
+    signedIn('admin');
+    render(<App />);
+    await waitForNav();
+    expect(nav().getByText('Utilisateurs')).toBeTruthy();
+    expect(nav().getByText('Paramètres')).toBeTruthy();
+    expect(nav().getByText('Classes')).toBeTruthy();
+  });
+
+  it('secrétaire : pas d\'accès aux écrans d\'administration', async () => {
+    signedIn('secretaire');
+    render(<App />);
+    await waitForNav();
+    expect(nav().getByText('Classes')).toBeTruthy();
+    expect(nav().queryByText('Utilisateurs')).toBeNull();
+    expect(nav().queryByText('Paramètres')).toBeNull();
+    expect(nav().queryByText('Saisir notes')).toBeNull();
+  });
+
+  it('professeur : saisie des notes, pas la gestion des classes', async () => {
+    signedIn('professeur');
+    render(<App />);
+    await waitForNav();
+    expect(nav().getByText('Saisir notes')).toBeTruthy();
+    expect(nav().queryByText('Utilisateurs')).toBeNull();
+    expect(nav().queryByText('Classes')).toBeNull();
+    expect(nav().queryByText('Matières')).toBeNull();
+  });
+});
+
+describe('application : écrans chargés à la demande', () => {
+  it('ouvre Utilisateurs (chargé à la demande) et la page Classes', async () => {
+    signedIn('admin');
+    render(<App />);
+
+    await waitForNav();
+    fireEvent.click(nav().getByText('Utilisateurs'));
+    // le composant est téléchargé à la demande, puis charge la liste (vide ici)
+    expect(await screen.findByText('Aucun utilisateur', {}, { timeout: 5000 })).toBeTruthy();
+
+    fireEvent.click(nav().getByText('Classes'));
+    expect(await screen.findByText('Gestion des classes', {}, { timeout: 5000 })).toBeTruthy();
+  });
+
+  it('ouvre les écrans lourds sans plantage (graphiques, import/export, absences)', async () => {
+    signedIn('admin');
+    render(<App />);
+    await waitForNav();
+    for (const label of ['Statistiques', 'Import/Export', 'Absences', 'Bulletins', 'Gestion parents', 'Analyse avancée']) {
+      fireEvent.click(nav().getByText(label));
+      // l'écran est téléchargé à la demande puis s'affiche : le menu reste là, sans page blanche
+      await waitFor(() => expect(nav().getByText('Classes')).toBeTruthy(), { timeout: 5000 });
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    expect(document.querySelector('main').textContent.length).toBeGreaterThan(0);
+  });
+});
