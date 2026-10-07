@@ -14,11 +14,15 @@ export default function StudentModal({ isOpen, onClose, onSave, classes, student
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [bulletinAccess, setBulletinAccess] = useState(false);
 
   // ── Contact d'urgence ──
   const [emergencyName, setEmergencyName] = useState('');
   const [emergencyPhone, setEmergencyPhone] = useState('');
   const [emergencyRelation, setEmergencyRelation] = useState('');
+
+  // la case n'apparaît qu'en modification, et seulement si sql/bulletin-access.sql est appliqué
+  const hasBulletinAccess = !!student && 'bulletin_access' in student;
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -32,12 +36,13 @@ export default function StudentModal({ isOpen, onClose, onSave, classes, student
       setBirthDate(student.birthDate || student.birth_date || '');
       setGender(student.gender || '');
       setPhotoUrl(student.photoUrl || student.photo_url || '');
+      setBulletinAccess(student.bulletin_access === true);
       setEmergencyName(student.emergencyName || student.emergency_name || '');
       setEmergencyPhone(student.emergencyPhone || student.emergency_phone || '');
       setEmergencyRelation(student.emergencyRelation || student.emergency_relation || '');
     } else {
       setFirstName(''); setLastName(''); setClassId('');
-      setBirthDate(''); setGender(''); setPhotoUrl('');
+      setBirthDate(''); setGender(''); setPhotoUrl(''); setBulletinAccess(false);
       setEmergencyName(''); setEmergencyPhone(''); setEmergencyRelation('');
     }
     setErrors({});
@@ -67,6 +72,8 @@ export default function StudentModal({ isOpen, onClose, onSave, classes, student
         emergencyName: emergencyName.trim() || null,
         emergencyPhone: emergencyPhone.trim() || null,
         emergencyRelation: emergencyRelation || null,
+        // seulement si la colonne existe en base (sinon la clé reste absente)
+        ...(hasBulletinAccess ? { bulletinAccess } : {}),
       });
       onClose();
     } catch {
@@ -163,6 +170,19 @@ export default function StudentModal({ isOpen, onClose, onSave, classes, student
               </select>
             </div>
           </div>
+
+          {hasBulletinAccess && (
+            <label className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl p-3 cursor-pointer">
+              <input type="checkbox" checked={bulletinAccess} onChange={e => setBulletinAccess(e.target.checked)}
+                className="mt-0.5 w-4 h-4" />
+              <span>
+                <span className="block text-sm font-medium text-gray-800">Bulletin accessible aux parents</span>
+                <span className="block text-xs text-gray-500">
+                  Débloqué automatiquement après paiement. Décochez pour bloquer l'accès, cochez pour l'accorder sans paiement.
+                </span>
+              </span>
+            </label>
+          )}
 
           {/* Photo URL */}
           <div>

@@ -62,3 +62,16 @@ describe('buildStudentProfilePayload', () => {
     });
   });
 });
+
+describe('accès au bulletin (bulletinAccess)', () => {
+  it('modification : envoyé quand la colonne existe en base, y compris false', () => {
+    const existing = { id: 1, bulletin_access: true };
+    expect(buildStudentProfilePayload({ bulletinAccess: false }, existing)).toEqual({ bulletin_access: false });
+    expect(buildStudentProfilePayload({ bulletinAccess: true }, existing)).toEqual({ bulletin_access: true });
+  });
+
+  it('jamais envoyé si la colonne est absente ou à la création', () => {
+    expect(buildStudentProfilePayload({ bulletinAccess: true }, { id: 1 })).toEqual({});
+    expect(buildStudentProfilePayload({ bulletinAccess: true })).toEqual({});
+  });
+});

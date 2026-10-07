@@ -9,6 +9,8 @@ const PROFILE_FIELDS = {
     emergencyName: 'emergency_name',
     emergencyPhone: 'emergency_phone',
     emergencyRelation: 'emergency_relation',
+    // accès des parents au bulletin (sql/bulletin-access.sql) ; modifiable seulement par le personnel
+    bulletinAccess: 'bulletin_access',
 };
 
 /** Ligne Supabase (snake_case) → objet élève de l'application (camelCase). */
@@ -45,6 +47,8 @@ export function buildStudentProfilePayload(profile = {}, existing = null) {
         if (value === undefined) continue;
         const columnKnown = existing ? snake in existing : false;
         if (value === null && !columnKnown) continue;
+        // la colonne d'accès au bulletin n'est jamais envoyée tant qu'elle n'existe pas en base
+        if (camel === 'bulletinAccess' && !columnKnown) continue;
         payload[snake] = value;
     }
     return payload;
