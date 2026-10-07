@@ -37,17 +37,36 @@ const SUPABASE_STUB = `
 export const readScript = (name) => readFileSync(path.join(sqlDir, name), 'utf8');
 
 /** Crée la base et exécute les scripts d'installation, dans l'ordre. */
-export async function createDatabase(scripts) {
+async function buildDatabase(scripts) {
   const db = new PGlite();
-  await db.exec(SUPABASE_STUB);
-  for (const script of scripts) {
-    try {
-      await db.exec(readScript(script));
-    } catch (error) {
-      throw new Error(`Échec du script ${script} : ${error.message}`);
+  try {
+    await db.exec(SUPABASE_STUB);
+    for (const script of scripts) {
+      try {
+        await db.exec(readScript(script));
+      } catch (error) {
+        throw new Error(`Échec du script ${script} : ${error.message}`);
+      }
     }
+    return db;
+  } catch (error) {
+    await db.close().catch(() => {});
+    throw error;
   }
-  return db;
+}
+
+/**
+ * Le moteur PostgreSQL tourne en WebAssembly : lorsque la machine est très chargée (tous les fichiers de
+ * test démarrent en parallèle), son démarrage peut échouer de façon passagère. Une seule nouvelle tentative
+ * suffit ; une erreur dans un script SQL, elle, échoue deux fois et reste visible avec son message.
+ */
+export async function createDatabase(scripts) {
+  try {
+    return await buildDatabase(scripts);
+  } catch (firstError) {
+    console.warn(`Création de la base de test échouée (${firstError.message}), nouvelle tentative…`);
+    return buildDatabase(scripts);
+  }
 }
 
 /** Exécute `fn` en tant qu'utilisateur authentifié (ou anonyme si userId est null). */
