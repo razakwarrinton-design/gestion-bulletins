@@ -48,12 +48,13 @@ supabase/       Fonctions edge
 
 Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 1. `sql/supabase-schema.sql`
-2. `sql/supabase-security-rls.sql`
-3. `sql/CHAT_TABLES.sql`
-4. `sql/students-profile.sql` : profil élève (contact d'urgence, date de naissance…), nécessaire pour enregistrer ces champs et pour l'envoi WhatsApp
-5. `sql/payments-online.sql` : paiements Mobile Money (voir [docs/PAIEMENTS.md](docs/PAIEMENTS.md))
-6. `sql/bulletin-access.sql` : accès des parents au bulletin (débloqué automatiquement par un paiement terminé)
-7. **`sql/security-hardening.sql`** : règles d'accès (un parent ne voit que ses enfants, comptes inscrits « en attente » jusqu'à validation). **Obligatoire avant toute mise en service**, voir [docs/SECURITE.md](docs/SECURITE.md)
+2. **`sql/grades-alignment.sql`** : ajoute à la table `grades` l'année scolaire, les sous-notes (interro, devoir, composition), le bonus et l'enseignant, autorise une note effacée et limite les notes à 0–20. **À exécuter avant de déployer cette version de l'application** : elle lit la colonne `bonus`, et sans ce script le chargement des notes échoue. Ré-exécutable ; les notes existantes sont rattachées à 2024-2025 (modifiable dans le script)
+3. `sql/supabase-security-rls.sql`
+4. `sql/CHAT_TABLES.sql`
+5. `sql/students-profile.sql` : profil élève (contact d'urgence, date de naissance…), nécessaire pour enregistrer ces champs et pour l'envoi WhatsApp
+6. `sql/payments-online.sql` : paiements Mobile Money (voir [docs/PAIEMENTS.md](docs/PAIEMENTS.md))
+7. `sql/bulletin-access.sql` : accès des parents au bulletin (débloqué automatiquement par un paiement terminé)
+8. **`sql/security-hardening.sql`** : règles d'accès (un parent ne voit que ses enfants, comptes inscrits « en attente » jusqu'à validation). **Obligatoire avant toute mise en service**, voir [docs/SECURITE.md](docs/SECURITE.md)
 
 Ensuite, créer le premier administrateur (voir [docs/SECURITE.md](docs/SECURITE.md)). Les autres comptes s'inscrivent
 eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*.

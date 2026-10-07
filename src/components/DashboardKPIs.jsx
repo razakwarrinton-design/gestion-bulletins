@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { currentAcademicYear } from '../utils/studentUtils';
 import {
     LineChart, Line, BarChart, Bar, RadarChart, Radar,
     PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -100,7 +101,7 @@ function QuickBtn({ icon: Icon, label, iconColor, bg, border, onClick }) {
 export default function DashboardKPIs({
     classes, students, subjects, grades,
     calculateAverage, currentUser,
-    currentYear = '2024-2025',
+    currentYear = currentAcademicYear(),
     setCurrentView, activities = []
 }) {
     const [selectedTrimester, setSelectedTrimester] = useState('1');

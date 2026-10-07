@@ -37,6 +37,7 @@ import Toast from './layout/Toast';
 import ClassesView from './views/ClassesView';
 import SubjectsView from './views/SubjectsView';
 import { resolveId } from './utils/ids';
+import { currentAcademicYear } from './utils/studentUtils';
 import PendingApproval from './components/PendingApproval';
 
 // Écrans chargés à la demande : le premier affichage reste léger (réseaux mobiles lents).
@@ -66,6 +67,22 @@ const BulletinsView = lazy(() => import('./views/BulletinsView'));
 
 const MAX_ACTIVITIES = 200;
 
+// Valeur de départ d'une installation neuve : l'année scolaire en cours (rentrée en septembre)
+const DEFAULT_YEAR = currentAcademicYear();
+const defaultAcademicYear = () => {
+    const start = parseInt(DEFAULT_YEAR, 10);
+    return {
+        id: 1, year: DEFAULT_YEAR,
+        startDate: `${start}-09-01`, endDate: `${start + 1}-06-30`,
+        trimesters: [
+            { number: 1, startDate: `${start}-09-01`, endDate: `${start}-12-15` },
+            { number: 2, startDate: `${start + 1}-01-01`, endDate: `${start + 1}-04-15` },
+            { number: 3, startDate: `${start + 1}-04-16`, endDate: `${start + 1}-06-30` },
+        ],
+        isActive: true, createdAt: new Date().toISOString(),
+    };
+};
+
 // ─── Composant principal ──────────────────────────────────────────────────────
 const BulletinApp = () => {
     // ── Authentification ────────────────────────────────────────────────────────
@@ -89,15 +106,9 @@ const BulletinApp = () => {
     const [chatUser, setChatUser] = useState(null); // Utilisateur de chat
 
     // ── Données Supabase via hooks ───────────────────────────────────────────────
-    const [currentYear, setCurrentYear] = useState('2024-2025');
-
     const { classes, loading: isLoadingClasses, addClass, deleteClass } = useClasses();
     const { students, loading: isLoadingStudents, addStudent, updateStudent, deleteStudent } = useStudents();
     const { subjects, loading: isLoadingSubjects, addSubject, deleteSubject } = useSubjects();
-
-    // ✅ Charge les grades si on en a besoin (y compris dashboard)
-    const shouldLoadGrades = ['dashboard', 'grades', 'bulletins', 'statistics', 'analytics', 'ia-appreciations'].includes(currentView);
-    const { grades, loading: isLoadingGrades, updateGrade, getGrade } = useGrades(shouldLoadGrades ? currentYear : null);
 
     // ── Données persistées (useSupabaseState) ───────────────────────────────────
     const [schoolInfo, setSchoolInfo] = useSupabaseState('schoolInfo', {
@@ -106,7 +117,7 @@ const BulletinApp = () => {
         address: 'Adresse de l\'établissement',
         phone: '+33 XXX XXX XXX',
         email: 'contact@ecole.com',
-        year: '2024-2025',
+        year: DEFAULT_YEAR,
         // ── Nouveaux champs (à renseigner dans Paramètres) ──
         republic: '',   // ex: "REPUBLIQUE TOGOLAISE"
         countryMotto: '',   // ex: "Travail · Liberté · Patrie"
@@ -120,20 +131,21 @@ const BulletinApp = () => {
         primary: '#2563eb', secondary: '#10b981', accent: '#f59e0b'
     });
     const [activities, setActivities] = useSupabaseState('activities', []);
-    const [academicYears, setAcademicYears] = useSupabaseState('academicYears', [
-        {
-            id: 1, year: '2024-2025',
-            startDate: '2024-09-01', endDate: '2025-06-30',
-            trimesters: [
-                { number: 1, startDate: '2024-09-01', endDate: '2024-12-15' },
-                { number: 2, startDate: '2025-01-01', endDate: '2025-04-15' },
-                { number: 3, startDate: '2025-04-16', endDate: '2025-06-30' }
-            ],
-            isActive: true, createdAt: new Date('2024-08-01').toISOString()
-        }
-    ]);
+    const [academicYears, setAcademicYears, isLoadingYears] = useSupabaseState('academicYears', [defaultAcademicYear()]);
     const [appreciations, setAppreciations] = useSupabaseState('appreciations', []);
     const [schoolLogo, setSchoolLogo] = useSupabaseState('schoolLogo', null);
+
+    // L'année en cours est l'année marquée « active » : elle est enregistrée avec les années scolaires,
+    // donc conservée au rechargement (avant, elle revenait à 2024-2025 à chaque ouverture).
+    const currentYear = academicYears.find(y => y.isActive)?.year ?? academicYears[0]?.year ?? DEFAULT_YEAR;
+    const setCurrentYear = (year) =>
+        setAcademicYears(prev => prev.map(y => ({ ...y, isActive: y.year === year })));
+
+    // Charge les notes si on en a besoin (y compris dashboard), une fois l'année connue
+    const shouldLoadGrades = ['dashboard', 'grades', 'bulletins', 'statistics', 'analytics', 'ia-appreciations'].includes(currentView);
+    const {
+        grades, loading: isLoadingGrades, error: gradesError, updateGrade, getGrade,
+    } = useGrades(shouldLoadGrades && !isLoadingYears ? currentYear : null);
 
     // ── Sélections ───────────────────────────────────────────────────────────────
     const [selectedClass, setSelectedClassState] = useState(null);
@@ -168,14 +180,16 @@ const BulletinApp = () => {
 
     // ── Redirection automatique : un parent va directement à son espace ──────────
     useEffect(() => {
-        console.log('🔄 App: Checking role for redirection. CurrentUser:', currentUser);
         if (currentUser?.role === 'parent') {
-            console.log('✅ App: Parent detected! Redirecting to "parents" view...');
             setCurrentView('parents');
-        } else if (currentUser?.role) {
-            console.log('📋 App: User role is:', currentUser.role, '(not parent)');
         }
     }, [currentUser]);
+
+    // Un échec de chargement des notes ne doit pas se traduire par une liste vide sans explication
+    useEffect(() => {
+        if (gradesError) showNotification(`Impossible de charger les notes : ${gradesError}`);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gradesError]);
 
     // ── Helpers ──────────────────────────────────────────────────────────────────
     const showNotification = (message) => {
@@ -470,7 +484,7 @@ const BulletinApp = () => {
                             students={students}
                             appColors={appColors}
                             schoolLogo={schoolLogo}
-                            schoolInfo={schoolInfo}
+                            schoolInfo={{ ...schoolInfo, year: currentYear }}
                             handlePrint={handlePrint}
                             getMention={getMention}
                             bulletinTemplate={selectedBulletinTemplate}

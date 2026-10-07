@@ -87,23 +87,29 @@ export const createExcelHandlers = ({
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
             let imported = 0;
-            jsonData.forEach(row => {
+            let failed = 0;
+            for (const row of jsonData) {
                 const student = students.find(s =>
                     s.lastName === row.Nom && s.firstName === row.Prénom && s.classId === selectedClass
                 );
-                if (student) {
-                    subjects.forEach(subject => {
-                        if (row[subject.name] !== undefined && row[subject.name] !== '') {
-                            const value = parseFloat(row[subject.name]);
-                            if (!isNaN(value)) {
-                                updateGrade(student.id, subject.id, selectedTrimester, value, '');
-                                imported++;
-                            }
-                        }
+                if (!student) continue;
+                for (const subject of subjects) {
+                    if (row[subject.name] === undefined || row[subject.name] === '') continue;
+                    const value = parseFloat(row[subject.name]);
+                    if (isNaN(value)) continue;
+                    // Le fichier contient la note finale : on remplace les sous-notes et le bonus, mais
+                    // on conserve l'appréciation (non fournie = inchangée).
+                    const result = await updateGrade(student.id, subject.id, selectedTrimester, value, undefined, {
+                        interro: null, devoir: null, composition: null, bonus: null,
                     });
+                    if (result?.success === false) failed++; else imported++;
                 }
-            });
-            showNotification(`${imported} note(s) importée(s) !`);
+            }
+            showNotification(
+                failed > 0
+                    ? `${imported} note(s) importée(s), ${failed} échec(s) : vérifiez vos droits et votre connexion`
+                    : `${imported} note(s) importée(s) !`
+            );
         };
         reader.readAsArrayBuffer(file);
     };

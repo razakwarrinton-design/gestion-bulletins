@@ -68,9 +68,18 @@ function NoteField({ label, value, onChange, disabled, isBonus = false }) {
 }
 
 // ─── Ligne de saisie par matière ──────────────────────────────────────────────
+// La note stockée inclut le bonus : en saisie simple on réaffiche la note SANS le bonus,
+// sinon il serait ajouté une seconde fois à chaque rechargement.
+const baseValueOf = (grade) =>
+  grade?.value == null ? '' : Math.round((grade.value - (grade.bonus || 0)) * 100) / 100;
+
 function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
-  const [mode, setMode] = useState('detail'); // 'simple' | 'detail'
-  const [noteSimple, setSimple] = useState(initialGrade?.value ?? '');
+  // Une note sans sous-notes (saisie simple ou import Excel) s'ouvre en mode simple, sinon elle paraîtrait vide
+  const [mode, setMode] = useState(() =>
+    initialGrade?.value != null &&
+    initialGrade.interro == null && initialGrade.devoir == null && initialGrade.composition == null
+      ? 'simple' : 'detail'); // 'simple' | 'detail'
+  const [noteSimple, setSimple] = useState(baseValueOf(initialGrade));
   const [interro, setInterro] = useState(initialGrade?.interro ?? '');
   const [devoir, setDevoir] = useState(initialGrade?.devoir ?? '');
   const [compo, setCompo] = useState(initialGrade?.composition ?? '');
@@ -78,6 +87,7 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
   const [teacherName, setTeacher] = useState(initialGrade?.teacherName ?? '');
   const [apprecVal, setApprec] = useState(initialGrade?.appreciation ?? '');
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const isFirst = useRef(true);
 
   // Note finale calculée (avant bonus)
@@ -90,7 +100,7 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
 
   // Sync si données externes changent (import Excel)
   useEffect(() => {
-    setSimple(initialGrade?.value ?? '');
+    setSimple(baseValueOf(initialGrade));
     setInterro(initialGrade?.interro ?? '');
     setDevoir(initialGrade?.devoir ?? '');
     setCompo(initialGrade?.composition ?? '');
@@ -116,16 +126,27 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
     const base = mode === 'detail' ? computeFinal(dbInterro, dbDevoir, dbCompo) : dbSimple;
     const bonusN = dbBonus !== '' && !isNaN(+dbBonus) ? +dbBonus : 0;
     const finalN = base !== '' && !isNaN(+base) ? Math.min(20, +base + bonusN) : '';
-    onSave(studentId, subject.id, trimester, finalN === '' ? '' : parseFloat(finalN), dbApprec, {
+    let cancelled = false;
+    let timer;
+    Promise.resolve(onSave(studentId, subject.id, trimester, finalN === '' ? '' : parseFloat(finalN), dbApprec, {
       interro: dbInterro === '' ? null : parseFloat(dbInterro),
       devoir: dbDevoir === '' ? null : parseFloat(dbDevoir),
       composition: dbCompo === '' ? null : parseFloat(dbCompo),
       bonus: dbBonus === '' ? null : parseFloat(dbBonus),
       teacherName: dbTeacher,
+    })).then((result) => {
+      if (cancelled) return;
+      // « Sauvegardé » seulement si la base a confirmé l'écriture
+      if (result && result.success === false) {
+        setSaved(false);
+        setSaveError(result.error || 'Échec de la sauvegarde');
+        return;
+      }
+      setSaveError('');
+      setSaved(true);
+      timer = setTimeout(() => setSaved(false), 1600);
     });
-    setSaved(true);
-    const t = setTimeout(() => setSaved(false), 1600);
-    return () => clearTimeout(t);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [dbInterro, dbDevoir, dbCompo, dbSimple, dbBonus, dbTeacher, dbApprec]);
 
   const fv = finalNote !== '' && !isNaN(+finalNote) ? +finalNote : null;
@@ -158,6 +179,11 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
           {saved && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#059669' }}>
               <CheckCircle size={13} /> Sauvegardé
+            </span>
+          )}
+          {saveError && (
+            <span role="alert" title={saveError} style={{ fontSize: 11, fontWeight: 700, color: '#DC2626' }}>
+              ⚠ Non sauvegardé
             </span>
           )}
           <button
@@ -331,9 +357,8 @@ export default function GradesForm({
     }
   };
 
-  const handleSave = (studentId, subjectId, trimester, value, appreciation, extra = {}) => {
+  const handleSave = (studentId, subjectId, trimester, value, appreciation, extra = {}) =>
     updateGrade(studentId, subjectId, trimester, value, appreciation, extra);
-  };
 
   return (
     <div className="space-y-5">

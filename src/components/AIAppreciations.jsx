@@ -215,7 +215,8 @@ export default function AIAppreciations({
     const handleSaveAppreciation = async (studentId, appreciation, trimester) => {
         const studentGrades = getStudentGrades(studentId);
         for (const g of studentGrades) {
-            await updateGrade(studentId, g.subjectId || g.subject_id, trimester, g.value, appreciation);
+            const result = await updateGrade(studentId, g.subjectId || g.subject_id, trimester, g.value, appreciation);
+            if (result?.success === false) throw new Error(result.error);
         }
         showNotification('Appréciation sauvegardée !');
     };
@@ -233,7 +234,8 @@ export default function AIAppreciations({
                 const appreciation = await generateAppreciation(enriched, sg, subjects, selectedTrimester, classAverage);
                 if (sg.length > 0) {
                     const g = sg[0];
-                    await updateGrade(student.id, g.subjectId || g.subject_id, selectedTrimester, g.value, appreciation);
+                    const result = await updateGrade(student.id, g.subjectId || g.subject_id, selectedTrimester, g.value, appreciation);
+                    if (result?.success === false) throw new Error(result.error);
                 }
                 done++;
                 setGenProgress(Math.round((done / eligible.length) * 100));

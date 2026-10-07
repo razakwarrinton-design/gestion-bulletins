@@ -3,6 +3,7 @@ import { Printer, X, Users, ChevronDown } from 'lucide-react';
 import { supabase } from '../config/supabase';
 import { prepareBulletinHtml } from '../utils/printSecurity';
 import { qrDataUrl } from '../utils/qrCode';
+import { currentAcademicYear } from '../utils/studentUtils';
 
 function PrintPreviewInner({
   printStudent, setShowPrintPreview, selectedTrimester,
@@ -85,7 +86,7 @@ function PrintPreviewInner({
   const schoolPhone = schoolInfo?.phone || '';
   const schoolEmail = schoolInfo?.email || '';
   const trimLabel = `Trimestre ${selectedTrimester}`;
-  const yearLabel = schoolInfo?.year || '2024-2025';
+  const yearLabel = schoolInfo?.year || currentAcademicYear();
 
   // ── Champs personnalisables pays/ministère (issus de schoolInfo) ──────────
   const republic = schoolInfo?.republic || '';   // ex: "REPUBLIQUE TOGOLAISE"
