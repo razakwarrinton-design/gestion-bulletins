@@ -1,194 +1,148 @@
-// src/services/PaymentService.js - VERSION ULTRA-SIMPLE (Structure réelle)
+// src/services/PaymentService.js
 import { supabase } from "../config/supabase";
 import { smsService } from "./SMSService";
 
 /**
- * Service de paiement simplifié
- * ✅ Utilise UNIQUEMENT les colonnes existantes : id, student_id, fee_type_id, amount_paid
+ * Service de paiement
+ *
+ * Les paiements Mobile Money (Moov Money / Flooz, T-Money, MTN, Wave, Orange…) passent
+ * par l'Edge Function `payment-initiate`, qui appelle FedaPay avec la clé secrète côté
+ * serveur. Le statut final (completed / failed) n'est écrit que par `payment-webhook`
+ * après confirmation signée : le navigateur ne peut jamais marquer un paiement comme
+ * réussi. Voir docs/PAIEMENTS.md.
  */
+
+const PROVIDERS = {
+  mobile_money: {
+    label: "Mobile Money",
+    icon: "📱",
+    region: "Togo, Bénin, Côte d'Ivoire, Sénégal",
+    description: "Moov Money (Flooz), T-Money, MTN, Wave, Orange Money",
+  },
+};
+
+/** Extrait le message d'erreur renvoyé par une Edge Function (corps JSON { error }). */
+async function readFunctionError(error) {
+  try {
+    const response = error?.context;
+    if (response && typeof response.json === "function") {
+      const body = await response.json();
+      if (body?.error) return body.error;
+    }
+  } catch {
+    // corps illisible : on retombe sur le message générique
+  }
+  return error?.message || "Erreur lors du paiement";
+}
 
 export class PaymentService {
   constructor() {
-    this.providers = {
-      orange_money: "Orange Money",
-      moov_money: "Moov Money",
-      vodafone_cash: "Vodafone Cash",
-      wave: "Wave",
-      stripe: "Stripe",
-      paypal: "PayPal",
-      bank_transfer: "Bank Transfer",
-    };
+    this.providers = Object.fromEntries(
+      Object.entries(PROVIDERS).map(([id, p]) => [id, p.label]),
+    );
   }
 
-  /**
-   * Liste tous les providers disponibles
-   */
+  /** Liste les moyens de paiement disponibles */
   getAvailableProviders() {
-    return Object.entries(this.providers).map(([key, label]) => ({
-      id: key,
-      label,
-      icon: this.getProviderIcon(key),
-      region: this.getProviderRegion(key),
+    return Object.entries(PROVIDERS).map(([id, p]) => ({
+      id,
+      label: p.label,
+      icon: p.icon,
+      region: p.region,
+      description: p.description,
     }));
   }
 
-  /**
-   * Get icon pour chaque provider
-   */
-  getProviderIcon(provider) {
-    const icons = {
-      orange_money: "🟠",
-      moov_money: "📱",
-      vodafone_cash: "💳",
-      wave: "🌊",
-      stripe: "💳",
-      paypal: "🅿️",
-      bank_transfer: "🏦",
-    };
-    return icons[provider] || "💰";
+  /** Ce moyen de paiement nécessite-t-il un numéro de téléphone ? */
+  providerNeedsPhone(providerId) {
+    return providerId === "mobile_money";
   }
 
   /**
-   * Get région/zone pour chaque provider
-   */
-  getProviderRegion(provider) {
-    const regions = {
-      orange_money: "Afrique Francophone",
-      moov_money: "Afrique Francophone",
-      vodafone_cash: "Togo",
-      wave: "Afrique Subsaharienne",
-      stripe: "International",
-      paypal: "International",
-      bank_transfer: "Global",
-    };
-    return regions[provider] || "Global";
-  }
-
-  /**
-   * Initier un paiement
-   * ✅ UNIQUEMENT : student_id, fee_type_id, amount_paid
+   * Initie un paiement. Renvoie { success, paymentId, reference, redirectUrl } ou
+   * { success: false, error }.
    */
   async initiatePayment(paymentData) {
     try {
-      const {
-        studentId,
-        amount,
-        provider,
-        description,
-        phoneNumber,
-        email,
-        feeTypeId,
-      } = paymentData;
+      const { studentId, amount, provider, description, phoneNumber, feeTypeId } =
+        paymentData;
 
-      // Valider les données
       if (!studentId || !amount || !provider) {
         throw new Error(
           "Données de paiement incomplètes (studentId, amount, provider)",
         );
       }
-
-      console.log("📝 Initiation paiement:", {
-        studentId,
-        amount,
-        provider,
-        feeTypeId,
-      });
-
-      // ✅ UNIQUEMENT les colonnes existantes
-      const paymentRecord = {
-        student_id: studentId,
-        amount_paid: parseFloat(amount),
-        fee_type_id: feeTypeId || null,
-      };
-
-      // Sauvegarder en base
-      const { data, error } = await supabase
-        .from("payments")
-        .insert([paymentRecord])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("❌ Erreur Supabase:", error);
-        throw error;
+      if (!PROVIDERS[provider]) {
+        throw new Error("Moyen de paiement non pris en charge");
+      }
+      const numericAmount = Number(amount);
+      if (!Number.isInteger(numericAmount) || numericAmount <= 0) {
+        throw new Error("Le montant doit être un nombre entier de FCFA");
       }
 
-      console.log("✅ Paiement créé en base:", data);
-
-      // Simuler la redirection selon le provider
-      const result = {
-        externalReference: `${provider.toUpperCase()}-${data.id.substring(0, 8)}`,
-        message: `Requête ${this.providers[provider]} créée`,
-      };
-
-      // Ajouter infos spécifiques au provider
-      if (provider === "bank_transfer") {
-        result.bankDetails = {
-          accountName: "EduPulse SARL",
-          accountNumber: "1234567890",
-          bankName: "Banque Togolaise",
-          swift: "BKTGTG",
-          reference: `PAY-${data.id.substring(0, 8)}`,
-          amount: amount,
-        };
-      } else if (provider === "stripe") {
-        result.redirectUrl = `https://stripe.example.com/pay/${data.id}`;
-      } else if (
-        ["orange_money", "moov_money", "vodafone_cash", "wave"].includes(
-          provider,
-        )
-      ) {
-        result.redirectUrl = `https://${provider}.example.com/pay/${data.id}`;
+      const { data, error } = await supabase.functions.invoke(
+        "payment-initiate",
+        {
+          body: {
+            studentId,
+            amount: numericAmount,
+            feeTypeId: feeTypeId ?? null,
+            description,
+            phoneNumber,
+          },
+        },
+      );
+      if (error) throw new Error(await readFunctionError(error));
+      if (!data?.success || !data?.paymentUrl) {
+        throw new Error(data?.error || "Réponse inattendue du service de paiement");
       }
 
-      // Envoyer SMS au parent (best-effort : ne doit pas faire échouer le paiement déjà enregistré)
+      // SMS de confirmation (best-effort : ne doit pas faire échouer le paiement)
       if (paymentData.parentPhone) {
         try {
           await smsService.notifyPaymentCreated(
             paymentData.parentPhone,
             paymentData.parentName,
-            amount,
-            `PAY-${data.id.substring(0, 8)}`,
+            numericAmount,
+            data.reference,
           );
         } catch (smsError) {
-          console.error("❌ Erreur envoi SMS paiement:", smsError);
+          console.error("Erreur envoi SMS paiement:", smsError);
         }
       }
 
       return {
         success: true,
-        paymentId: data.id,
-        reference: `PAY-${data.id.substring(0, 8)}`,
+        paymentId: data.paymentId,
+        reference: data.reference,
         provider,
         description,
-        ...result,
+        redirectUrl: data.paymentUrl,
+        message: `Redirection vers ${PROVIDERS[provider].label}`,
       };
     } catch (error) {
-      console.error("❌ Erreur initiation paiement:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
+      console.error("Erreur initiation paiement:", error);
+      return { success: false, error: error.message };
     }
   }
 
-  /**
-   * Vérifier le statut d'un paiement
-   */
+  /** Statut réel d'un paiement, tel qu'écrit par le webhook */
   async checkPaymentStatus(paymentId) {
     try {
       const { data, error } = await supabase
         .from("payments")
-        .select("*")
+        .select("id, status, amount_paid, student_id, paid_at, failure_reason")
         .eq("id", paymentId)
         .single();
-
       if (error) throw error;
 
       return {
-        status: "pending", // À implémenter avec webhooks
+        paymentId: data.id,
+        status: data.status || "pending",
         amount: data.amount_paid,
         studentId: data.student_id,
+        paidAt: data.paid_at,
+        failureReason: data.failure_reason,
       };
     } catch (error) {
       console.error("Erreur vérification paiement:", error);
@@ -196,9 +150,7 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Récupérer l'historique des paiements
-   */
+  /** Historique des paiements d'un élève */
   async getPaymentHistory(studentId, limit = 50) {
     try {
       const { data, error } = await supabase
@@ -207,7 +159,6 @@ export class PaymentService {
         .eq("student_id", studentId)
         .order("created_at", { ascending: false })
         .limit(limit);
-
       if (error) throw error;
       return data || [];
     } catch (error) {
@@ -216,27 +167,26 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Obtenir les statistiques des paiements
-   */
+  /** Statistiques : seuls les paiements confirmés comptent dans le total encaissé */
   async getPaymentStatistics(studentId) {
     try {
       const { data, error } = await supabase
         .from("payments")
-        .select("*")
+        .select("amount_paid, status")
         .eq("student_id", studentId);
-
       if (error) throw error;
 
-      const totalAmount = data.reduce(
+      const completed = data.filter((p) => p.status === "completed");
+      const totalAmount = completed.reduce(
         (sum, p) => sum + parseFloat(p.amount_paid || 0),
         0,
       );
 
       return {
         total: data.length,
+        completed: completed.length,
         totalAmount,
-        averageAmount: data.length > 0 ? totalAmount / data.length : 0,
+        averageAmount: completed.length > 0 ? totalAmount / completed.length : 0,
       };
     } catch (error) {
       console.error("Erreur statistiques paiements:", error);
@@ -244,16 +194,14 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Formater un montant
-   */
+  /** Formate un montant en FCFA */
   formatAmount(amount, currency = "XOF") {
     return new Intl.NumberFormat("fr-TG", {
       style: "currency",
       currency,
+      maximumFractionDigits: 0,
     }).format(parseFloat(amount) || 0);
   }
 }
 
-// Export singleton
 export const paymentService = new PaymentService();

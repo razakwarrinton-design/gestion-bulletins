@@ -44,6 +44,7 @@ import MFAChallenge from './components/MFAChallenge';
 import BulletinTemplatePicker from './components/BulletinTemplatePicker';
 import { NAV_ITEMS } from './config/navigation';
 import { createExcelHandlers } from './utils/excelIO';
+import { consumePaymentReturn, PAYMENT_RETURN_MESSAGE } from './utils/paymentReturn';
 import Sidebar from './layout/Sidebar';
 import Topbar from './layout/Topbar';
 import Toast from './layout/Toast';
@@ -63,8 +64,16 @@ const BulletinApp = () => {
     // ── Navigation & UI ──────────────────────────────────────────────────────────
     const [currentView, setCurrentView] = useState('dashboard');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [showAlert, setShowAlert] = useState(false);
-    const [alertMessage, setAlertMessage] = useState('');
+    // Retour depuis la page de paiement : message d'attente (le statut réel vient du webhook)
+    const [paymentReturnId] = useState(() => consumePaymentReturn());
+    const [showAlert, setShowAlert] = useState(Boolean(paymentReturnId));
+    const [alertMessage, setAlertMessage] = useState(paymentReturnId ? PAYMENT_RETURN_MESSAGE : '');
+
+    useEffect(() => {
+        if (!paymentReturnId) return undefined;
+        const timer = setTimeout(() => setShowAlert(false), 6000);
+        return () => clearTimeout(timer);
+    }, [paymentReturnId]);
     const [parentModalOpen, setParentModalOpen] = useState(false);
     const [chatUser, setChatUser] = useState(null); // Utilisateur de chat
 

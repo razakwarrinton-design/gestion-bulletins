@@ -50,7 +50,8 @@ export default function AdminPaymentsDashboard() {
             const pendingCount = data?.filter(p => p.status === 'pending').length || 0;
             const completedCount = data?.filter(p => p.status === 'completed').length || 0;
             const failedCount = data?.filter(p => p.status === 'failed').length || 0;
-            const totalAmount = data?.reduce((sum, p) => sum + (parseFloat(p.amount_paid) || 0), 0) || 0;
+            // Seuls les paiements confirmés sont encaissés (pas les en attente ni les échoués)
+            const totalAmount = data?.filter(p => p.status === 'completed').reduce((sum, p) => sum + (parseFloat(p.amount_paid) || 0), 0) || 0;
 
             setStats({
                 total: data?.length || 0,
@@ -197,7 +198,7 @@ export default function AdminPaymentsDashboard() {
                 </div>
 
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-600">
-                    <p className="text-gray-600 text-sm font-medium">Montant total</p>
+                    <p className="text-gray-600 text-sm font-medium">Montant encaissé</p>
                     <p className="text-2xl font-bold text-purple-600 mt-2">{formatAmount(stats.totalAmount)}</p>
                 </div>
             </div>

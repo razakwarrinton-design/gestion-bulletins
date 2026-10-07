@@ -1,6 +1,7 @@
 // src/components/PaymentModal.jsx
 import React, { useState } from 'react';
 import { usePayments } from '../hooks/usePayments';
+import { hasInternationalPrefix } from '../utils/phone';
 import { X, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 
 /**
@@ -17,7 +18,6 @@ export default function PaymentModal({
 }) {
     const [selectedProvider, setSelectedProvider] = useState(null);
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [email, setEmail] = useState('');
     const [step, setStep] = useState('provider'); // provider, details, processing, success, error
 
     const {
@@ -51,14 +51,9 @@ export default function PaymentModal({
             return;
         }
 
-        // Certains providers nécessitent le numéro de téléphone
-        if (
-            ['orange_money', 'moov_money', 'vodafone_cash', 'wave'].includes(
-                selectedProvider.id
-            ) &&
-            !phoneNumber
-        ) {
-            alert('Numéro de téléphone requis');
+        // Mobile Money : numéro avec indicatif pays obligatoire (+228, +229, +225, +221)
+        if (selectedProvider.id === 'mobile_money' && !hasInternationalPrefix(phoneNumber)) {
+            alert("Indiquez le numéro avec l'indicatif du pays, ex. +228 90 12 34 56");
             return;
         }
 
@@ -70,7 +65,6 @@ export default function PaymentModal({
             provider: selectedProvider.id,
             description,
             phoneNumber,
-            email,
         });
 
         if (result.success) {
@@ -155,9 +149,7 @@ export default function PaymentModal({
                             </h3>
 
                             {/* Numéro de téléphone (pour mobile money) */}
-                            {['orange_money', 'moov_money', 'vodafone_cash', 'wave'].includes(
-                                selectedProvider.id
-                            ) && (
+                            {selectedProvider.id === 'mobile_money' && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Numéro de téléphone
@@ -173,22 +165,11 @@ export default function PaymentModal({
                                     </div>
                                 )}
 
-                            {/* Email (pour Stripe, PayPal) */}
-                            {['stripe', 'paypal'].includes(selectedProvider.id) && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="exemple@email.com"
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-                            )}
+                            <p className="text-xs text-gray-500">
+                                Vous serez redirigé vers la page de paiement sécurisée pour
+                                choisir votre opérateur ({selectedProvider.description}) et
+                                valider avec votre code secret.
+                            </p>
 
                             {/* Boutons */}
                             <div className="flex gap-3 pt-4">
