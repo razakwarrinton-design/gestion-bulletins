@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, X, Users, ChevronDown } from 'lucide-react';
 import { supabase } from '../config/supabase';
+import { prepareBulletinHtml } from '../utils/printSecurity';
+import { qrDataUrl } from '../utils/qrCode';
 
-export default function PrintPreview({
+function PrintPreviewInner({
   printStudent, setShowPrintPreview, selectedTrimester,
   calculateAverage, grades, subjects, classes, students,
   appColors, schoolLogo, schoolInfo, handlePrint, getMention,
@@ -12,6 +14,8 @@ export default function PrintPreview({
   const [batchTemplate, setBatchTemplate] = useState('model1');
   const [isBatchLoading, setIsBatchLoading] = useState(false);
   const [absData, setAbsData] = useState({ absents: 0, retards: 0, injustifies: 0 });
+
+  const student = printStudent;
 
   // Charger les absences de l'élève
   useEffect(() => {
@@ -29,9 +33,6 @@ export default function PrintPreview({
       });
   }, [student?.id]);
 
-  if (!printStudent) return null;
-
-  const student = printStudent;
   const average = parseFloat(calculateAverage(student.id, selectedTrimester)) || 0;
   const studentGrades = grades.filter(g => (g.studentId || g.student_id) === student.id && g.trimester === selectedTrimester);
   const classInfo = classes.find(c => c.id === (student.classId || student.class_id));
@@ -95,7 +96,7 @@ export default function PrintPreview({
   const openPrint = (html) => {
     const win = window.open('', '_blank', 'width=960,height=800');
     if (!win) { alert('Autorisez les pop-ups pour imprimer.'); return; }
-    win.document.write(html);
+    win.document.write(prepareBulletinHtml(html));
     win.document.close();
     setTimeout(() => { win.print(); setTimeout(() => win.close(), 600); }, 450);
   };
@@ -120,8 +121,8 @@ export default function PrintPreview({
   // ── QR Code élève (API gratuite) ──────────────────────────────────────────
   const qrCodeImg = (s, avg, rank, total) => {
     const data = `${s.firstName} ${s.lastName} | ${classInfo?.name || ''} | Rang:${rank}/${total} | Moy:${fmtAvg(avg)}/20 | ${trimLabel} ${yearLabel}`;
-    const url = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(data)}&color=1e3a5f`;
-    return `<img src="${url}" width="80" height="80" alt="QR" style="display:block;">`;
+    const url = qrDataUrl(data);
+    return `<img src="${url}" width="80" height="80" alt="QR" style="display:block;image-rendering:pixelated;">`;
   };
 
   // ── Signature numérique (inchangée) ──────────────────────────────────────
@@ -794,7 +795,7 @@ export default function PrintPreview({
 
     const win = window.open('', '_blank', 'width=960,height=800');
     if (!win) { alert('Autorisez les pop-ups pour imprimer.'); setIsBatchLoading(false); return; }
-    win.document.write(batchHtml);
+    win.document.write(prepareBulletinHtml(batchHtml));
     win.document.close();
     setTimeout(() => { win.print(); setTimeout(() => win.close(), 600); setIsBatchLoading(false); }, 600);
     setShowPrintPreview(false);
@@ -927,4 +928,9 @@ export default function PrintPreview({
       </div>
     </div>
   );
+}
+
+export default function PrintPreview(props) {
+  if (!props.printStudent) return null;
+  return <PrintPreviewInner {...props} />;
 }
