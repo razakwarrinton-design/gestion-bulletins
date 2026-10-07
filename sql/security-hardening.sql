@@ -3,6 +3,7 @@
 -- À exécuter dans l'éditeur SQL de Supabase APRÈS tous les autres scripts
 -- (supabase-schema, supabase-security-rls, CHAT_TABLES, students-profile, payments-online).
 -- Ré-exécutable. Testé sur un vrai PostgreSQL : voir sql/__tests__/rls.test.js.
+-- Prérequis : sql/grades-alignment.sql (colonne grades.academic_year, utilisée par child_class_rank).
 --
 -- Problèmes corrigés (constatés sur les scripts précédents) :
 --   1. Tout compte connecté lisait TOUS les élèves, TOUTES les notes et les contacts d'urgence :
@@ -229,18 +230,25 @@ CREATE POLICY "Suppression personnel" ON absences FOR DELETE USING (public.is_st
 -- parent de l'élève. Même formule que les bulletins : somme(note × coefficient) / somme(coefficient),
 -- notes vides ignorées.
 DROP FUNCTION IF EXISTS public.child_class_rank(BIGINT, TEXT);
-CREATE FUNCTION public.child_class_rank(p_student BIGINT, p_trimester TEXT)
+DROP FUNCTION IF EXISTS public.child_class_rank(BIGINT, TEXT, TEXT);
+-- p_year : année scolaire (ex. '2025-2026'). Sans elle, la dernière année où l'élève a des notes ;
+-- sans ce filtre, les notes de plusieurs années se mélangeaient dans le classement.
+CREATE FUNCTION public.child_class_rank(p_student BIGINT, p_trimester TEXT, p_year TEXT DEFAULT NULL)
 RETURNS TABLE (rank INT, total INT, class_average NUMERIC, class_max NUMERIC, class_min NUMERIC)
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public
 AS $$
-  WITH averages AS (
+  WITH target AS (
+    SELECT COALESCE(p_year, (SELECT MAX(academic_year) FROM grades WHERE student_id = p_student)) AS year
+  ),
+  averages AS (
     SELECT g.student_id,
            SUM(g.value * COALESCE(s.coefficient, 1)) / NULLIF(SUM(COALESCE(s.coefficient, 1)), 0) AS average
     FROM grades g
     JOIN subjects s  ON s.id = g.subject_id
     JOIN students st ON st.id = g.student_id
     WHERE g.trimester = p_trimester
+      AND g.academic_year = (SELECT year FROM target)
       AND g.value IS NOT NULL
       AND st.class_id = (SELECT class_id FROM students WHERE id = p_student)
     GROUP BY g.student_id

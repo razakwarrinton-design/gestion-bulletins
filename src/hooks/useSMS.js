@@ -21,7 +21,6 @@ export function useSMS() {
       const result = await smsService.sendSMS(phoneNumber, message);
 
       if (result.success) {
-        console.log("✅ SMS envoyé");
         updateHistory();
         return result;
       } else {

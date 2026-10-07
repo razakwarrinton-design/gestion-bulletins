@@ -41,7 +41,7 @@ function PrintPreviewInner({
   useEffect(() => {
     if (!student?.id) return undefined;
     let cancelled = false;
-    Promise.resolve(supabase.rpc('child_class_rank', { p_student: student.id, p_trimester: selectedTrimester }))
+    Promise.resolve(supabase.rpc('child_class_rank', { p_student: student.id, p_trimester: selectedTrimester, p_year: schoolInfo?.year }))
       .then(({ data, error }) => {
         const row = Array.isArray(data) ? data[0] : data;
         if (!cancelled) setServerRank(!error && row ? row : null);

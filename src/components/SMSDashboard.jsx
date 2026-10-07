@@ -180,7 +180,7 @@ export default function SMSDashboard() {
             {/* ──── INFO ──── */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p className="text-sm text-blue-800">
-                    💡 <strong>Info :</strong> Tous les SMS envoyés aux parents sont enregistrés ici. Mode sandbox utilise des SMS simulés pour les tests.
+                    💡 <strong>Info :</strong> Tous les SMS envoyés aux parents sont enregistrés ici. L'historique couvre la session en cours. En mode test (AT_ENV=sandbox côté serveur), aucun SMS réel n'est remis.
                 </p>
             </div>
         </div>

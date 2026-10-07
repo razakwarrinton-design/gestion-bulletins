@@ -1,6 +1,7 @@
 // src/services/PaymentService.js
 import { supabase } from "../config/supabase";
 import { smsService } from "./SMSService";
+import { readFunctionError } from "../utils/functionError";
 
 /**
  * Service de paiement
@@ -20,20 +21,6 @@ const PROVIDERS = {
     description: "Moov Money (Flooz), T-Money, MTN, Wave, Orange Money",
   },
 };
-
-/** Extrait le message d'erreur renvoyé par une Edge Function (corps JSON { error }). */
-async function readFunctionError(error) {
-  try {
-    const response = error?.context;
-    if (response && typeof response.json === "function") {
-      const body = await response.json();
-      if (body?.error) return body.error;
-    }
-  } catch {
-    // corps illisible : on retombe sur le message générique
-  }
-  return error?.message || "Erreur lors du paiement";
-}
 
 export class PaymentService {
   constructor() {
@@ -92,7 +79,7 @@ export class PaymentService {
           },
         },
       );
-      if (error) throw new Error(await readFunctionError(error));
+      if (error) throw new Error(await readFunctionError(error, "Erreur lors du paiement"));
       if (!data?.success || !data?.paymentUrl) {
         throw new Error(data?.error || "Réponse inattendue du service de paiement");
       }

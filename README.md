@@ -56,6 +56,19 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 7. `sql/bulletin-access.sql` : accès des parents au bulletin (débloqué automatiquement par un paiement terminé)
 8. **`sql/security-hardening.sql`** : règles d'accès (un parent ne voit que ses enfants, comptes inscrits « en attente » jusqu'à validation). **Obligatoire avant toute mise en service**, voir [docs/SECURITE.md](docs/SECURITE.md)
 
+## Fonctions Edge (Supabase)
+
+| Fonction | Rôle | Secrets à définir |
+|---|---|---|
+| `create-parent-account` | Création d'un compte parent par l'administrateur | (fournis par la plateforme) |
+| `payment-initiate`, `payment-webhook` | Paiement Mobile Money via FedaPay ([docs/PAIEMENTS.md](docs/PAIEMENTS.md)) | `FEDAPAY_SECRET_KEY`, `FEDAPAY_ENV`, `APP_URL` |
+| `send-sms` | SMS via Africa's Talking, réservé à l'administrateur et au secrétariat | `AT_USERNAME`, `AT_API_KEY`, `AT_ENV` (`sandbox` ou `production`), `AT_SENDER_ID` (facultatif) |
+
+Déploiement : `supabase functions deploy <nom>`. Tant que `send-sms` n'est pas déployée et configurée, l'envoi
+d'un SMS échoue avec un message explicite (aucun envoi n'est plus simulé). Les boutons « Générer avec IA »
+(`generate-appreciation`) et « Notifier les parents » (`notify-parents`) appellent des fonctions qui ne sont
+pas encore dans ce dépôt.
+
 Ensuite, créer le premier administrateur (voir [docs/SECURITE.md](docs/SECURITE.md)). Les autres comptes s'inscrivent
 eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*.
 

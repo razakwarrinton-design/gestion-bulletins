@@ -52,7 +52,6 @@ export class ChatService {
 
       if (createError) throw createError;
 
-      console.log("✅ Conversation créée:", created.id);
       return { success: true, conversation: created };
     } catch (error) {
       console.error("❌ Erreur conversation:", error);
@@ -119,7 +118,6 @@ export class ChatService {
         .update({ updated_at: new Date().toISOString() })
         .eq("id", conversationId);
 
-      console.log("✅ Message envoyé:", data.id);
       return { success: true, message: data };
     } catch (error) {
       console.error("❌ Erreur envoi message:", error);
@@ -277,7 +275,6 @@ export class ChatService {
 
       if (error) throw error;
 
-      console.log("✅ Conversation supprimée");
       return { success: true };
     } catch (error) {
       console.error("❌ Erreur suppression:", error);
@@ -337,7 +334,6 @@ export class ChatService {
             filter: `conversation_id=eq.${conversationId}`,
           },
           (payload) => {
-            console.log("📨 Nouveau message:", payload.new);
             callback(payload.new);
           },
         )

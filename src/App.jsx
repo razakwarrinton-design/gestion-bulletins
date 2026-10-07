@@ -636,6 +636,7 @@ const BulletinApp = () => {
                             <ParentPortal
                                 currentUser={currentUser}
                                 schoolInfo={schoolInfo}
+                                currentYear={isLoadingYears ? null : currentYear}
                                 onPrint={(child) => openPrintPreview(child)}
                             />
                         )}

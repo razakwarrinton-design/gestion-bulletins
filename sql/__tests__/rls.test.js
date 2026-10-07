@@ -8,6 +8,7 @@ import { createDatabase, asUser, readScript } from './harness';
 const BASELINE = process.env.RLS_BASELINE === '1';
 const SCRIPTS = [
   'supabase-schema.sql',
+  'grades-alignment.sql',
   'supabase-security-rls.sql',
   'CHAT_TABLES.sql',
   'students-profile.sql',
@@ -54,10 +55,11 @@ beforeAll(async () => {
       (2, 'Ama', 'Dossou', 1, '+22890000002'),
       (3, 'Yao', 'Agbo', 1, NULL);
     INSERT INTO parent_students (parent_id, student_id) VALUES ('${PARENT_X}', 1), ('${PARENT_Y}', 2);
-    INSERT INTO grades (id, student_id, subject_id, trimester, value) VALUES
-      ('g1', 1, 1, '1', 18), ('g2', 1, 2, '1', 14),
-      ('g3', 2, 1, '1', 12), ('g4', 2, 2, '1', 12),
-      ('g5', 3, 1, '1', 8);
+    INSERT INTO grades (id, student_id, subject_id, trimester, academic_year, value) VALUES
+      ('g1', 1, 1, '1', '2025-2026', 18), ('g2', 1, 2, '1', '2025-2026', 14),
+      ('g3', 2, 1, '1', '2025-2026', 12), ('g4', 2, 2, '1', '2025-2026', 12),
+      ('g5', 3, 1, '1', '2025-2026', 8),
+      ('g0', 1, 1, '1', '2024-2025', 4);   -- année précédente : ne doit pas fausser le classement
     INSERT INTO app_data (key, value) VALUES
       ('schoolInfo', '"{}"'), ('appColors', '"{}"'), ('academicYears', '"[]"'),
       ('appreciations', '"[{\\"studentId\\":2,\\"text\\":\\"confidentiel\\"}]"'),
@@ -230,6 +232,16 @@ describe('rang d\'un enfant dans sa classe (sans exposer les notes des autres)',
     expect(Number(r.class_average)).toBe(12.22);
     const [r2] = await rows(PARENT_Y, `SELECT * FROM child_class_rank(2, '1')`);
     expect(Number(r2.rank)).toBe(2);
+  });
+
+  it('ne mélange pas les années scolaires', async () => {
+    // Année précédente demandée explicitement : seule la note de 2024-2025 de l'élève 1 compte
+    const [old] = await rows(PARENT_X, `SELECT * FROM child_class_rank(1, '1', '2024-2025')`);
+    expect(Number(old.total)).toBe(1);
+    expect(Number(old.class_average)).toBe(4);
+    const [current] = await rows(PARENT_X, `SELECT * FROM child_class_rank(1, '1', '2025-2026')`);
+    expect(Number(current.total)).toBe(3);
+    expect(Number(current.class_max)).toBe(16.67);
   });
 
   it('un parent n\'obtient rien pour l\'enfant d\'un autre', async () => {

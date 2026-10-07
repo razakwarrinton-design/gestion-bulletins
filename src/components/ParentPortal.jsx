@@ -855,7 +855,7 @@ function AbsencesParent({ child }) {
 }
 
 // ── Composant principal ───────────────────────────────────────────────────────
-export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
+export default function ParentPortal({ currentUser, schoolInfo, onPrint, currentYear }) {
     const [selectedTrimester, setSelectedTrimester] = useState('1');
     const [selectedChild, setSelectedChild] = useState(null);
     const [paymentStatus, setPaymentStatus] = useState({});
@@ -864,17 +864,9 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
-    const { children, loading, error, calculateAverage, getStudentGrades } = useParent(currentUser?.id);
+    const { children, loading, error, calculateAverage, getStudentGrades } = useParent(currentUser?.id, currentYear);
 
     const showLocalNotif = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3500); };
-
-    useEffect(() => {
-        console.log('👨‍👩‍👧 ParentPortal: Component mounted');
-        console.log('Current user:', currentUser);
-        console.log('Loading:', loading);
-        console.log('Children:', children);
-        console.log('Error:', error);
-    }, []);
 
     useEffect(() => {
         if (children.length > 0 && !selectedChild) setSelectedChild(children[0]);
@@ -911,13 +903,14 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
             const { data, error } = await supabase.rpc('child_class_rank', {
                 p_student: selectedChild.id,
                 p_trimester: selectedTrimester,
+                p_year: currentYear,
             });
             const row = Array.isArray(data) ? data[0] : data;
             if (error || !row) return;
             setRankData(prev => ({ ...prev, [key]: { rang: row.rank, total: row.total } }));
         };
         fetchRank();
-    }, [selectedChild, selectedTrimester]);
+    }, [selectedChild, selectedTrimester, currentYear]);
 
     if (loading) return (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -1084,7 +1077,6 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint }) {
                 description="Frais de scolarité - Trimestre 1"
                 onClose={() => setPaymentModalOpen(false)}
                 onSuccess={(result) => {
-                    console.log('✅ Paiement initié:', result);
                     setNotification(`✅ Paiement initié ! Ref: ${result.reference}`);
                     setTimeout(() => setNotification(null), 5000);
                 }}
