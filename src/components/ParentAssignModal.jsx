@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { supabase } from '../config/supabase';
+import { sameId } from '../utils/ids';
 
 export default function ParentAssignModal({ isOpen, onClose, students, classes, showNotification }) {
     const [tab, setTab] = useState('assign');
@@ -33,11 +34,11 @@ export default function ParentAssignModal({ isOpen, onClose, students, classes, 
     };
 
     const filteredStudents = selectedClass
-        ? students.filter(s => (s.classId || s.class_id) === selectedClass)
+        ? students.filter(s => sameId(s.classId || s.class_id, selectedClass))
         : students;
 
     const filteredStudentsCreate = linkClass
-        ? students.filter(s => (s.classId || s.class_id) === linkClass)
+        ? students.filter(s => sameId(s.classId || s.class_id, linkClass))
         : students;
 
     // ── Créer compte parent via Edge Function ────────────────────────────────
@@ -90,7 +91,7 @@ export default function ParentAssignModal({ isOpen, onClose, students, classes, 
                 } else throw error;
             } else {
                 const parent = parents.find(p => p.id === selectedParent);
-                const student = students.find(s => s.id === selectedStudent);
+                const student = students.find(s => sameId(s.id, selectedStudent));
                 showNotification(`✅ ${student?.firstName} ${student?.lastName} lié(e) à ${parent?.first_name} ${parent?.last_name}`);
                 setParent(''); setStudent(''); setError('');
                 onClose();

@@ -37,7 +37,7 @@ export default function AbsenceManager({ classes, students, subjects, currentUse
 
     // ── Élèves de la classe sélectionnée ──
     const classStudents = useMemo(() =>
-        formClass ? students.filter(s => (s.classId || s.class_id) === formClass) : []
+        formClass ? students.filter(s => sameId(s.classId || s.class_id, formClass)) : []
         , [formClass, students]);
 
     // Init entries quand la classe change
@@ -245,7 +245,7 @@ export default function AbsenceManager({ classes, students, subjects, currentUse
                             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                                 <div className="flex items-center gap-2">
                                     <h3 className="font-bold text-gray-800 text-sm">
-                                        Élèves — {classes.find(c => c.id === formClass)?.name}
+                                        Élèves — {classes.find(c => sameId(c.id, formClass))?.name}
                                     </h3>
                                     <span className="text-xs bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">
                                         {Object.values(formEntries).filter(e => e.selected).length} sélectionné{Object.values(formEntries).filter(e => e.selected).length > 1 ? 's' : ''}
