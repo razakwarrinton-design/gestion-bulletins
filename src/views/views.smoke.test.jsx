@@ -29,7 +29,7 @@ import Toast from '../layout/Toast';
 import BulletinTemplatePicker from '../components/BulletinTemplatePicker';
 import { NAV_ITEMS, NAV_SECTIONS } from '../config/navigation';
 import { calculateAverage } from '../utils/grades';
-import { getMention } from '../utils/grades';
+import { getMention, getClassRank } from '../utils/grades';
 
 // Le rendu serveur sépare les morceaux de texte par des commentaires HTML
 const renderToString = (el) => renderRaw(el).replace(/<!-- -->/g, '');
@@ -88,6 +88,25 @@ describe('vues extraites de App.jsx : rendu sans erreur', () => {
     expect(html).toContain('Koffi Mensah');
     expect(html).toContain('13.71/20'); // (15*4 + 12*3) / 7
     expect(html).toContain('Imprimer PDF');
+    expect(html).toContain('aucun numéro de contact valide'); // pas de contact d'urgence renseigné
+  });
+
+  it('BulletinsView propose WhatsApp avec le rang quand un contact est renseigné', () => {
+    const withContact = [{ ...students[0], emergencyPhone: '+228 90 12 34 56' }, students[1]];
+    const rank = (id, trimester, classmates) => getClassRank(id, trimester, classmates, grades, subjects);
+    const html = renderToString(
+      <BulletinsView
+        classes={classes} students={withContact} selectedClass="c1" setSelectedClass={noop}
+        selectedTrimester="1" setSelectedTrimester={noop}
+        calculateAverage={avg} getMention={getMention} getRank={rank}
+        schoolName="Collège Les Lumières" onPrint={noop}
+      />
+    );
+    expect(html).toContain('https://wa.me/22890123456?text=');
+    expect(html).toContain('Envoyer par WhatsApp');
+    expect(html).toContain('Rang : 1/2');
+    expect(decodeURIComponent(html.match(/wa\.me\/\d+\?text=([^"]+)"/)[1].replace(/&amp;/g, '&')))
+      .toContain('Collège Les Lumières');
   });
 
   it('StatisticsView demande une classe tant qu\'aucune n\'est choisie', () => {

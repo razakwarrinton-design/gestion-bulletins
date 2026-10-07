@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
+import { mapStudentRow, buildStudentProfilePayload } from '../utils/studentProfile';
 
 export function useStudents() {
   const [students, setStudents] = useState([]);
@@ -11,44 +12,52 @@ export function useStudents() {
 
   const fetchStudents = async () => {
     setLoading(true);
-    // ✅ Optimisation : sélectionne SEULEMENT les colonnes nécessaires
+    // select('*') : renvoie aussi les colonnes de profil (contact d'urgence…) quand
+    // sql/students-profile.sql a été appliqué, sans casser la liste s'il ne l'est pas.
     const { data, error } = await supabase
       .from('students')
-      .select('id, first_name, last_name, class_id, created_at')
+      .select('*')
       .order('last_name');
     if (!error) {
       // Mapper snake_case → camelCase pour compatibilité avec le code existant
-      setStudents(data.map(s => ({
-        ...s,
-        firstName: s.first_name,
-        lastName: s.last_name,
-        classId: s.class_id,
-      })));
+      setStudents(data.map(mapStudentRow));
     }
     setLoading(false);
   };
 
-  const addStudent = async (firstName, lastName, classId) => {
+  /** profile : birthDate, gender, photoUrl, emergencyName, emergencyPhone, emergencyRelation */
+  const addStudent = async (firstName, lastName, classId, profile = {}) => {
     const { data, error } = await supabase
       .from('students')
-      .insert({ first_name: firstName, last_name: lastName, class_id: classId })
-      .select('id, first_name, last_name, class_id, created_at')
+      .insert({
+        first_name: firstName,
+        last_name: lastName,
+        class_id: classId,
+        ...buildStudentProfilePayload(profile),
+      })
+      .select('*')
       .single();
     if (error) throw error;
-    const mapped = { ...data, firstName: data.first_name, lastName: data.last_name, classId: data.class_id };
+    const mapped = mapStudentRow(data);
     setStudents(prev => [...prev, mapped]);
     return mapped;
   };
 
-  const updateStudent = async (id, firstName, lastName, classId) => {
+  const updateStudent = async (id, firstName, lastName, classId, profile = {}) => {
+    const existing = students.find(s => s.id === id) || null;
     const { data, error } = await supabase
       .from('students')
-      .update({ first_name: firstName, last_name: lastName, class_id: classId })
+      .update({
+        first_name: firstName,
+        last_name: lastName,
+        class_id: classId,
+        ...buildStudentProfilePayload(profile, existing),
+      })
       .eq('id', id)
-      .select('id, first_name, last_name, class_id, created_at')
+      .select('*')
       .single();
     if (error) throw error;
-    const mapped = { ...data, firstName: data.first_name, lastName: data.last_name, classId: data.class_id };
+    const mapped = mapStudentRow(data);
     setStudents(prev => prev.map(s => s.id === id ? mapped : s));
     return mapped;
   };

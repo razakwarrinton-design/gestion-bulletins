@@ -27,3 +27,27 @@ export function getMention(average) {
   if (avg >= 10) return { text: 'Passable', color: '#f59e0b' };
   return { text: 'Insuffisant', color: '#ef4444' };
 }
+
+/**
+ * Rang d'un élève parmi ses camarades pour un trimestre, avec la même moyenne que le
+ * bulletin (calculateAverage). Seuls les élèves ayant au moins une note saisie ce
+ * trimestre sont classés ; les ex æquo partagent le même rang.
+ * Renvoie { rank: 0, outOf } si l'élève n'a pas de note.
+ */
+export function getClassRank(studentId, trimester, classmates, grades, subjects) {
+  const hasGrade = (id) => grades.some(g =>
+    g.studentId === id &&
+    g.trimester === trimester &&
+    g.value !== '' && g.value !== null && g.value !== undefined &&
+    !Number.isNaN(parseFloat(g.value))
+  );
+
+  const ranked = classmates
+    .filter(s => hasGrade(s.id))
+    .map(s => ({ id: s.id, average: parseFloat(calculateAverage(s.id, trimester, grades, subjects)) || 0 }));
+
+  const me = ranked.find(r => r.id === studentId);
+  if (!me) return { rank: 0, outOf: ranked.length };
+
+  return { rank: 1 + ranked.filter(r => r.average > me.average).length, outOf: ranked.length };
+}

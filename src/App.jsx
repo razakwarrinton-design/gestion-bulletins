@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useSupabaseState } from './hooks/useSupabaseState';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
-import { calculateAverage as calcAverageUtil, getMention as getMentionUtil } from './utils/grades';
+import {
+    calculateAverage as calcAverageUtil,
+    getMention as getMentionUtil,
+    getClassRank as getClassRankUtil,
+} from './utils/grades';
 import LoginModalSupabase from './components/LoginModalSupabase';
 import PrintPreview from './components/PrintPreview';
 import StudentsList from './components/StudentsList';
@@ -202,6 +206,9 @@ const BulletinApp = () => {
     const getMention = (average) =>
         getMentionUtil(average);
 
+    const getRank = (studentId, trimester, classmates) =>
+        getClassRankUtil(studentId, trimester, classmates, grades, subjects);
+
     const calculateTrimesterAverage = (studentId, trimester) =>
         calculUtils.calculateTrimesterAverage(studentId, trimester, grades, subjects);
 
@@ -237,13 +244,14 @@ const BulletinApp = () => {
         setStudentModalOpen(true);
     };
 
-    const handleSaveStudent = async ({ firstName, lastName, classId }) => {
+    const handleSaveStudent = async ({ firstName, lastName, classId, ...profile }) => {
+        // profile : date de naissance, sexe, photo, contact d'urgence (voir sql/students-profile.sql)
         if (editingStudent) {
-            await updateStudent(editingStudent.id, firstName, lastName, classId);
+            await updateStudent(editingStudent.id, firstName, lastName, classId, profile);
             logActivity('Modification d\'élève', `Élève "${firstName} ${lastName}" modifié`);
             showNotification('Élève modifié avec succès !');
         } else {
-            await addStudent(firstName, lastName, classId);
+            await addStudent(firstName, lastName, classId, profile);
             logActivity('Ajout d\'élève', `Élève "${firstName} ${lastName}" ajouté`);
             showNotification('Élève ajouté avec succès !');
         }
@@ -494,6 +502,7 @@ const BulletinApp = () => {
                                 selectedClass={selectedClass} setSelectedClass={setSelectedClass}
                                 selectedTrimester={selectedTrimester} setSelectedTrimester={setSelectedTrimester}
                                 calculateAverage={calculateAverage} getMention={getMention}
+                                getRank={getRank} schoolName={schoolInfo.name}
                                 onPrint={openPrintPreview}
                             />
                         ))}

@@ -24,7 +24,9 @@ npm run dev
 - Classes, élèves, matières et coefficients
 - Saisie des notes, moyennes pondérées, mentions, classement
 - Bulletins imprimables, appréciations (enseignant, conseil de classe, assistant IA)
-- Absences, paiements (frais de scolarité), SMS, messagerie
+- Envoi des résultats d'un élève au parent par WhatsApp (lien pré-rempli, sans clé API)
+- Paiement des frais de scolarité par Mobile Money (Moov Money/Flooz, T-Money, MTN, Wave, Orange) via FedaPay
+- Absences, SMS, messagerie
 - Rôles : Admin, Professeur, Secrétaire, Parent (double authentification disponible)
 - Portail parents, mode sombre, interface multilingue, PWA
 
@@ -48,6 +50,8 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 1. `sql/supabase-schema.sql`
 2. `sql/supabase-security-rls.sql`
 3. `sql/CHAT_TABLES.sql`
+4. `sql/students-profile.sql` : profil élève (contact d'urgence, date de naissance…), nécessaire pour enregistrer ces champs et pour l'envoi WhatsApp
+5. `sql/payments-online.sql` : paiements Mobile Money (voir [docs/PAIEMENTS.md](docs/PAIEMENTS.md))
 
 Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURATION.md) et
 [docs/SECURITE-RLS-RESUME.md](docs/SECURITE-RLS-RESUME.md).
