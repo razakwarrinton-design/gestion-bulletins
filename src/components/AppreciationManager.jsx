@@ -1,65 +1,69 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, MessageSquare } from 'lucide-react';
+import { Trash2, MessageSquare } from 'lucide-react';
+import { resolveId } from '../utils/ids';
 
 /**
  * Composant: Gestion des appréciations
  * Deux niveaux:
  * 1. Appréciations enseignant (par matière et trimestre)
  * 2. Appréciations conseil de classe (générale)
+ *
+ * Les appréciations sont des lignes de la table appreciations (une par appréciation, voir
+ * useAppreciations) : `onAdd` et `onDelete` renvoient { success, error }.
  */
 export default function AppreciationManager({
-  grades,
   students,
   subjects,
-  classes,
   selectedClass,
   selectedTrimester,
   showNotification,
   appreciations = [],
-  setAppreciations
+  loading = false,
+  error = '',
+  onAdd,
+  onDelete,
 }) {
   const [activeTab, setActiveTab] = useState('teacher'); // 'teacher' ou 'council'
-  const [, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     studentId: '',
     subjectId: '',
     trimester: selectedTrimester,
-    teacherAppreciation: '',
-    councilAppreciation: ''
+    text: ''
   });
 
   const classStudents = students.filter(s => s.classId === selectedClass);
 
-  const handleAddAppreciation = () => {
-    if (activeTab === 'teacher') {
-      if (!formData.studentId || !formData.subjectId || !formData.teacherAppreciation) {
-        showNotification('Veuillez remplir tous les champs');
-        return;
-      }
-    } else {
-      if (!formData.studentId || !formData.councilAppreciation) {
-        showNotification('Veuillez remplir tous les champs');
-        return;
-      }
+  const handleAddAppreciation = async () => {
+    const needsSubject = activeTab === 'teacher';
+    if (!formData.studentId || !formData.text.trim() || (needsSubject && !formData.subjectId)) {
+      showNotification('Veuillez remplir tous les champs');
+      return;
     }
 
-    const newAppreciation = {
-      id: Date.now(),
-      ...formData,
+    setSaving(true);
+    const result = await onAdd({
+      // un <select> renvoie du texte : on retrouve l'identifiant d'origine (nombre)
+      studentId: resolveId(students, formData.studentId),
+      subjectId: needsSubject ? resolveId(subjects, formData.subjectId) : null,
+      trimester: formData.trimester,
       type: activeTab,
-      createdAt: new Date().toISOString()
-    };
+      text: formData.text,
+    });
+    setSaving(false);
 
-    setAppreciations(prev => [...prev, newAppreciation]);
+    if (result?.success === false) {
+      showNotification(`Erreur : appréciation non enregistrée (${result.error})`);
+      return;
+    }
     showNotification('Appréciation enregistrée');
     resetForm();
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Supprimer cette appréciation ?')) {
-      setAppreciations(prev => prev.filter(a => a.id !== id));
-      showNotification('Appréciation supprimée');
-    }
+  const handleDelete = async (id) => {
+    if (!window.confirm('Supprimer cette appréciation ?')) return;
+    const result = await onDelete(id);
+    showNotification(result?.success === false ? `Erreur : ${result.error}` : 'Appréciation supprimée');
   };
 
   const resetForm = () => {
@@ -67,10 +71,8 @@ export default function AppreciationManager({
       studentId: '',
       subjectId: '',
       trimester: selectedTrimester,
-      teacherAppreciation: '',
-      councilAppreciation: ''
+      text: ''
     });
-    setEditingId(null);
   };
 
   // Filtrer les appréciations selon l'onglet actif
@@ -169,11 +171,8 @@ export default function AppreciationManager({
             {activeTab === 'teacher' ? 'Appréciation enseignant' : 'Appréciation conseil de classe'}
           </label>
           <textarea
-            value={activeTab === 'teacher' ? formData.teacherAppreciation : formData.councilAppreciation}
-            onChange={(e) => setFormData({
-              ...formData,
-              [activeTab === 'teacher' ? 'teacherAppreciation' : 'councilAppreciation']: e.target.value
-            })}
+            value={formData.text}
+            onChange={(e) => setFormData({ ...formData, text: e.target.value })}
             placeholder="Entrez l'appréciation..."
             rows="4"
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -183,7 +182,8 @@ export default function AppreciationManager({
         <div className="flex space-x-2 mt-4">
           <button
             onClick={handleAddAppreciation}
-            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={saving}
+            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60"
           >
             Enregistrer
           </button>
@@ -198,15 +198,17 @@ export default function AppreciationManager({
 
       {/* Liste */}
       <div className="space-y-3">
-        {filteredAppreciations.length === 0 ? (
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {loading && <p className="text-sm text-gray-400 text-center py-4">Chargement des appréciations…</p>}
+        {!loading && filteredAppreciations.length === 0 ? (
           <div className="text-center py-8 bg-gray-50 rounded-lg">
             <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-2" />
             <p className="text-gray-500">Aucune appréciation enregistrée</p>
           </div>
         ) : (
-          filteredAppreciations.map(app => {
-            const student = students.find(s => s.id === parseInt(app.studentId));
-            const subject = app.subjectId ? subjects.find(s => s.id === parseInt(app.subjectId)) : null;
+          !loading && filteredAppreciations.map(app => {
+            const student = students.find(s => s.id === app.studentId);
+            const subject = app.subjectId ? subjects.find(s => s.id === app.subjectId) : null;
 
             return (
               <div key={app.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
@@ -220,7 +222,7 @@ export default function AppreciationManager({
                       Trimestre {app.trimester} - {new Date(app.createdAt).toLocaleDateString('fr-FR')}
                     </p>
                     <p className="mt-2 text-sm text-gray-700">
-                      {app.teacherAppreciation || app.councilAppreciation}
+                      {app.text}
                     </p>
                   </div>
                   <button

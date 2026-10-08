@@ -381,7 +381,8 @@ export default function Settings({
 
                     <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">
-                            <strong>Total:</strong> {activities.filter(a => filterRole === 'all' || a.userRole === filterRole).length} activités enregistrées
+                            <strong>Affichées :</strong> {activities.filter(a => filterRole === 'all' || a.userRole === filterRole).length} activités récentes (les 50 dernières).
+                            Pour l&apos;historique complet des modifications, voir le <em>Journal d&apos;audit</em>.
                         </p>
                     </div>
                 </div>

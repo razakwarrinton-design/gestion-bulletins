@@ -113,8 +113,8 @@ const cases = {
     calculateAverage={avg} currentUser={admin} setCurrentView={noop} activities={[]} />,
   AcademicYearManager: <AcademicYearManager academicYears={academicYears} setAcademicYears={noop}
     currentYear="2024-2025" setCurrentYear={noop} showNotification={noop} />,
-  AppreciationManager: <AppreciationManager grades={grades} students={students} subjects={subjects} classes={classes}
-    selectedClass="c1" selectedTrimester="1" showNotification={noop} appreciations={[]} setAppreciations={noop} />,
+  AppreciationManager: <AppreciationManager students={students} subjects={subjects}
+    selectedClass="c1" selectedTrimester="1" showNotification={noop} appreciations={[]} onAdd={noop} onDelete={noop} />,
   AdvancedAnalytics: <AdvancedAnalytics students={students} classes={classes} grades={grades} subjects={subjects}
     selectedClass="c1" selectedTrimester="1" calculateTrimesterAverage={numAvg} getMention={getMention} />,
   AbsenceManager: <AbsenceManager classes={classes} students={students} subjects={subjects} currentUser={admin} />,

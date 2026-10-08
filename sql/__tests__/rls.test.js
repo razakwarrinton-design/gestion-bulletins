@@ -15,6 +15,7 @@ const SCRIPTS = [
   'payments-online.sql',
   'bulletin-access.sql',
   ...(BASELINE ? [] : ['security-hardening.sql']),
+  'appreciations-activities.sql',
   'audit-log.sql',
 ];
 

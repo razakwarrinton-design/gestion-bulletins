@@ -119,6 +119,7 @@ BEGIN
       ('students',      'photo_url'),
       ('classes',       ''),
       ('subjects',      ''),
+      ('appreciations', ''),
       ('absences',      ''),
       ('user_profiles', ''),
       ('payments',      ''),

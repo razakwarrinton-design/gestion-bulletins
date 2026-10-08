@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
-import { useSupabaseState } from './hooks/useSupabaseState';
+import { useAppreciations } from './hooks/useAppreciations';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { useHashRoute } from './hooks/useHashRoute';
 import { useToast } from './hooks/useToast';
@@ -81,7 +81,8 @@ const BulletinApp = () => {
         currentYear, setCurrentYear, handleLogoUpload, updateSchoolInfo, updateColor,
     } = useSchoolSettings({ notify: showNotification });
     const { activities, logActivity } = useActivityLog(currentUser);
-    const [appreciations, setAppreciations] = useSupabaseState('appreciations', []);
+    // Les appréciations ne sont chargées que sur leur écran (table appreciations, une ligne par appréciation)
+    const appreciationsApi = useAppreciations(currentView === 'appreciations' && !isLoadingYears ? currentYear : null);
 
     // Charge les notes si on en a besoin (y compris dashboard), une fois l'année connue
     const shouldLoadGrades = ['dashboard', 'grades', 'bulletins', 'statistics', 'analytics', 'ia-appreciations'].includes(currentView);
@@ -297,14 +298,14 @@ const BulletinApp = () => {
                     <div className="bg-white rounded-2xl shadow-sm p-6 min-h-full" style={{ border: '1px solid #EFF6FF' }}>
                         <Suspense fallback={<Spinner text="Chargement..." />}>
                         <AppViews currentView={currentView} ctx={{
-                            academicYears, activities, appColors, appreciations, authLoading, calculateAverage,
+                            academicYears, activities, appColors, appreciationsApi, authLoading, calculateAverage,
                             calculateTrimesterAverage, chatUser, classes, currentUser, currentYear, exportClassGrades,
                             exportRanking, getGrade, getMention, getRank, grades, handleAddClass,
                             handleAddStudent, handleAddSubject, handleDeleteClass, handleDeleteStudent, handleDeleteSubject, handleEditStudent,
                             handleLogin, handleLogoUpload, handleRegister, importGrades, importStudents, isLoadingClasses,
                             isLoadingGrades, isLoadingStudents, isLoadingSubjects, isLoadingYears, isRegister, navigate,
                             openConfirm, openPrintPreview, schoolInfo, schoolLogo, selectedClass, selectedTrimester,
-                            setAcademicYears, setAppreciations, setChatUser, setCurrentYear, setIsRegister, setParentModalOpen,
+                            setAcademicYears, setChatUser, setCurrentYear, setIsRegister, setParentModalOpen,
                             setSelectedClass, setSelectedTrimester, setShowLoginModal, showLoginModal, showNotification, students,
                             subjects, updateColor, updateGrade, updateSchoolInfo,
                         }} />

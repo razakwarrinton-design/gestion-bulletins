@@ -41,14 +41,14 @@ const BulletinsView = lazy(() => import('../views/BulletinsView'));
  */
 export default function AppViews({ currentView, ctx }) {
     const {
-        academicYears, activities, appColors, appreciations, authLoading, calculateAverage,
+        academicYears, activities, appColors, appreciationsApi, authLoading, calculateAverage,
         calculateTrimesterAverage, chatUser, classes, currentUser, currentYear, exportClassGrades,
         exportRanking, getGrade, getMention, getRank, grades, handleAddClass,
         handleAddStudent, handleAddSubject, handleDeleteClass, handleDeleteStudent, handleDeleteSubject, handleEditStudent,
         handleLogin, handleLogoUpload, handleRegister, importGrades, importStudents, isLoadingClasses,
         isLoadingGrades, isLoadingStudents, isLoadingSubjects, isLoadingYears, isRegister, navigate,
         openConfirm, openPrintPreview, schoolInfo, schoolLogo, selectedClass, selectedTrimester,
-        setAcademicYears, setAppreciations, setChatUser, setCurrentYear, setIsRegister, setParentModalOpen,
+        setAcademicYears, setChatUser, setCurrentYear, setIsRegister, setParentModalOpen,
         setSelectedClass, setSelectedTrimester, setShowLoginModal, showLoginModal, showNotification, students,
         subjects, updateColor, updateGrade, updateSchoolInfo,
     } = ctx;
@@ -114,10 +114,11 @@ export default function AppViews({ currentView, ctx }) {
                         {currentView === 'appreciations' && (isLoadingStudents || isLoadingGrades
                             ? <Spinner text="Chargement des appréciations..." />
                             : <AppreciationManager
-                                grades={grades} students={students} subjects={subjects} classes={classes}
+                                students={students} subjects={subjects}
                                 selectedClass={selectedClass} selectedTrimester={selectedTrimester}
-                                showNotification={showNotification} currentUser={currentUser}
-                                appreciations={appreciations} setAppreciations={setAppreciations}
+                                showNotification={showNotification}
+                                appreciations={appreciationsApi.appreciations} loading={appreciationsApi.loading}
+                                error={appreciationsApi.error} onAdd={appreciationsApi.add} onDelete={appreciationsApi.remove}
                             />
                         )}
                         {currentView === 'analytics' && (isLoadingStudents || isLoadingGrades
