@@ -1,8 +1,13 @@
+import { strengthsAndWeaknesses } from './context';
+
 // MODÈLE 2 — MODERNE : renvoie le HTML complet du bulletin d'un élève.
 // `c` est le contexte de buildBulletinContext ; les autres paramètres sont ceux de l'élève imprimé
 // (ils diffèrent de c.student quand on imprime toute la classe).
 export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef) {
-  const { schoolInfo, subjects, classInfo, computeFinal, gradeColor, gradeLabel, fmtAvg, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, absData, generalAppreciation, classTotal, classAverage, classMax, classMin, strengths, weaknesses } = c;
+  const { effectif, schoolInfo, subjects, classInfo, computeFinal, gradeColor, gradeLabel, fmtAvg, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, classTotal, classAverage, classMax, classMin, absencesFor, appreciationFor } = c;
+  const absData = absencesFor(s.id);
+  const generalAppreciation = appreciationFor(s.id);
+  const { strengths, weaknesses } = strengthsAndWeaknesses(sGrades, subjects);
     const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
     const principalTeacher = schoolInfo?.principalTeacher || '';
 
@@ -74,9 +79,9 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
   .stat-pill { text-align: center; background: #f1f5f9; padding: 6px 12px; border-radius: 8px; }
   .stat-val { font-size: 12pt; font-weight: 800; color: #1e40af; }
   .stat-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
-  .mention-bar { margin: 10px 16px 8px; background: ${sMention.color || '#2563eb'}18; border-left: 5px solid ${sMention.color || '#2563eb'}; border-radius: 0 6px 6px 0; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; }
-  .mention-text { font-size: 11pt; font-weight: 700; color: ${sMention.color || '#2563eb'}; }
-  .decision-badge { background: ${sStatus.color}18; color: ${sStatus.color}; border: 1.5px solid ${sStatus.color}; padding: 3px 12px; border-radius: 20px; font-size: 8.5pt; font-weight: 700; }
+  .mention-bar { margin: 10px 16px 8px; border-radius: 0 6px 6px 0; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .mention-text { font-size: 11pt; font-weight: 700; }
+  .decision-badge { padding: 3px 12px; border-radius: 20px; font-size: 8.5pt; font-weight: 700; }
   .section { margin: 0 16px 10px; }
   .section-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; margin-bottom: 7px; }
   .grade-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
@@ -122,7 +127,7 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
     <div class="student-avatar">${(s.firstName || '?')[0]}${(s.lastName || '?')[0]}</div>
     <div>
       <div class="student-name">${s.firstName} ${s.lastName?.toUpperCase()}</div>
-      <div class="student-meta">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;|&nbsp; Effectif: <strong>${classTotal}</strong> &nbsp;|&nbsp; ${yearLabel}${s.birthDate || s.birth_date ? ` &nbsp;|&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
+      <div class="student-meta">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;|&nbsp; Effectif: <strong>${effectif}</strong> &nbsp;|&nbsp; ${yearLabel}${s.birthDate || s.birth_date ? ` &nbsp;|&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
     </div>
     <div class="student-stats">
       <div class="stat-pill"><div class="stat-val">${fmtAvg(sAvg)}</div><div class="stat-lbl">Moyenne</div></div>
@@ -131,12 +136,12 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
     </div>
   </div>
 
-  <div class="mention-bar">
+  <div class="mention-bar" style="background:${sMention.color || '#2563eb'}18;border-left:5px solid ${sMention.color || '#2563eb'};">
     <div>
       <div style="font-size:7.5pt;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:1px;">Mention</div>
-      <div class="mention-text">${sMention.text || 'N/A'}</div>
+      <div class="mention-text" style="color:${sMention.color || '#2563eb'};">${sMention.text || 'N/A'}</div>
     </div>
-    <div class="decision-badge">${sStatus.text}</div>
+    <div class="decision-badge" style="background:${sStatus.color}18;color:${sStatus.color};border:1.5px solid ${sStatus.color};">${sStatus.text}</div>
   </div>
 
   <div class="class-stats">

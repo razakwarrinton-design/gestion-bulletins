@@ -1,18 +1,19 @@
+import { strengthsAndWeaknesses } from './context';
+
 // MODÈLE 3 — PREMIUM : renvoie le HTML complet du bulletin d'un élève.
 // `c` est le contexte de buildBulletinContext ; les autres paramètres sont ceux de l'élève imprimé
 // (ils diffèrent de c.student quand on imprime toute la classe).
 export function renderModel3(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef, sTotalPts) {
-  const { schoolInfo, subjects, grades, classStudents, classInfo, selectedTrimester, calculateAverage, computeFinal, gradeColor, gradeLabel, fmtAvg, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, absData, generalAppreciation, classTotal, classAverage, classMax, classMin } = c;
+  const { effectif, schoolInfo, subjects, grades, classStudents, classInfo, selectedTrimester, calculateAverage, computeFinal, gradeColor, gradeLabel, fmtAvg, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, classTotal, classAverage, classMax, classMin, absencesFor, appreciationFor } = c;
+  const absData = absencesFor(s.id);
+  const generalAppreciation = appreciationFor(s.id);
     const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
     const principalTeacher = schoolInfo?.principalTeacher || '';
 
     const sT1 = parseFloat(calculateAverage(s.id, '1')) || 0;
     const sT2 = parseFloat(calculateAverage(s.id, '2')) || 0;
     const sT3 = parseFloat(calculateAverage(s.id, '3')) || 0;
-    const sSorted = [...sGrades].filter(g => g.value != null).sort((a, b) => b.value - a.value);
-    const sHalf = Math.max(1, Math.floor(sSorted.length / 2));
-    const sStr = sSorted.slice(0, Math.min(3, sHalf)).map(g => ({ name: subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
-    const sWeak = sSorted.slice(-Math.min(3, sHalf)).reverse().map(g => ({ name: subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
+    const { strengths: sStr, weaknesses: sWeak } = strengthsAndWeaknesses(sGrades, subjects);
 
     const rows = sGrades.map(g => {
       const subj = subjects.find(sub => sub.id === (g.subjectId || g.subject_id));
@@ -118,9 +119,9 @@ export function renderModel3(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
   .side-panel { display: flex; flex-direction: column; gap: 8px; }
   .panel-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px; }
   .panel-title { font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #64748b; margin-bottom: 6px; }
-  .mention-box { background: linear-gradient(135deg,${sMention.color || '#2563eb'}15,${sMention.color || '#2563eb'}08); border: 2px solid ${sMention.color || '#2563eb'}; border-radius: 8px; padding: 9px; text-align: center; }
-  .mention-val { font-size: 12pt; font-weight: 900; color: ${sMention.color || '#2563eb'}; }
-  .decision-tag { display:inline-block; background:${sStatus.color}18; color:${sStatus.color}; border:1.5px solid ${sStatus.color}; padding:2px 10px; border-radius:20px; font-size:7.5pt; font-weight:800; margin-top:5px; }
+  .mention-box { border-radius: 8px; padding: 9px; text-align: center; }
+  .mention-val { font-size: 12pt; font-weight: 900; }
+  .decision-tag { display:inline-block; padding:2px 10px; border-radius:20px; font-size:7.5pt; font-weight:800; margin-top:5px; }
   .evol-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px; }
   .strength-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; font-size: 8pt; }
   .sigs { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 0 14px 10px; }
@@ -158,7 +159,7 @@ export function renderModel3(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
   <div class="student-banner">
     <div>
       <div class="student-fullname">${s.firstName} ${s.lastName?.toUpperCase()}</div>
-      <div class="student-class">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;·&nbsp; Effectif: <strong>${classTotal}</strong> &nbsp;·&nbsp; Rang: <strong>${sRank}/${classTotal}</strong>${s.birthDate || s.birth_date ? ` &nbsp;·&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
+      <div class="student-class">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;·&nbsp; Effectif: <strong>${effectif}</strong> &nbsp;·&nbsp; Rang: <strong>${sRank}/${classTotal}</strong>${s.birthDate || s.birth_date ? ` &nbsp;·&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
     </div>
     <div class="avg-display">
       <div class="avg-num">${fmtAvg(sAvg)}</div>
@@ -207,10 +208,10 @@ export function renderModel3(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
     </div>
 
     <div class="side-panel">
-      <div class="mention-box">
+      <div class="mention-box" style="background:linear-gradient(135deg,${sMention.color || '#2563eb'}15,${sMention.color || '#2563eb'}08);border:2px solid ${sMention.color || '#2563eb'};">
         <div style="font-size:7pt;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:3px;">Mention</div>
-        <div class="mention-val">${sMention.text || 'N/A'}</div>
-        <div class="decision-tag">${sStatus.text}</div>
+        <div class="mention-val" style="color:${sMention.color || '#2563eb'};">${sMention.text || 'N/A'}</div>
+        <div class="decision-tag" style="background:${sStatus.color}18;color:${sStatus.color};border:1.5px solid ${sStatus.color};">${sStatus.text}</div>
       </div>
       <div class="evol-box">
         <div class="panel-title">📈 Évolution des moyennes</div>

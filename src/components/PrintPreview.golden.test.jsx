@@ -9,9 +9,10 @@ import { render, screen, act, fireEvent, cleanup } from '@testing-library/react'
 
 const server = vi.hoisted(() => ({
   absences: [
-    { id: 1, type: 'absent', justified: false },
-    { id: 2, type: 'absent', justified: true },
-    { id: 3, type: 'retard', justified: false },
+    { student_id: 's1', type: 'absent', justified: false },
+    { student_id: 's1', type: 'absent', justified: true },
+    { student_id: 's1', type: 'retard', justified: false },
+    { student_id: 's2', type: 'absent', justified: false },
   ],
 }));
 
@@ -98,5 +99,47 @@ describe('rendu des bulletins (instantané)', () => {
     fireEvent.change(screen.getByRole('combobox'), { target: { value: template } });
     fireEvent.click(screen.getByRole('button', { name: /Imprimer 3 bulletins/ }));
     expect(opened.html).toMatchSnapshot();
+  });
+});
+
+describe('impression de toute la classe : chaque bulletin porte les données de son élève', () => {
+  const printClass = async (template) => {
+    await renderReady(baseProps());
+    fireEvent.change(screen.getByPlaceholderText(/Bon trimestre/), { target: { value: 'Appréciation de Koffi' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: template } });
+    fireEvent.click(screen.getByRole('button', { name: /Imprimer 3 bulletins/ }));
+    // une « page » par élève : le corps de chaque bulletin est enveloppé dans un div page-break-after
+    const doc = new DOMParser().parseFromString(opened.html, 'text/html');
+    return Array.from(doc.querySelectorAll('div[style*="page-break-after"]')).map(p => p.textContent.replace(/\s+/g, ' '));
+  };
+
+  it('absences : chaque élève a les siennes (et pas celles de l\'élève ouvert)', async () => {
+    const [koffi, ama, yao] = await printClass('model1');
+    expect(koffi).toContain('2 abs. · 1 ret. · 2 injust.');
+    expect(ama).toContain('1 abs. · 0 ret. · 1 injust.');
+    expect(yao).toContain('0 abs. · 0 ret. · 0 injust.');
+  });
+
+  it('l\'appréciation du conseil de classe saisie n\'est imprimée que sur le bulletin de l\'élève ouvert', async () => {
+    const [koffi, ama, yao] = await printClass('model2');
+    expect(koffi).toContain('Appréciation de Koffi');
+    expect(ama).not.toContain('Appréciation de Koffi');
+    expect(yao).not.toContain('Appréciation de Koffi');
+  });
+
+  it('les points forts ne sont plus ceux de l\'élève ouvert', async () => {
+    const [, , yao] = await printClass('model2');
+    expect(yao).not.toContain('Points forts'); // aucune note : rien à valoriser
+  });
+
+  it('la mention et la décision gardent leur couleur propre (en ligne, pas dans la feuille de style commune)', async () => {
+    await renderReady(baseProps());
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'model2' } });
+    fireEvent.click(screen.getByRole('button', { name: /Imprimer 3 bulletins/ }));
+    const doc = new DOMParser().parseFromString(opened.html, 'text/html');
+    const css = doc.querySelector('style').textContent;
+    expect(css).not.toMatch(/\.decision-badge\s*\{[^}]*color:\s*;/); // l'ancien CSS cassé (« color: ; »)
+    const badges = Array.from(doc.querySelectorAll('.decision-badge')).map(b => b.getAttribute('style'));
+    expect(new Set(badges).size).toBeGreaterThan(1); // admis / à suivre / en difficulté : pas la même couleur
   });
 });

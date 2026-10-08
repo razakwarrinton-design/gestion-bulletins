@@ -13,26 +13,36 @@ function PrintPreviewInner({
   const [generalAppreciation, setGeneralAppreciation] = useState('');
   const [batchTemplate, setBatchTemplate] = useState('model1');
   const [isBatchLoading, setIsBatchLoading] = useState(false);
-  const [absData, setAbsData] = useState({ absents: 0, retards: 0, injustifies: 0 });
+  const [absencesByStudent, setAbsencesByStudent] = useState({});
 
   const student = printStudent;
   const [serverRank, setServerRank] = useState(null);
 
-  // Charger les absences de l'élève
+  // Absences de l'élève imprimé et de ses camarades de classe (impression de toute la classe) :
+  // une seule requête, regroupée par élève
+  const classId = student?.classId || student?.class_id;
+  const absenceIds = [...new Set([student?.id, ...(students || [])
+    .filter(s => (s.classId || s.class_id) === classId).map(s => s.id)].filter(id => id != null))];
+  const absenceKey = absenceIds.join(',');
   useEffect(() => {
-    if (!student?.id) return;
-    supabase.from('absences')
-      .select('id, type, justified')
-      .eq('student_id', student.id)
+    if (!absenceKey) return undefined;
+    let cancelled = false;
+    Promise.resolve(supabase.from('absences')
+      .select('student_id, type, justified')
+      .in('student_id', absenceKey.split(',')))
       .then(({ data }) => {
-        if (!data) return;
-        setAbsData({
-          absents: data.filter(a => a.type === 'absent').length,
-          retards: data.filter(a => a.type === 'retard').length,
-          injustifies: data.filter(a => !a.justified).length,
-        });
+        if (!data || cancelled) return;
+        const grouped = {};
+        for (const a of data) {
+          const entry = (grouped[a.student_id] ??= { absents: 0, retards: 0, injustifies: 0 });
+          if (a.type === 'absent') entry.absents++;
+          if (a.type === 'retard') entry.retards++;
+          if (!a.justified) entry.injustifies++;
+        }
+        setAbsencesByStudent(grouped);
       });
-  }, [student?.id]);
+    return () => { cancelled = true; };
+  }, [absenceKey]);
 
   // Rang et statistiques de classe calculés par la base (fonction child_class_rank) : un parent ne
   // lit que ses propres enfants et ne peut pas les calculer à partir des notes de la classe.
@@ -51,10 +61,10 @@ function PrintPreviewInner({
   const c = buildBulletinContext({
     printStudent, selectedTrimester, calculateAverage, getMention,
     grades, subjects, classes, students, schoolLogo, schoolInfo,
-    absData, generalAppreciation, serverRank,
+    absencesByStudent, generalAppreciation, serverRank,
   });
   const {
-    studentGrades, average, mention, ranking, studentRank, studentStatus, totalCoef, totalPoints,
+    studentGrades, average, mention, studentRank, studentStatus, totalCoef, totalPoints,
     classInfo, classStudents, classTotal, trimLabel, fmtAvg,
   } = c;
 
@@ -78,11 +88,10 @@ function PrintPreviewInner({
   const openBatchPrint = () => {
     if (!classStudents.length) return;
     setIsBatchLoading(true);
-    const pages = classStudents.map(s => {
+    const htmls = classStudents.map(s => {
       const sAvg = parseFloat(calculateAverage(s.id, selectedTrimester)) || 0;
       const sGrades = grades.filter(g => (g.studentId || g.student_id) === s.id && g.trimester === selectedTrimester);
-      const sRanking = ranking;
-      const sRank = sRanking.findIndex(r => r.student.id === s.id) + 1 || '-';
+      const sRank = c.rankOf(s.id);
       const sMention = getMention(sAvg);
       const sStatus = sAvg >= 12 ? { text: 'ADMIS(E)', color: '#059669' } : sAvg >= 8 ? { text: 'À SUIVRE', color: '#d97706' } : { text: 'EN DIFFICULTÉ', color: '#dc2626' };
       const sTotalCoef = sGrades.reduce((sum, g) => sum + (subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.coefficient || 0), 0);
@@ -90,17 +99,15 @@ function PrintPreviewInner({
         const coef = subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.coefficient || 0;
         return sum + ((g.value || 0) * coef);
       }, 0);
-      const html = buildHtml(batchTemplate, s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef, sTotalPts);
+      return buildHtml(batchTemplate, s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef, sTotalPts);
+    });
+    const pages = htmls.map(html => {
       const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
       return bodyMatch ? `<div style="page-break-after:always;">${bodyMatch[1]}</div>` : '';
     }).join('');
 
-    // Récupérer le CSS du premier bulletin pour le batch
-    const firstHtml = buildHtml(batchTemplate, classStudents[0],
-      grades.filter(g => (g.studentId || g.student_id) === classStudents[0].id && g.trimester === selectedTrimester),
-      parseFloat(calculateAverage(classStudents[0].id, selectedTrimester)) || 0, 1,
-      { text: '', color: '' }, getMention(0), 0, 0);
-    const cssMatch = firstHtml.match(/<style>([\s\S]*?)<\/style>/i);
+    // La feuille de style est la même pour tous les élèves (les couleurs propres à chacun sont en ligne)
+    const cssMatch = htmls[0].match(/<style>([\s\S]*?)<\/style>/i);
     const css = cssMatch ? cssMatch[1] : '';
 
     const batchHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">

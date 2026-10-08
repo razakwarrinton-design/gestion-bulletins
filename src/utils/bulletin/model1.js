@@ -2,7 +2,9 @@
 // `c` est le contexte de buildBulletinContext ; les autres paramètres sont ceux de l'élève imprimé
 // (ils diffèrent de c.student quand on imprime toute la classe).
 export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef, sTotalPts) {
-  const { schoolInfo, subjects, grades, classStudents, classInfo, selectedTrimester, computeFinal, gradeColor, fmtAvg, officialTopBar, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, schoolDevise, absData, generalAppreciation, classTotal, classAverage } = c;
+  const { schoolInfo, subjects, grades, classStudents, classInfo, selectedTrimester, computeFinal, gradeColor, fmtAvg, officialTopBar, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, schoolDevise, classTotal, classAverage, effectif, absencesFor, appreciationFor } = c;
+  const absData = absencesFor(s.id);
+  const generalAppreciation = appreciationFor(s.id);
     const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
     const principalTeacher = schoolInfo?.principalTeacher || '';
 
@@ -113,7 +115,7 @@ export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
       <div class="info-row"><div class="info-label">Nom</div><div class="info-value">${s.lastName?.toUpperCase()}</div></div>
       <div class="info-row"><div class="info-label">Prénom</div><div class="info-value">${s.firstName}</div></div>
       <div class="info-row"><div class="info-label">Classe</div><div class="info-value">${classInfo?.name || 'N/A'}</div></div>
-      <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">${classTotal} élèves</div></div>
+      <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">${effectif} élèves</div></div>
       <div class="info-row"><div class="info-label">Rang</div><div class="info-value">${sRank} / ${classTotal}</div></div>
       <div class="info-row"><div class="info-label">Trimestre</div><div class="info-value">${trimLabel}</div></div>
       ${s.birthDate || s.birth_date ? `<div class="info-row"><div class="info-label">Date de naissance</div><div class="info-value">${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</div></div>` : ''}

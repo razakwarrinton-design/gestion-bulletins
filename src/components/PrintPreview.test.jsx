@@ -8,7 +8,7 @@ const server = vi.hoisted(() => ({ row: null }));
 vi.mock('../config/supabase', () => ({
   supabase: {
     from: () => ({
-      select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }),
+      select: () => ({ eq: () => Promise.resolve({ data: [], error: null }), in: () => Promise.resolve({ data: [], error: null }) }),
     }),
     rpc: () => Promise.resolve({ data: server.row ? [server.row] : [], error: null }),
   },

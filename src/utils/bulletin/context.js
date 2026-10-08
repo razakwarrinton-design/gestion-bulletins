@@ -2,6 +2,19 @@ import { qrDataUrl } from '../qrCode';
 import { currentAcademicYear } from '../studentUtils';
 import { getMentionLevel } from '../mentions';
 import { finalGrade } from '../finalGrade';
+import { getClassRank, hasGrade } from '../grades';
+
+const NO_ABSENCES = { absents: 0, retards: 0, injustifies: 0 };
+
+/** Points forts (meilleures notes) et points à renforcer (moins bonnes notes) d'un élève. */
+export function strengthsAndWeaknesses(studentGrades, subjects) {
+  const nameOf = (g) => subjects.find(s => s.id === (g.subjectId || g.subject_id))?.name || '?';
+  const sorted = [...studentGrades].filter(g => g.value != null).sort((a, b) => b.value - a.value);
+  const half = Math.max(1, Math.floor(sorted.length / 2));
+  const strengths = sorted.slice(0, Math.min(3, half)).map(g => ({ name: nameOf(g), value: g.value }));
+  const weaknesses = sorted.slice(-Math.min(3, half)).reverse().map(g => ({ name: nameOf(g), value: g.value }));
+  return { strengths, weaknesses };
+}
 
 /**
  * Données et petites fonctions de mise en forme partagées par les modèles de bulletin.
@@ -12,7 +25,7 @@ import { finalGrade } from '../finalGrade';
 export function buildBulletinContext({
   printStudent, selectedTrimester, calculateAverage, getMention,
   grades, subjects, classes, students, schoolLogo, schoolInfo,
-  absData, generalAppreciation, serverRank,
+  absencesByStudent, generalAppreciation, serverRank,
 }) {
   const student = printStudent;
   const average = parseFloat(calculateAverage(student.id, selectedTrimester)) || 0;
@@ -21,18 +34,25 @@ export function buildBulletinContext({
   const classStudents = students ? students.filter(s => (s.classId || s.class_id) === classInfo?.id) : [];
   const mention = getMention(average);
 
-  const ranking = classStudents
-    .map(s => ({ student: s, average: parseFloat(calculateAverage(s.id, selectedTrimester)) || 0 }))
-    .sort((a, b) => b.average - a.average);
-  const localRank = ranking.findIndex(r => r.student.id === student.id) + 1 || '-';
+  // Rang : même règle que partout ailleurs (utils/grades) — seuls les élèves ayant une note sont
+  // classés et les ex æquo partagent leur rang. Pour l'élève imprimé, la base (qui voit toute la
+  // classe) a priorité : un parent ne lit que ses propres enfants.
+  const ranking = classStudents.filter(s => hasGrade(s.id, selectedTrimester, grades));
+  const rankOf = (studentId) => {
+    if (serverRank && studentId === student.id) return serverRank.rank;
+    return getClassRank(studentId, selectedTrimester, classStudents, grades, subjects).rank || '-';
+  };
 
-  const classAverages = classStudents.map(s => parseFloat(calculateAverage(s.id, selectedTrimester)) || 0).filter(a => a > 0);
+  const classAverages = ranking.map(s => parseFloat(calculateAverage(s.id, selectedTrimester)) || 0);
   const localClassAverage = classAverages.length ? classAverages.reduce((a, b) => a + b, 0) / classAverages.length : 0;
   const localClassMax = classAverages.length ? Math.max(...classAverages) : 0;
   const localClassMin = classAverages.length ? Math.min(...classAverages) : 0;
 
-  const studentRank = serverRank ? serverRank.rank : localRank;
-  const classTotal = serverRank ? serverRank.total : classStudents.length;
+  const studentRank = rankOf(student.id);
+  // Nombre d'élèves classés (« rang / total »)
+  const classTotal = serverRank ? serverRank.total : ranking.length;
+  // Effectif de la classe (tous les élèves, classés ou non) ; la base peut en voir plus que la liste affichée
+  const effectif = Math.max(classTotal, classStudents.length);
   const classAverage = serverRank ? Number(serverRank.class_average) : localClassAverage;
   const classMax = serverRank ? Number(serverRank.class_max) : localClassMax;
   const classMin = serverRank ? Number(serverRank.class_min) : localClassMin;
@@ -64,10 +84,7 @@ export function buildBulletinContext({
   const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
   const gradeLabel = (v) => getMentionLevel(v)?.label ?? '';
 
-  const sortedGrades = [...studentGrades].filter(g => g.value != null).sort((a, b) => b.value - a.value);
-  const half = Math.max(1, Math.floor(sortedGrades.length / 2));
-  const strengths = sortedGrades.slice(0, Math.min(3, half)).map(g => ({ name: subjects.find(s => s.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
-  const weaknesses = sortedGrades.slice(-Math.min(3, half)).reverse().map(g => ({ name: subjects.find(s => s.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
+  const { strengths, weaknesses } = strengthsAndWeaknesses(studentGrades, subjects);
 
   // La note enregistrée contient déjà le bonus : voir utils/finalGrade.js
   const computeFinal = finalGrade;
@@ -111,7 +128,12 @@ export function buildBulletinContext({
       </div>
     </div>`;
 
+  // Absences et appréciation du conseil de classe sont propres à chaque élève : en impression de
+  // classe, chaque bulletin porte les siennes (l'appréciation saisie ne concerne que l'élève ouvert).
+  const absencesFor = (studentId) => absencesByStudent?.[studentId] ?? NO_ABSENCES;
+  const appreciationFor = (studentId) => (studentId === student.id ? generalAppreciation : '');
+
   return {
-    student, studentGrades, average, mention, ranking, studentRank, studentStatus, totalCoef, totalPoints, classInfo, classStudents, classTotal, classAverage, classMax, classMin, strengths, weaknesses, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, fmtAvg, gradeColor, gradeLabel, computeFinal, officialTopBar, qrCodeImg, digitalSigBox, subjects, grades, selectedTrimester, calculateAverage, schoolInfo, schoolLogo, absData, generalAppreciation,
+    student, studentGrades, average, mention, ranking, studentRank, studentStatus, totalCoef, totalPoints, classInfo, classStudents, classTotal, classAverage, classMax, classMin, strengths, weaknesses, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, fmtAvg, gradeColor, gradeLabel, computeFinal, officialTopBar, qrCodeImg, digitalSigBox, subjects, grades, selectedTrimester, calculateAverage, schoolInfo, schoolLogo, absencesFor, appreciationFor, rankOf, effectif,
   };
 }
