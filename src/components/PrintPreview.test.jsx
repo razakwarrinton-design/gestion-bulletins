@@ -165,3 +165,24 @@ describe('PrintPreview : affichage', () => {
     expect(screen.queryByText(/&#39;/)).toBeNull();
   });
 });
+
+describe('PrintPreview : bonus', () => {
+  it('n\'ajoute pas une seconde fois le bonus à la note enregistrée (qui le contient déjà)', () => {
+    // note de base 15 + bonus 1 : GradesForm enregistre value = 16
+    const withBonus = [
+      { studentId: 's1', subjectId: 'math', trimester: '1', value: 16, bonus: 1, interro: 15, devoir: 15, composition: 15 },
+      { studentId: 's2', subjectId: 'math', trimester: '1', value: 9 },
+    ];
+    render(<PrintPreview {...baseProps({
+      grades: withBonus,
+      calculateAverage: (id, t) => calculateAverage(id, t, withBonus, subjects),
+    })} />);
+    act(() => {
+      window.dispatchEvent(new CustomEvent('print-bulletin', { detail: { template: 'model1' } }));
+    });
+    const text = new DOMParser().parseFromString(opened.html, 'text/html').body.textContent;
+    expect(text).toContain('16.00');
+    expect(text).not.toContain('17.00');
+    expect(text).toContain('+1.00'); // le bonus reste affiché dans sa colonne
+  });
+});

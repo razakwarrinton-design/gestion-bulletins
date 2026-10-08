@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Save, CheckCircle, ChevronDown, ChevronUp, User, Pen, Star, Bell, Send } from 'lucide-react';
 import { supabase } from '../config/supabase';
 import { getMentionLevel } from '../utils/mentions';
+import { weightedBase, applyBonus } from '../utils/finalGrade';
 
 // ─── Hook debounce ────────────────────────────────────────────────────────────
 function useDebounce(value, delay) {
@@ -19,15 +20,10 @@ const noteTxtCol = v => +v < 8 ? '#DC2626' : +v < 10 ? '#D97706' : +v < 14 ? '#2
 const mention = v => getMentionLevel(v)?.short ?? '';
 
 // ─── Calcul note finale depuis interro/devoir/compo (sans bonus) ─────────────
-// Pondération : Interro ×1 · Devoir ×2 · Composition ×3
+// Pondération : Interro ×1 · Devoir ×2 · Composition ×3 (voir utils/finalGrade.js, partagé avec les bulletins)
 const computeFinal = (interro, devoir, compo) => {
-  const parts = [];
-  if (interro !== '' && !isNaN(+interro)) parts.push({ v: +interro, w: 1 });
-  if (devoir !== '' && !isNaN(+devoir)) parts.push({ v: +devoir, w: 2 });
-  if (compo !== '' && !isNaN(+compo)) parts.push({ v: +compo, w: 3 });
-  if (!parts.length) return '';
-  const sumW = parts.reduce((s, p) => s + p.w, 0);
-  return (parts.reduce((s, p) => s + p.v * p.w, 0) / sumW).toFixed(2);
+  const base = weightedBase({ interro, devoir, composition: compo });
+  return base === null ? '' : base.toFixed(2);
 };
 
 // ─── Petit champ numérique réutilisable ───────────────────────────────────────
@@ -94,10 +90,9 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
   // Note finale calculée (avant bonus)
   const baseNote = mode === 'detail' ? computeFinal(interro, devoir, compo) : noteSimple;
   // Note finale avec bonus (plafonnée à 20)
-  const bonusVal = bonus !== '' && !isNaN(+bonus) ? +bonus : 0;
-  const finalNote = baseNote !== '' && !isNaN(+baseNote)
-    ? Math.min(20, +baseNote + bonusVal).toFixed(2)
-    : '';
+  const finalNoteValue = applyBonus(baseNote, bonus);
+  const bonusVal = bonus !== '' && !isNaN(+bonus) ? +bonus : 0; // affichage du bonus appliqué
+  const finalNote = finalNoteValue === null ? '' : finalNoteValue.toFixed(2);
 
   // Sync si données externes changent (import Excel)
   useEffect(() => {
@@ -125,8 +120,7 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
   useEffect(() => {
     if (isFirst.current) { isFirst.current = false; return; }
     const base = mode === 'detail' ? computeFinal(dbInterro, dbDevoir, dbCompo) : dbSimple;
-    const bonusN = dbBonus !== '' && !isNaN(+dbBonus) ? +dbBonus : 0;
-    const finalN = base !== '' && !isNaN(+base) ? Math.min(20, +base + bonusN) : '';
+    const finalN = applyBonus(base, dbBonus) ?? '';
     let cancelled = false;
     let timer;
     Promise.resolve(onSave(studentId, subject.id, trimester, finalN === '' ? '' : parseFloat(finalN), dbApprec, {

@@ -5,6 +5,7 @@ import { prepareBulletinHtml } from '../utils/printSecurity';
 import { qrDataUrl } from '../utils/qrCode';
 import { currentAcademicYear } from '../utils/studentUtils';
 import { getMentionLevel } from '../utils/mentions';
+import { finalGrade } from '../utils/finalGrade';
 
 function PrintPreviewInner({
   printStudent, setShowPrintPreview, selectedTrimester,
@@ -104,13 +105,8 @@ function PrintPreviewInner({
   const strengths = sortedGrades.slice(0, Math.min(3, half)).map(g => ({ name: subjects.find(s => s.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
   const weaknesses = sortedGrades.slice(-Math.min(3, half)).reverse().map(g => ({ name: subjects.find(s => s.id === (g.subjectId || g.subject_id))?.name || '?', value: g.value }));
 
-  const computeFinal = (g) => {
-    if (!g) return null;
-    if (g.value != null) return Math.min(20, g.value + (g.bonus || 0));
-    const parts = [g.interro, g.devoir, g.composition].filter(v => v != null);
-    if (!parts.length) return null;
-    return Math.min(20, (parts.reduce((a, b) => a + b, 0) / parts.length) + (g.bonus || 0));
-  };
+  // La note enregistrée contient déjà le bonus : voir utils/finalGrade.js
+  const computeFinal = finalGrade;
 
   const openPrint = (html) => {
     const win = window.open('', '_blank', 'width=960,height=800');
