@@ -28,6 +28,7 @@ const ChatWindow = lazy(() => import('../components/ChatWindow'));
 const ParentChatDashboard = lazy(() => import('../components/ParentChatDashboard'));
 const ProfesseurChatDashboard = lazy(() => import('../components/ProfesseurChatDashboard'));
 const AdminChatDashboard = lazy(() => import('../components/AdminChatDashboard'));
+const AuditLog = lazy(() => import('../components/AuditLog'));
 const UsersManager = lazy(() => import('../components/UsersManager'));
 const StatisticsView = lazy(() => import('../views/StatisticsView'));
 const ImportExportView = lazy(() => import('../views/ImportExportView'));
@@ -164,6 +165,7 @@ export default function AppViews({ currentView, ctx }) {
                         {currentView === 'users' && (
                             <UsersManager currentUser={currentUser} showNotification={showNotification} />
                         )}
+                        {currentView === 'audit' && <AuditLog showNotification={showNotification} />}
                         {currentView === 'sms-dashboard' && <SMSDashboard />}
                         {currentView === 'chat' && (
                             chatUser ? (

@@ -1,7 +1,7 @@
 import {
     LayoutDashboard, GraduationCap, Users, BookOpen, Pencil, ClipboardList,
     FileText, Calendar, Star, TrendingUp, BarChart2, Bot, FolderUp, UsersRound,
-    CreditCard, Settings, UserCheck, UserCog, MessageSquare, MessageCircle,
+    CreditCard, Settings, UserCheck, UserCog, MessageSquare, MessageCircle, ScrollText,
 } from 'lucide-react';
 
 // ─── Sections de navigation ───────────────────────────────────────────────────
@@ -30,6 +30,7 @@ export const NAV_ITEMS = [
     { view: 'gestion-parents', label: 'Gestion parents', Icon: UsersRound, section: 'gestion', roles: ['admin'] },
     { view: 'admin-payments', label: 'Gestion des paiements', Icon: CreditCard, section: 'gestion', roles: ['admin', 'secretaire'] },
     { view: 'users', label: 'Utilisateurs', Icon: UserCog, section: 'gestion', roles: ['admin'] },
+    { view: 'audit', label: "Journal d'audit", Icon: ScrollText, section: 'gestion', roles: ['admin'] },
     { view: 'settings', label: 'Paramètres', Icon: Settings, section: 'gestion', roles: ['admin'] },
     { view: 'parents', label: 'Espace Parents', Icon: UserCheck, section: 'gestion', roles: ['parent'] },
     { view: 'sms-dashboard', label: 'SMS', Icon: MessageSquare, section: 'gestion', roles: ['admin'] },

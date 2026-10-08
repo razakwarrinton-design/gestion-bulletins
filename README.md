@@ -55,6 +55,7 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 6. `sql/payments-online.sql` : paiements Mobile Money (voir [docs/PAIEMENTS.md](docs/PAIEMENTS.md))
 7. `sql/bulletin-access.sql` : accès des parents au bulletin (débloqué automatiquement par un paiement terminé)
 8. **`sql/security-hardening.sql`** : règles d'accès (un parent ne voit que ses enfants, comptes inscrits « en attente » jusqu'à validation). **Obligatoire avant toute mise en service**, voir [docs/SECURITE.md](docs/SECURITE.md)
+9. `sql/audit-log.sql` : journal d'audit tenu par la base (qui a créé, modifié ou supprimé quoi), lisible par les administrateurs dans le menu *Journal d'audit*. À exécuter après `security-hardening.sql`
 
 Ensuite, créer le premier administrateur (voir [docs/SECURITE.md](docs/SECURITE.md)). Les autres comptes s'inscrivent
 eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*.
