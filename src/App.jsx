@@ -1,6 +1,12 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useSupabaseState } from './hooks/useSupabaseState';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
+import { useHashRoute } from './hooks/useHashRoute';
+import { useToast } from './hooks/useToast';
+import { useConfirmDialog } from './hooks/useConfirmDialog';
+import { useActivityLog } from './hooks/useActivityLog';
+import { useSchoolSettings } from './hooks/useSchoolSettings';
+import { useCatalogActions } from './hooks/useCatalogActions';
 import {
     calculateAverage as calcAverageUtil,
     getMention as getMentionUtil,
@@ -15,14 +21,7 @@ import ClassModal from './components/ClassModal';
 import StudentModal from './components/StudentModal';
 import SubjectModal from './components/SubjectModal';
 import ConfirmModal from './components/ConfirmModal';
-import {
-    DashboardSkeleton,
-    ClassesSkeleton,
-    TableSkeleton,
-    GradesSkeleton,
-    BulletinsSkeleton,
-    Spinner
-} from './components/Skeleton';
+import { Spinner } from './components/Skeleton';
 import ParentAssignModal from './components/ParentAssignModal';
 import LoginPage from './components/LoginPage';
 import { useDarkMode } from './hooks/useDarkMode';
@@ -34,54 +33,12 @@ import { consumePaymentReturn, PAYMENT_RETURN_MESSAGE } from './utils/paymentRet
 import Sidebar from './layout/Sidebar';
 import Topbar from './layout/Topbar';
 import Toast from './layout/Toast';
-import ClassesView from './views/ClassesView';
-import SubjectsView from './views/SubjectsView';
+import AppViews from './layout/AppViews';
 import { resolveId } from './utils/ids';
-import { currentAcademicYear } from './utils/studentUtils';
 import PendingApproval from './components/PendingApproval';
 
 // Écrans chargés à la demande : le premier affichage reste léger (réseaux mobiles lents).
-const LoginModalSupabase = lazy(() => import('./components/LoginModalSupabase'));
 const PrintPreview = lazy(() => import('./components/PrintPreview'));
-const StudentsList = lazy(() => import('./components/StudentsList'));
-const GradesForm = lazy(() => import('./components/GradesForm'));
-const SettingsPanel = lazy(() => import('./components/Settings'));
-const AcademicYearManager = lazy(() => import('./components/AcademicYearManager'));
-const AppreciationManager = lazy(() => import('./components/AppreciationManager'));
-const AdvancedAnalytics = lazy(() => import('./components/AdvancedAnalytics'));
-const ParentPortal = lazy(() => import('./components/ParentPortal'));
-const AIAppreciations = lazy(() => import('./components/AIAppreciations'));
-const AbsenceManager = lazy(() => import('./components/AbsenceManager'));
-const DashboardKPIs = lazy(() => import('./components/DashboardKPIs'));
-const AdminPaymentsDashboard = lazy(() => import('./components/AdminPaymentsDashboard'));
-const SMSDashboard = lazy(() => import('./components/SMSDashboard'));
-const ChatWindow = lazy(() => import('./components/ChatWindow'));
-const ParentChatDashboard = lazy(() => import('./components/ParentChatDashboard'));
-const ProfesseurChatDashboard = lazy(() => import('./components/ProfesseurChatDashboard'));
-const AdminChatDashboard = lazy(() => import('./components/AdminChatDashboard'));
-const UsersManager = lazy(() => import('./components/UsersManager'));
-const StatisticsView = lazy(() => import('./views/StatisticsView'));
-const ImportExportView = lazy(() => import('./views/ImportExportView'));
-const ParentsManagementView = lazy(() => import('./views/ParentsManagementView'));
-const BulletinsView = lazy(() => import('./views/BulletinsView'));
-
-const MAX_ACTIVITIES = 200;
-
-// Valeur de départ d'une installation neuve : l'année scolaire en cours (rentrée en septembre)
-const DEFAULT_YEAR = currentAcademicYear();
-const defaultAcademicYear = () => {
-    const start = parseInt(DEFAULT_YEAR, 10);
-    return {
-        id: 1, year: DEFAULT_YEAR,
-        startDate: `${start}-09-01`, endDate: `${start + 1}-06-30`,
-        trimesters: [
-            { number: 1, startDate: `${start}-09-01`, endDate: `${start}-12-15` },
-            { number: 2, startDate: `${start + 1}-01-01`, endDate: `${start + 1}-04-15` },
-            { number: 3, startDate: `${start + 1}-04-16`, endDate: `${start + 1}-06-30` },
-        ],
-        isActive: true, createdAt: new Date().toISOString(),
-    };
-};
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 const BulletinApp = () => {
@@ -90,62 +47,54 @@ const BulletinApp = () => {
     const { isDark, toggle: toggleDark } = useDarkMode();
 
     // ── Navigation & UI ──────────────────────────────────────────────────────────
-    const [currentView, setCurrentView] = useState('dashboard');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     // Retour depuis la page de paiement : message d'attente (le statut réel vient du webhook)
     const [paymentReturnId] = useState(() => consumePaymentReturn());
-    const [showAlert, setShowAlert] = useState(Boolean(paymentReturnId));
-    const [alertMessage, setAlertMessage] = useState(paymentReturnId ? PAYMENT_RETURN_MESSAGE : '');
-
-    useEffect(() => {
-        if (!paymentReturnId) return undefined;
-        const timer = setTimeout(() => setShowAlert(false), 6000);
-        return () => clearTimeout(timer);
-    }, [paymentReturnId]);
+    const { showAlert, alertMessage, notify: showNotification } = useToast({
+        initialMessage: paymentReturnId ? PAYMENT_RETURN_MESSAGE : '',
+    });
+    const { confirmModal, openConfirm, closeConfirm } = useConfirmDialog();
     const [parentModalOpen, setParentModalOpen] = useState(false);
     const [chatUser, setChatUser] = useState(null); // Utilisateur de chat
+
+    // Écrans accessibles selon le rôle. L'écran courant suit l'adresse (#/écran) mais ne peut jamais
+    // être un écran absent du menu du compte : une adresse tapée à la main ne contourne pas les rôles.
+    const role = currentUser?.role;
+    const visibleNavItems = useMemo(
+        () => NAV_ITEMS.filter(item => !role || item.roles.includes(role)),
+        [role]
+    );
+    const allowedViews = useMemo(() => visibleNavItems.map(item => item.view), [visibleNavItems]);
+    const [currentView, navigate] = useHashRoute({
+        allowedViews,
+        defaultView: role === 'parent' ? 'parents' : 'dashboard',
+    });
 
     // ── Données Supabase via hooks ───────────────────────────────────────────────
     const { classes, loading: isLoadingClasses, addClass, deleteClass } = useClasses();
     const { students, loading: isLoadingStudents, addStudent, updateStudent, deleteStudent } = useStudents();
     const { subjects, loading: isLoadingSubjects, addSubject, deleteSubject } = useSubjects();
 
-    // ── Données persistées (useSupabaseState) ───────────────────────────────────
-    const [schoolInfo, setSchoolInfo] = useSupabaseState('schoolInfo', {
-        // ── Infos de base (existants) ──
-        name: 'ÉTABLISSEMENT SCOLAIRE',
-        address: 'Adresse de l\'établissement',
-        phone: '+33 XXX XXX XXX',
-        email: 'contact@ecole.com',
-        year: DEFAULT_YEAR,
-        // ── Nouveaux champs (à renseigner dans Paramètres) ──
-        republic: '',   // ex: "REPUBLIQUE TOGOLAISE"
-        countryMotto: '',   // ex: "Travail · Liberté · Patrie"
-        ministry: '',   // ex: "Ministère des Enseignements Primaire et Secondaire"
-        devise: '',   // devise de l'école, ex: "L'excellence avant tout"
-        directorName: '',   // nom complet du directeur
-        principalTeacher: '',   // nom du professeur principal (pour les bulletins)
-    });
-
-    const [appColors, setAppColors] = useSupabaseState('appColors', {
-        primary: '#2563eb', secondary: '#10b981', accent: '#f59e0b'
-    });
-    const [activities, setActivities] = useSupabaseState('activities', []);
-    const [academicYears, setAcademicYears, isLoadingYears] = useSupabaseState('academicYears', [defaultAcademicYear()]);
+    // ── Réglages de l'établissement, journal d'activité, appréciations ──────────
+    const {
+        schoolInfo, appColors, schoolLogo, academicYears, setAcademicYears, isLoadingYears,
+        currentYear, setCurrentYear, handleLogoUpload, updateSchoolInfo, updateColor,
+    } = useSchoolSettings({ notify: showNotification });
+    const { activities, logActivity } = useActivityLog(currentUser);
     const [appreciations, setAppreciations] = useSupabaseState('appreciations', []);
-    const [schoolLogo, setSchoolLogo] = useSupabaseState('schoolLogo', null);
-
-    // L'année en cours est l'année marquée « active » : elle est enregistrée avec les années scolaires,
-    // donc conservée au rechargement (avant, elle revenait à 2024-2025 à chaque ouverture).
-    const currentYear = academicYears.find(y => y.isActive)?.year ?? academicYears[0]?.year ?? DEFAULT_YEAR;
-    const setCurrentYear = (year) =>
-        setAcademicYears(prev => prev.map(y => ({ ...y, isActive: y.year === year })));
 
     // Charge les notes si on en a besoin (y compris dashboard), une fois l'année connue
     const shouldLoadGrades = ['dashboard', 'grades', 'bulletins', 'statistics', 'analytics', 'ia-appreciations'].includes(currentView);
     const {
         grades, loading: isLoadingGrades, error: gradesError, updateGrade, getGrade,
     } = useGrades(shouldLoadGrades && !isLoadingYears ? currentYear : null);
+
+    // ── Classes, élèves, matières : fenêtres de saisie et actions ───────────────
+    const {
+        classModalOpen, setClassModalOpen, studentModalOpen, setStudentModalOpen, subjectModalOpen, setSubjectModalOpen, editingStudent, setEditingStudent, handleAddClass, handleSaveClass, handleDeleteClass, handleAddStudent, handleEditStudent, handleSaveStudent, handleDeleteStudent, handleAddSubject, handleSaveSubject, handleDeleteSubject,
+    } = useCatalogActions({
+        addClass, deleteClass, addStudent, updateStudent, deleteStudent, addSubject, deleteSubject, logActivity, showNotification, openConfirm,
+    });
 
     // ── Sélections ───────────────────────────────────────────────────────────────
     const [selectedClass, setSelectedClassState] = useState(null);
@@ -164,63 +113,14 @@ const BulletinApp = () => {
     const [isRegister, setIsRegister] = useState(false);
     const [mfaChallenge, setMfaChallenge] = useState({ open: false, factorId: '' });
 
-    // ── Modals CRUD ──────────────────────────────────────────────────────────────
-    const [classModalOpen, setClassModalOpen] = useState(false);
-    const [studentModalOpen, setStudentModalOpen] = useState(false);
-    const [subjectModalOpen, setSubjectModalOpen] = useState(false);
-    const [editingStudent, setEditingStudent] = useState(null);
-    const [confirmModal, setConfirmModal] = useState({
-        open: false, title: '', message: '', onConfirm: null
-    });
-
-    // ── Items de navigation visibles selon le rôle ───────────────────────────────
-    const visibleNavItems = NAV_ITEMS.filter(item =>
-        !currentUser || item.roles.includes(currentUser.role)
-    );
-
-    // ── Redirection automatique : un parent va directement à son espace ──────────
-    useEffect(() => {
-        if (currentUser?.role === 'parent') {
-            setCurrentView('parents');
-        }
-    }, [currentUser]);
-
     // Un échec de chargement des notes ne doit pas se traduire par une liste vide sans explication
     useEffect(() => {
         if (gradesError) showNotification(`Impossible de charger les notes : ${gradesError}`);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [gradesError]);
 
-    // ── Helpers ──────────────────────────────────────────────────────────────────
-    const showNotification = (message) => {
-        setAlertMessage(message);
-        setShowAlert(true);
-        setTimeout(() => setShowAlert(false), 3000);
-    };
-
-    const logActivity = (action, details) => {
-        const newActivity = {
-            id: crypto.randomUUID(),
-            timestamp: new Date().toISOString(),
-            user: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Anonyme',
-            userRole: currentUser?.role || 'unknown',
-            action,
-            details
-        };
-        // Journal borné : sans limite, la valeur stockée (et rechargée à chaque ouverture) grossit sans fin
-        setActivities(prev => [newActivity, ...prev].slice(0, MAX_ACTIVITIES));
-    };
-
-    const openConfirm = (title, message, onConfirm) => {
-        setConfirmModal({ open: true, title, message, onConfirm });
-    };
-
-    const closeConfirm = () => {
-        setConfirmModal({ open: false, title: '', message: '', onConfirm: null });
-    };
-
     const handleViewChange = (view) => {
-        setCurrentView(view);
+        navigate(view);
         setMobileMenuOpen(false);
     };
 
@@ -236,83 +136,6 @@ const BulletinApp = () => {
 
     const calculateTrimesterAverage = (studentId, trimester) =>
         calculUtils.calculateTrimesterAverage(studentId, trimester, grades, subjects);
-
-    // ── Handlers Classes ─────────────────────────────────────────────────────────
-    const handleAddClass = () => setClassModalOpen(true);
-
-    const handleSaveClass = async (name) => {
-        await addClass(name);
-        logActivity('Ajout de classe', `Classe "${name}" créée`);
-        showNotification('Classe ajoutée avec succès !');
-    };
-
-    const handleDeleteClass = (cls) => {
-        openConfirm(
-            'Supprimer la classe ?',
-            `La classe "${cls.name}" et tous ses élèves seront définitivement supprimés.`,
-            async () => {
-                await deleteClass(cls.id);
-                logActivity('Suppression de classe', `Classe "${cls.name}" supprimée`);
-                showNotification('Classe supprimée');
-            }
-        );
-    };
-
-    // ── Handlers Élèves ──────────────────────────────────────────────────────────
-    const handleAddStudent = () => {
-        setEditingStudent(null);
-        setStudentModalOpen(true);
-    };
-
-    const handleEditStudent = (student) => {
-        setEditingStudent(student);
-        setStudentModalOpen(true);
-    };
-
-    const handleSaveStudent = async ({ firstName, lastName, classId, ...profile }) => {
-        // profile : date de naissance, sexe, photo, contact d'urgence (voir sql/students-profile.sql)
-        if (editingStudent) {
-            await updateStudent(editingStudent.id, firstName, lastName, classId, profile);
-            logActivity('Modification d\'élève', `Élève "${firstName} ${lastName}" modifié`);
-            showNotification('Élève modifié avec succès !');
-        } else {
-            await addStudent(firstName, lastName, classId, profile);
-            logActivity('Ajout d\'élève', `Élève "${firstName} ${lastName}" ajouté`);
-            showNotification('Élève ajouté avec succès !');
-        }
-    };
-
-    const handleDeleteStudent = (student) => {
-        openConfirm(
-            'Supprimer l\'élève ?',
-            `${student.firstName} ${student.lastName} sera définitivement supprimé ainsi que toutes ses notes.`,
-            async () => {
-                await deleteStudent(student.id);
-                logActivity('Suppression d\'élève', `Élève "${student.firstName} ${student.lastName}" supprimé`);
-                showNotification('Élève supprimé');
-            }
-        );
-    };
-
-    // ── Handlers Matières ────────────────────────────────────────────────────────
-    const handleAddSubject = () => setSubjectModalOpen(true);
-
-    const handleSaveSubject = async (name, coefficient) => {
-        await addSubject(name, coefficient);
-        logActivity('Ajout de matière', `Matière "${name}" créée`);
-        showNotification('Matière ajoutée avec succès !');
-    };
-
-    const handleDeleteSubject = (subject) => {
-        openConfirm(
-            'Supprimer la matière ?',
-            `"${subject.name}" sera définitivement supprimée ainsi que toutes les notes associées.`,
-            async () => {
-                await deleteSubject(subject.id);
-                showNotification('Matière supprimée');
-            }
-        );
-    };
 
     // ── Handlers Auth ────────────────────────────────────────────────────────────
     const handleLogin = async (email, password) => {
@@ -332,7 +155,7 @@ const BulletinApp = () => {
                 logActivity('Déconnexion', 'Déconnexion réussie');
                 const result = await signOut();
                 if (result.success) {
-                    setCurrentView('dashboard');
+                    navigate('dashboard');
                     showNotification('Déconnexion réussie');
                 }
             }
@@ -346,28 +169,6 @@ const BulletinApp = () => {
             showNotification('Compte créé avec succès !');
         }
         return result;
-    };
-
-    // ── Handlers Paramètres ──────────────────────────────────────────────────────
-    const handleLogoUpload = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            setSchoolLogo(e.target.result);
-            showNotification('Logo mis à jour !');
-        };
-        reader.readAsDataURL(file);
-    };
-
-    const updateSchoolInfo = (field, value) => {
-        setSchoolInfo({ ...schoolInfo, [field]: value });
-        showNotification('Informations mises à jour !');
-    };
-
-    const updateColor = (colorType, value) => {
-        setAppColors({ ...appColors, [colorType]: value });
-        showNotification('Couleur mise à jour !');
     };
 
     // ── Impression ───────────────────────────────────────────────────────────────
@@ -495,174 +296,18 @@ const BulletinApp = () => {
                     {/* ── Views ─────────────────────────────────────────────────────── */}
                     <div className="bg-white rounded-2xl shadow-sm p-6 min-h-full" style={{ border: '1px solid #EFF6FF' }}>
                         <Suspense fallback={<Spinner text="Chargement..." />}>
-
-                        {currentView === 'dashboard' && (isLoadingClasses || isLoadingStudents || isLoadingSubjects
-                            ? <DashboardSkeleton />
-                            : <DashboardKPIs
-                                classes={classes} students={students} subjects={subjects} grades={grades}
-                                calculateAverage={calculateAverage} currentUser={currentUser}
-                                currentYear={currentYear} setCurrentView={setCurrentView} activities={activities}
-                            />
-                        )}
-                        {currentView === 'classes' && (isLoadingClasses ? <ClassesSkeleton /> : (
-                            <ClassesView
-                                currentUser={currentUser} classes={classes} students={students}
-                                onAddClass={handleAddClass} onDeleteClass={handleDeleteClass}
-                            />
-                        ))}
-                        {currentView === 'students' && (isLoadingStudents
-                            ? <TableSkeleton rows={6} cols={4} />
-                            : <StudentsList
-                                classes={classes} students={students}
-                                selectedClass={selectedClass} setSelectedClass={setSelectedClass}
-                                addStudent={handleAddStudent} editStudent={handleEditStudent}
-                                deleteStudent={handleDeleteStudent} currentUser={currentUser}
-                            />
-                        )}
-                        {currentView === 'subjects' && (isLoadingSubjects ? <TableSkeleton rows={5} cols={3} /> : (
-                            <SubjectsView
-                                currentUser={currentUser} subjects={subjects}
-                                onAddSubject={handleAddSubject} onDeleteSubject={handleDeleteSubject}
-                            />
-                        ))}
-                        {currentView === 'grades' && (isLoadingClasses || isLoadingStudents || isLoadingSubjects || isLoadingGrades
-                            ? <GradesSkeleton />
-                            : <GradesForm
-                                classes={classes} students={students} subjects={subjects}
-                                selectedClass={selectedClass} setSelectedClass={setSelectedClass}
-                                selectedTrimester={selectedTrimester} setSelectedTrimester={setSelectedTrimester}
-                                getGrade={getGrade} updateGrade={updateGrade}
-                                calculateAverage={calculateAverage} getMention={getMention}
-                            />
-                        )}
-                        {currentView === 'bulletins' && (isLoadingStudents || isLoadingGrades ? <BulletinsSkeleton /> : (
-                            <BulletinsView
-                                classes={classes} students={students}
-                                selectedClass={selectedClass} setSelectedClass={setSelectedClass}
-                                selectedTrimester={selectedTrimester} setSelectedTrimester={setSelectedTrimester}
-                                calculateAverage={calculateAverage} getMention={getMention}
-                                getRank={getRank} schoolName={schoolInfo.name}
-                                onPrint={openPrintPreview}
-                            />
-                        ))}
-                        {currentView === 'academicyears' && (
-                            <AcademicYearManager
-                                academicYears={academicYears} setAcademicYears={setAcademicYears}
-                                currentYear={currentYear} setCurrentYear={setCurrentYear}
-                                showNotification={showNotification}
-                            />
-                        )}
-                        {currentView === 'appreciations' && (isLoadingStudents || isLoadingGrades
-                            ? <Spinner text="Chargement des appréciations..." />
-                            : <AppreciationManager
-                                grades={grades} students={students} subjects={subjects} classes={classes}
-                                selectedClass={selectedClass} selectedTrimester={selectedTrimester}
-                                showNotification={showNotification} currentUser={currentUser}
-                                appreciations={appreciations} setAppreciations={setAppreciations}
-                            />
-                        )}
-                        {currentView === 'analytics' && (isLoadingStudents || isLoadingGrades
-                            ? <Spinner text="Chargement de l'analyse..." />
-                            : <AdvancedAnalytics
-                                students={students} classes={classes} grades={grades} subjects={subjects}
-                                selectedClass={selectedClass} selectedTrimester={selectedTrimester}
-                                calculateTrimesterAverage={calculateTrimesterAverage} getMention={getMention}
-                            />
-                        )}
-                        {currentView === 'statistics' && (isLoadingStudents || isLoadingGrades
-                            ? <Spinner text="Chargement des statistiques..." />
-                            : <StatisticsView
-                                classes={classes} students={students} subjects={subjects} grades={grades}
-                                selectedClass={selectedClass} setSelectedClass={setSelectedClass}
-                                selectedTrimester={selectedTrimester} setSelectedTrimester={setSelectedTrimester}
-                                calculateAverage={calculateAverage} getMention={getMention}
-                            />
-                        )}
-                        {currentView === 'importexport' && (
-                            <ImportExportView
-                                classes={classes}
-                                selectedClass={selectedClass} setSelectedClass={setSelectedClass}
-                                selectedTrimester={selectedTrimester} setSelectedTrimester={setSelectedTrimester}
-                                onImportStudents={importStudents} onImportGrades={importGrades}
-                                onExportGrades={exportClassGrades} onExportRanking={exportRanking}
-                            />
-                        )}
-                        {currentView === 'settings' && (
-                            <SettingsPanel
-                                schoolLogo={schoolLogo} handleLogoUpload={handleLogoUpload}
-                                schoolInfo={schoolInfo} updateSchoolInfo={updateSchoolInfo}
-                                appColors={appColors} updateColor={updateColor}
-                                currentUser={currentUser} handleRegister={handleRegister}
-                                showNotification={showNotification} activities={activities}
-                            />
-                        )}
-                        {showLoginModal && (
-                            <LoginModalSupabase
-                                isRegister={isRegister} setIsRegister={setIsRegister}
-                                setShowLoginModal={setShowLoginModal}
-                                onSignIn={handleLogin} onSignUp={handleRegister} loading={authLoading}
-                            />
-                        )}
-                        {currentView === 'users' && (
-                            <UsersManager currentUser={currentUser} showNotification={showNotification} />
-                        )}
-                        {currentView === 'sms-dashboard' && <SMSDashboard />}
-                        {currentView === 'chat' && (
-                            chatUser ? (
-                                <ChatWindow
-                                    conversationId={chatUser.conversationId}
-                                    otherUser={chatUser.otherUser}
-                                    currentUser={currentUser}
-                                    onClose={() => setChatUser(null)}
-                                />
-                            ) : currentUser?.role === 'admin' ? (
-                                <AdminChatDashboard
-                                    currentUser={currentUser}
-                                    onOpenChat={(conversationId, otherUser) => setChatUser({ conversationId, otherUser })}
-                                />
-                            ) : currentUser?.role === 'professeur' ? (
-                                <ProfesseurChatDashboard
-                                    currentUser={currentUser}
-                                    onOpenChat={(conversationId, otherUser) => setChatUser({ conversationId, otherUser })}
-                                />
-                            ) : (
-                                <ParentChatDashboard
-                                    currentUser={currentUser}
-                                    onOpenChat={(conversationId, otherUser) => setChatUser({ conversationId, otherUser })}
-                                />
-                            )
-                        )}
-                        {currentView === 'parents' && (
-                            <ParentPortal
-                                currentUser={currentUser}
-                                schoolInfo={schoolInfo}
-                                currentYear={isLoadingYears ? null : currentYear}
-                                onPrint={(child) => openPrintPreview(child)}
-                            />
-                        )}
-                        {currentView === 'gestion-parents' && (
-                            <ParentsManagementView
-                                openConfirm={openConfirm} showNotification={showNotification}
-                                onAddParent={() => setParentModalOpen(true)}
-                            />
-                        )}
-                        {currentView === 'admin-payments' && <AdminPaymentsDashboard />}
-                        {currentView === 'absences' && (
-                            <AbsenceManager
-                                students={students}
-                                classes={classes}
-                                subjects={subjects}
-                                currentUser={currentUser}
-                            />
-                        )}
-                        {currentView === 'ia-appreciations' && (
-                            <AIAppreciations
-                                students={students} classes={classes} grades={grades} subjects={subjects}
-                                selectedClass={selectedClass} selectedTrimester={selectedTrimester}
-                                calculateAverage={calculateAverage} showNotification={showNotification}
-                                updateGrade={updateGrade}
-                            />
-                        )}
+                        <AppViews currentView={currentView} ctx={{
+                            academicYears, activities, appColors, appreciations, authLoading, calculateAverage,
+                            calculateTrimesterAverage, chatUser, classes, currentUser, currentYear, exportClassGrades,
+                            exportRanking, getGrade, getMention, getRank, grades, handleAddClass,
+                            handleAddStudent, handleAddSubject, handleDeleteClass, handleDeleteStudent, handleDeleteSubject, handleEditStudent,
+                            handleLogin, handleLogoUpload, handleRegister, importGrades, importStudents, isLoadingClasses,
+                            isLoadingGrades, isLoadingStudents, isLoadingSubjects, isLoadingYears, isRegister, navigate,
+                            openConfirm, openPrintPreview, schoolInfo, schoolLogo, selectedClass, selectedTrimester,
+                            setAcademicYears, setAppreciations, setChatUser, setCurrentYear, setIsRegister, setParentModalOpen,
+                            setSelectedClass, setSelectedTrimester, setShowLoginModal, showLoginModal, showNotification, students,
+                            subjects, updateColor, updateGrade, updateSchoolInfo,
+                        }} />
                         </Suspense>
                     </div>
                 </main>

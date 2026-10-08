@@ -4,7 +4,7 @@
 // la demande des écrans. Le faux Supabase répond avec des listes vides, sauf pour la session et le
 // profil de l'utilisateur connecté.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, within, act } from '@testing-library/react';
 
 const auth = vi.hoisted(() => ({ session: null, profile: null }));
 
@@ -128,6 +128,44 @@ describe('application : accès selon l\'état du compte', () => {
     expect(nav().queryByText('Utilisateurs')).toBeNull();
     expect(nav().queryByText('Classes')).toBeNull();
     expect(nav().queryByText('Matières')).toBeNull();
+  });
+});
+
+describe('application : navigation par adresse (#/écran)', () => {
+  beforeEach(() => { window.history.replaceState(null, '', '/'); });
+
+  it('un lien direct ouvre l’écran demandé après connexion', async () => {
+    window.history.replaceState(null, '', '/#/classes');
+    signedIn('admin');
+    render(<App />);
+    expect(await screen.findByText('Gestion des classes', {}, { timeout: 20000 })).toBeTruthy();
+  }, 40000);
+
+  it('une adresse ne contourne pas les rôles : un secrétaire ne voit pas « Utilisateurs »', async () => {
+    window.history.replaceState(null, '', '/#/users');
+    signedIn('secretaire');
+    render(<App />);
+    await waitForNav();
+    expect(screen.queryByText('Aucun utilisateur')).toBeNull();
+    expect(window.location.hash).toBe('#/dashboard');
+  });
+
+  it('un parent arrive sur son espace même avec une adresse vide, et ne peut pas ouvrir les classes', async () => {
+    signedIn('parent');
+    render(<App />);
+    await waitForNav();
+    await waitFor(() => expect(nav().getByText('Espace Parents')).toBeTruthy());
+    window.history.replaceState(null, '', '/#/classes');
+    await act(async () => { window.dispatchEvent(new HashChangeEvent('hashchange')); });
+    await waitFor(() => expect(window.location.hash).toBe('#/parents'));
+  });
+
+  it('cliquer sur le menu change l’adresse', async () => {
+    signedIn('admin');
+    render(<App />);
+    await waitForNav();
+    fireEvent.click(nav().getByText('Classes'));
+    expect(window.location.hash).toBe('#/classes');
   });
 });
 
