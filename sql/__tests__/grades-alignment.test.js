@@ -29,6 +29,32 @@ const upsert = (year, value, extra = {}) => db.query(
   [year, value, extra.interro ?? null, extra.devoir ?? null, extra.composition ?? null, extra.bonus ?? null],
 );
 
+describe("base dont l'ancienne unicité porte un autre nom", () => {
+  it('supprime aussi les contraintes et index uniques renommés à la main', async () => {
+    const legacy = await createDatabase(['supabase-schema.sql']);
+    try {
+      await legacy.exec(`
+        ALTER TABLE grades DROP CONSTRAINT grades_student_id_subject_id_trimester_key;
+        ALTER TABLE grades ADD CONSTRAINT notes_unique_manuelle UNIQUE (trimester, student_id, subject_id);
+        CREATE UNIQUE INDEX notes_index_manuel ON grades (subject_id, trimester, student_id);
+        INSERT INTO classes (id, name) VALUES (1, 'A');
+        INSERT INTO subjects (id, name, coefficient) VALUES (1, 'Maths', 2);
+        INSERT INTO students (id, first_name, last_name, class_id) VALUES (1, 'K', 'M', 1);
+      `);
+      await legacy.exec(readScript('grades-alignment.sql'));
+      // la même note sur deux années scolaires doit maintenant être possible
+      await legacy.exec(`INSERT INTO grades (student_id, subject_id, trimester, academic_year, value) VALUES (1, 1, '1', '2024-2025', 10)`);
+      await legacy.exec(`INSERT INTO grades (student_id, subject_id, trimester, academic_year, value) VALUES (1, 1, '1', '2025-2026', 12)`);
+      const { rows } = await legacy.query(`SELECT count(*)::int AS n FROM grades`);
+      expect(rows[0].n).toBe(2);
+      const { rows: left } = await legacy.query(`SELECT conname FROM pg_constraint WHERE conrelid = 'grades'::regclass AND contype = 'u'`);
+      expect(left).toEqual([]);
+    } finally {
+      await legacy.close();
+    }
+  }, 120000); // crée une seconde base PostgreSQL (WebAssembly) : plus long que le délai par défaut
+});
+
 describe('sql/grades-alignment.sql', () => {
   it('rattache les notes existantes à 2024-2025 sans les perdre', async () => {
     const { rows } = await db.query(`SELECT academic_year, value FROM grades WHERE id = 'ancienne'`);

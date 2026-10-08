@@ -61,6 +61,27 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 Ensuite, créer le premier administrateur (voir [docs/SECURITE.md](docs/SECURITE.md)). Les autres comptes s'inscrivent
 eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*.
 
+### Mettre à jour une installation existante
+
+Les scripts sont ré-exécutables. Pour passer une base déjà en service à cette version :
+
+1. **Sauvegarder, ou tester sur une branche Supabase** : ces scripts modifient des tables en place.
+2. Vérifier les contraintes actuelles de `grades` (une base modifiée à la main peut différer des scripts du dépôt) :
+   `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = 'public.grades'::regclass;`
+3. Exécuter, **dans cet ordre** : `grades-alignment.sql` → `security-hardening.sql` → `appreciations-activities.sql` → `audit-log.sql`.
+4. Déployer l'application, puis les fonctions Edge (voir ci-dessous).
+
+`security-hardening.sql` doit être relancé : `child_class_rank` (rang de l'enfant dans sa classe) prend maintenant
+l'année scolaire en paramètre. Ce script **supprime puis recrée toutes les règles d'accès** des tables `user_profiles`,
+`app_data`, `classes`, `subjects`, `students`, `grades`, `activities` et `absences` : une règle ajoutée à la main dans le
+tableau de bord Supabase sur l'une d'elles sera perdue. Notez-les avant, et recréez-les ensuite si elles sont nécessaires.
+
+Ce que ces scripts changent pour les utilisateurs : les notes existantes sont rattachées à l'année 2024-2025 (modifiable
+dans `grades-alignment.sql`) ; les appréciations et le journal d'activité sont copiés dans leurs nouvelles tables (les
+anciennes données restent dans `app_data`) ; les appréciations reprises n'ont pas d'auteur connu, donc tout professeur
+peut encore les modifier, alors que les nouvelles ne sont modifiables que par leur auteur et l'administrateur ; le
+journal d'audit commence à l'exécution de `audit-log.sql` (il ne reconstitue pas l'historique passé).
+
 Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURATION.md).
 
 ## Fonctions Edge (Supabase)

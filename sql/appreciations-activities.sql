@@ -47,12 +47,18 @@ CREATE POLICY "Lecture personnel" ON appreciations FOR SELECT
   USING (public.is_staff());
 CREATE POLICY "Saisie admin et professeur" ON appreciations FOR INSERT
   WITH CHECK (public.get_user_role() IN ('admin', 'professeur') AND author_id = auth.uid());
--- Un professeur ne modifie que ses propres appréciations (avant, il pouvait réécrire celles de tous)
+-- Un professeur modifie ses propres appréciations (avant, il pouvait réécrire celles de tous). Les
+-- appréciations reprises de l'ancienne liste n'ont pas d'auteur connu (author_id vide) : tout professeur
+-- peut encore les modifier ou les supprimer, comme avant la migration. Les nouvelles appréciations
+-- portent leur auteur et ne sont modifiables que par lui (ou l'administrateur).
 CREATE POLICY "Modification par l'auteur ou l'admin" ON appreciations FOR UPDATE
-  USING (public.get_user_role() = 'admin' OR (public.get_user_role() = 'professeur' AND author_id = auth.uid()))
-  WITH CHECK (public.get_user_role() = 'admin' OR (public.get_user_role() = 'professeur' AND author_id = auth.uid()));
+  USING (public.get_user_role() = 'admin'
+         OR (public.get_user_role() = 'professeur' AND (author_id = auth.uid() OR author_id IS NULL)))
+  WITH CHECK (public.get_user_role() = 'admin'
+         OR (public.get_user_role() = 'professeur' AND (author_id = auth.uid() OR author_id IS NULL)));
 CREATE POLICY "Suppression par l'auteur ou l'admin" ON appreciations FOR DELETE
-  USING (public.get_user_role() = 'admin' OR (public.get_user_role() = 'professeur' AND author_id = auth.uid()));
+  USING (public.get_user_role() = 'admin'
+         OR (public.get_user_role() = 'professeur' AND (author_id = auth.uid() OR author_id IS NULL)));
 
 -- ── 2. Journal d'activité (la table existe déjà dans supabase-schema.sql) ───
 CREATE TABLE IF NOT EXISTS activities (

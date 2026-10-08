@@ -21,10 +21,13 @@ export function useHashRoute({ allowedViews, defaultView }) {
     const requested = parseHash(hash);
     const view = resolveView(requested, allowedViews, defaultView);
 
-    // Adresse inconnue ou interdite : on la remplace par celle de l'écran réellement affiché
-    // (sans ajouter d'entrée d'historique, pour que « retour » ne ramène pas sur la mauvaise adresse).
+    // Adresse de type écran (#/écran) mais inconnue ou interdite : on la remplace par celle de l'écran
+    // réellement affiché (sans ajouter d'entrée d'historique, pour que « retour » ne ramène pas sur la
+    // mauvaise adresse). Un fragment qui n'est PAS une route — #access_token=…&type=recovery des liens de
+    // confirmation et de réinitialisation Supabase, #error=… — n'est jamais touché : le client
+    // d'authentification doit pouvoir le lire.
     useEffect(() => {
-        if (hash && requested !== view) {
+        if (requested !== null && requested !== view) {
             window.history.replaceState(null, '', viewToHash(view));
         }
     }, [hash, requested, view]);

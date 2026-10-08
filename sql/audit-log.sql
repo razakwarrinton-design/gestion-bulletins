@@ -11,10 +11,16 @@
 --   * seuls les administrateurs lisent le journal ;
 --   * personne ne peut y écrire, le modifier ou le supprimer par l'API (aucune règle d'écriture) ;
 --     seule la fonction purge_audit_logs, réservée aux administrateurs et limitée aux entrées de plus
---     d'un an, en supprime (durée de conservation / droit à l'oubli) ;
+--     d'un an, en supprime (durée de conservation) ;
 --   * pas de clé étrangère : supprimer un élève ou un compte n'efface pas son historique ;
---   * seules les colonnes modifiées sont conservées (pas de copie complète des lignes), et les données
---     volumineuses (photos, contenu des réglages) ne sont pas copiées : le journal note « (modifié) » ;
+--   * seules les colonnes modifiées sont conservées (pas de copie complète des lignes). Les données
+--     volumineuses (photos, contenu des réglages) et les données personnelles de contact (téléphones,
+--     date de naissance, e-mail, notes d'absence) ne sont jamais copiées : le journal note seulement
+--     « (modifié) » quand l'une d'elles change. Les noms des élèves restent, pour qu'une suppression soit
+--     compréhensible ;
+--   * ce journal n'est PAS un outil d'effacement : la purge ne descend pas sous un an. Pour effacer plus
+--     tôt les traces d'une personne (demande d'effacement), un administrateur de la base doit supprimer
+--     les lignes concernées par une requête SQL ciblée (DELETE FROM audit_logs WHERE ...).
 --   * l'auteur est auth.uid() ; une modification faite sans utilisateur (éditeur SQL, fonctions
 --     serveur comme le webhook de paiement) est enregistrée avec le rôle « system ».
 -- ============================================================================
@@ -116,13 +122,13 @@ BEGIN
   FOR t IN
     SELECT * FROM (VALUES
       ('grades',        ''),
-      ('students',      'photo_url'),
+      ('students',      'photo_url,birth_date,emergency_name,emergency_phone,emergency_relation'),
       ('classes',       ''),
       ('subjects',      ''),
       ('appreciations', ''),
-      ('absences',      ''),
-      ('user_profiles', ''),
-      ('payments',      ''),
+      ('absences',      'notes'),
+      ('user_profiles', 'email'),
+      ('payments',      'payer_phone'),
       ('parent_students', ''),
       ('app_data',      'value')
     ) AS v(table_name, skipped)
@@ -133,7 +139,8 @@ BEGIN
         'CREATE TRIGGER audit_%1$s AFTER INSERT OR UPDATE OR DELETE ON public.%1$I '
         'FOR EACH ROW EXECUTE FUNCTION public.audit_row_change(%2$s)',
         t.table_name,
-        CASE WHEN t.skipped = '' THEN '' ELSE quote_literal(t.skipped) END
+        -- une chaîne par colonne : « a,b » devient 'a', 'b'
+        COALESCE((SELECT string_agg(quote_literal(col), ', ') FROM unnest(string_to_array(NULLIF(t.skipped, ''), ',')) AS col), '')
       );
     END IF;
   END LOOP;

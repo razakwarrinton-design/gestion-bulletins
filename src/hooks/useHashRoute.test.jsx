@@ -54,6 +54,18 @@ describe('useHashRoute', () => {
     expect(window.location.hash).toBe('#/dashboard');
   });
 
+  it.each([
+    ['#access_token=abc&refresh_token=def&type=recovery'],
+    ['#access_token=abc&type=signup'],
+    ['#error=access_denied&error_code=otp_expired'],
+    ['#section-2'],
+  ])('ne touche jamais à un fragment qui n’est pas une route : %s', (fragment) => {
+    window.history.replaceState(null, '', `/${fragment}`);
+    const { result } = renderHook(() => useHashRoute({ allowedViews: ALLOWED, defaultView: 'dashboard' }));
+    expect(result.current[0]).toBe('dashboard');
+    expect(window.location.hash).toBe(fragment);
+  });
+
   it('navigate ignore un écran interdit', () => {
     const { result } = renderHook(() => useHashRoute({ allowedViews: ALLOWED, defaultView: 'dashboard' }));
     act(() => result.current[1]('users'));

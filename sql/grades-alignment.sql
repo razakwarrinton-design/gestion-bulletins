@@ -44,7 +44,40 @@ BEGIN
 END $$;
 
 -- ── 4. Unicité par année scolaire (cible de l'upsert de l'application) ──────
-ALTER TABLE grades DROP CONSTRAINT IF EXISTS grades_student_id_subject_id_trimester_key;
+-- L'ancienne unicité (élève, matière, trimestre) empêcherait d'enregistrer la même note sur deux années.
+-- Elle est supprimée quel que soit son nom (une base modifiée à la main peut l'avoir nommée autrement),
+-- qu'elle soit déclarée comme contrainte ou comme simple index unique.
+DO $$
+DECLARE
+  c RECORD;
+BEGIN
+  FOR c IN
+    SELECT con.conname
+    FROM pg_constraint con
+    WHERE con.conrelid = 'public.grades'::regclass
+      AND con.contype = 'u'
+      AND (SELECT array_agg(att.attname::text ORDER BY att.attname)
+           FROM unnest(con.conkey) AS k
+           JOIN pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = k)
+          = ARRAY['student_id', 'subject_id', 'trimester']
+  LOOP
+    EXECUTE format('ALTER TABLE public.grades DROP CONSTRAINT %I', c.conname);
+  END LOOP;
+
+  FOR c IN
+    SELECT i.indexrelid::regclass AS idx
+    FROM pg_index i
+    WHERE i.indrelid = 'public.grades'::regclass
+      AND i.indisunique AND NOT i.indisprimary AND i.indpred IS NULL
+      AND NOT EXISTS (SELECT 1 FROM pg_constraint con WHERE con.conindid = i.indexrelid)
+      AND (SELECT array_agg(att.attname::text ORDER BY att.attname)
+           FROM unnest(string_to_array(i.indkey::text, ' ')::INT[]) AS k
+           JOIN pg_attribute att ON att.attrelid = i.indrelid AND att.attnum = k)
+          = ARRAY['student_id', 'subject_id', 'trimester']
+  LOOP
+    EXECUTE format('DROP INDEX %s', c.idx);
+  END LOOP;
+END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS grades_student_subject_trimester_year_key
   ON grades (student_id, subject_id, trimester, academic_year);
 CREATE INDEX IF NOT EXISTS grades_academic_year_idx ON grades (academic_year);

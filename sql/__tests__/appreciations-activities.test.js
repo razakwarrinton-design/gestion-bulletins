@@ -135,6 +135,18 @@ describe('appréciations : règles d\'accès', () => {
     expect(await rows(ADMIN, `SELECT id FROM appreciations WHERE id = ${mine.id}`)).toEqual([]);
   });
 
+  it('les appréciations reprises de l\'ancienne liste (sans auteur) restent modifiables par les professeurs', async () => {
+    const [legacy] = await rows(ADMIN, "SELECT id, author_id FROM appreciations WHERE body = 'Bon travail'");
+    expect(legacy.author_id).toBeNull();
+    await run(PROF2, `UPDATE appreciations SET body = 'Bon travail (relu)' WHERE id = ${legacy.id}`);
+    expect((await rows(ADMIN, `SELECT body FROM appreciations WHERE id = ${legacy.id}`))[0].body).toBe('Bon travail (relu)');
+    await run(PROF2, `UPDATE appreciations SET body = 'Bon travail' WHERE id = ${legacy.id}`);
+    // mais jamais celles qu'un collègue a signées
+    const { rows: [signed] } = await insert(PROF);
+    await run(PROF2, `DELETE FROM appreciations WHERE id = ${signed.id}`);
+    expect(await rows(ADMIN, `SELECT id FROM appreciations WHERE id = ${signed.id}`)).toHaveLength(1);
+  });
+
   it('refuse une appréciation d\'enseignant sans matière, une du conseil avec matière, un texte vide', async () => {
     await expect(run(ADMIN, `INSERT INTO appreciations (student_id, trimester, academic_year, type, body) VALUES (1, '1', '2025-2026', 'teacher', 'x')`)).rejects.toThrow(/subject_matches_type/);
     await expect(run(ADMIN, `INSERT INTO appreciations (student_id, subject_id, trimester, academic_year, type, body) VALUES (1, 1, '1', '2025-2026', 'council', 'x')`)).rejects.toThrow(/subject_matches_type/);

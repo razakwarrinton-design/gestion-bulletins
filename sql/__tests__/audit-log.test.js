@@ -111,6 +111,30 @@ describe('contenu du journal', () => {
     expect(settings.map((e) => e.action)).toEqual(['INSERT', 'UPDATE']);
   });
 
+  it('ne copie jamais les données personnelles de contact : ni à la création, ni à la suppression', async () => {
+    await db.exec(`INSERT INTO students (id, first_name, last_name, class_id, birth_date, emergency_name, emergency_phone, emergency_relation)
+                   VALUES (60, 'Yao', 'Agbo', 1, '2013-05-06', 'Mme Agbo', '+22890112233', 'mère')`);
+    await db.exec("UPDATE students SET emergency_phone = '+22890998877' WHERE id = 60");
+    await db.exec('DELETE FROM students WHERE id = 60');
+    const entries = await logsFor('students', 60);
+    const text = JSON.stringify(entries);
+    expect(text).not.toMatch(/22890112233|22890998877|2013-05-06|Mme Agbo|mère/);
+    // le nom reste, pour qu'une suppression soit compréhensible
+    expect(entries.at(-1).old_value).toMatchObject({ first_name: 'Yao', last_name: 'Agbo' });
+    // et le changement du téléphone est noté sans sa valeur
+    expect(entries.find((e) => e.action === 'UPDATE').new_value).toEqual({ emergency_phone: '(modifié)' });
+  });
+
+  it("ne copie pas l'e-mail d'un compte, ni le téléphone du payeur, ni les notes d'absence", async () => {
+    const [created] = await logsFor('user_profiles', PARENT);
+    expect(JSON.stringify(created)).not.toContain('parents.test');
+    await db.exec(`INSERT INTO payments (id, student_id, amount_paid, status, provider, payer_phone)
+                   VALUES ('00000000-0000-0000-0000-0000000000f2', 1, 100, 'pending', 'fedapay', '+22890000000')`);
+    expect(JSON.stringify(await logsFor('payments', '00000000-0000-0000-0000-0000000000f2'))).not.toContain('22890000000');
+    await db.exec(`INSERT INTO absences (id, student_id, notes) VALUES ('00000000-0000-0000-0000-0000000000a1', 1, 'rendez-vous médical')`);
+    expect(JSON.stringify(await logsFor('absences', '00000000-0000-0000-0000-0000000000a1'))).not.toContain('médical');
+  });
+
   it('la liaison parent-élève est identifiable', async () => {
     const entry = (await logsFor('parent_students', `${PARENT}:1`))[0];
     expect(entry.action).toBe('INSERT');
