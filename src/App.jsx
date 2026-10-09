@@ -43,7 +43,7 @@ const PrintPreview = lazy(() => import('./components/PrintPreview'));
 // ─── Composant principal ──────────────────────────────────────────────────────
 const BulletinApp = () => {
     // ── Authentification ────────────────────────────────────────────────────────
-    const { currentUser, loading: authLoading, signIn, signUp, signOut } = useSupabaseAuth();
+    const { currentUser, loading: authLoading, initializing: authInitializing, signIn, signUp, signOut } = useSupabaseAuth();
     const { isDark, toggle: toggleDark } = useDarkMode();
 
     // ── Navigation & UI ──────────────────────────────────────────────────────────
@@ -188,7 +188,9 @@ const BulletinApp = () => {
     });
 
     // ── Écran de chargement ───────────────────────────────────────────────────
-    if (authLoading) {
+    // Seulement tant que la session enregistrée n'est pas relue : pendant une tentative de connexion, la
+    // page de connexion reste affichée (sinon son message d'erreur disparaît avec elle).
+    if (authInitializing) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                 <div className="text-center space-y-4">

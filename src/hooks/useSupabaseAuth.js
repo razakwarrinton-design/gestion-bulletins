@@ -8,7 +8,12 @@ import { supabase, supabaseConfigured } from '../config/supabase';
 export function useSupabaseAuth() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
+  // `loading` : une opération est en cours (connexion, inscription…). `initializing` : la session
+  // enregistrée dans le navigateur n'a pas encore été relue, seul moment où l'application affiche
+  // un écran de chargement. Sans cette distinction, l'écran de chargement remplaçait la page de
+  // connexion pendant chaque tentative, et son message d'erreur disparaissait avec elle.
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState(null);
 
   // Charger la session au montage du composant
@@ -16,18 +21,22 @@ export function useSupabaseAuth() {
     if (!supabaseConfigured) {
       setError('Supabase non configuré. Vérifiez VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY.');
       setLoading(false);
+      setInitializing(false);
       return;
     }
 
     // Récupérer la session actuelle
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        loadUserProfile(session.user.id);
+        await loadUserProfile(session.user.id);
       } else {
         setLoading(false);
       }
-    });
+    }).catch((err) => {
+      console.error('Erreur de lecture de la session:', err);
+      setLoading(false);
+    }).finally(() => setInitializing(false));
 
     // Écouter les changements d'authentification
     const {
@@ -56,9 +65,11 @@ export function useSupabaseAuth() {
 
       if (error) throw error;
       setProfile(data);
+      return { ok: true };
     } catch (err) {
       console.error('Erreur lors du chargement du profil:', err);
       setError(err.message);
+      return { ok: false, error: err.message };
     } finally {
       setLoading(false);
     }
@@ -84,9 +95,14 @@ export function useSupabaseAuth() {
 
       if (error) throw error;
 
-      // ✅ AJOUTE CES LIGNES : Charge le profil immédiatement
+      // Charge le profil immédiatement. Un compte de connexion sans profil ne donnerait aucun accès :
+      // on le dit, au lieu de laisser la page de connexion sans explication.
       if (data.user) {
-        await loadUserProfile(data.user.id);
+        const loaded = await loadUserProfile(data.user.id);
+        if (!loaded.ok) {
+          await supabase.auth.signOut();
+          throw new Error(`Connexion réussie, mais le profil de ce compte est introuvable (${loaded.error}). Contactez l'administrateur.`);
+        }
       }
 
       return { success: true, user: data.user };
@@ -255,6 +271,7 @@ export function useSupabaseAuth() {
     profile,
     currentUser, // Format compatible avec l'ancien système
     loading,
+    initializing,
     error,
     signIn,
     signUp,

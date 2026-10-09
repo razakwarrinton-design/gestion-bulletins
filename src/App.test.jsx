@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, within, act } from '@testing-library/react';
 
-const auth = vi.hoisted(() => ({ session: null, profile: null }));
+const auth = vi.hoisted(() => ({ session: null, profile: null, signInError: null }));
 
 vi.mock('./config/supabase', () => {
   const query = (table) => {
@@ -42,7 +42,9 @@ vi.mock('./config/supabase', () => {
         getUser: async () => ({ data: { user: auth.session?.user ?? null }, error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
         signOut: async () => ({ error: null }),
-        signInWithPassword: async () => ({ data: {}, error: null }),
+        signInWithPassword: async () => (auth.signInError
+          ? { data: { user: null }, error: { message: auth.signInError } }
+          : { data: {}, error: null }),
         mfa: {
           listFactors: async () => ({ data: { totp: [], all: [] }, error: null }),
           getAuthenticatorAssuranceLevel: async () => ({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null }),
@@ -69,6 +71,7 @@ const signedIn = (role) => {
 beforeEach(() => {
   auth.session = null;
   auth.profile = null;
+  auth.signInError = null;
   window.matchMedia = window.matchMedia || (() => ({
     matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
   }));
@@ -83,6 +86,35 @@ describe('application : accès selon l\'état du compte', () => {
     render(<App />);
     expect(await screen.findByText(/Bon retour/)).toBeTruthy();
     expect(screen.queryByText('Classes')).toBeNull();
+  });
+
+  it('connexion refusée : la page de connexion reste affichée avec le message d\'erreur', async () => {
+    auth.signInError = 'Invalid login credentials';
+    render(<App />);
+    const email = await screen.findByPlaceholderText('votre@email.com');
+    fireEvent.change(email, { target: { value: 'admin@ecole.test' } });
+    fireEvent.change(document.querySelector('input[type="password"]'), { target: { value: 'mauvais-mot-de-passe' } });
+    fireEvent.click(screen.getByRole('button', { name: /Se connecter/ }));
+    expect(await screen.findByText('Invalid login credentials')).toBeTruthy();
+    // le formulaire n'a pas été remplacé par l'écran de chargement : la saisie est conservée
+    expect(screen.getByPlaceholderText('votre@email.com').value).toBe('admin@ecole.test');
+  });
+
+  it('compte de connexion sans profil : le dit au lieu de rester muet', async () => {
+    // la connexion réussit côté authentification, mais aucune ligne user_profiles ne correspond
+    auth.profile = null;
+    const { supabase } = await import('./config/supabase');
+    const original = supabase.auth.signInWithPassword;
+    supabase.auth.signInWithPassword = async () => ({ data: { user: { id: 'u9' } }, error: null });
+    try {
+      render(<App />);
+      fireEvent.change(await screen.findByPlaceholderText('votre@email.com'), { target: { value: 'orphelin@ecole.test' } });
+      fireEvent.change(document.querySelector('input[type="password"]'), { target: { value: 'secret123' } });
+      fireEvent.click(screen.getByRole('button', { name: /Se connecter/ }));
+      expect(await screen.findByText(/profil de ce compte est introuvable/)).toBeTruthy();
+    } finally {
+      supabase.auth.signInWithPassword = original;
+    }
   });
 
   it('inscription publique : plus de choix de rôle, et un message d\'attente', async () => {
