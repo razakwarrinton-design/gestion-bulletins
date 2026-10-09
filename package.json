@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "sql:baseline": "node scripts/build-baseline.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {

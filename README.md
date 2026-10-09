@@ -104,6 +104,33 @@ anciennes données restent dans `app_data`) ; les appréciations reprises n'ont 
 peut encore les modifier, alors que les nouvelles ne sont modifiables que par leur auteur et l'administrateur ; le
 journal d'audit commence à l'exécution de `audit-log.sql` (il ne reconstitue pas l'historique passé).
 
+### Migrations (Supabase CLI)
+
+`supabase/migrations/20261009000000_baseline.sql` est l'état de la base obtenu en exécutant les scripts 1 à 10 :
+il est **généré** (`npm run sql:baseline`) et un test échoue s'il n'est plus à jour. Pour suivre les évolutions du
+schéma avec la CLI, au lieu de coller des scripts dans l'éditeur SQL :
+
+1. `supabase init` (crée `supabase/config.toml`, sans toucher aux fichiers existants), puis `supabase link --project-ref <réf>`.
+2. **Base déjà installée** : déclarer la référence comme appliquée, sans la rejouer :
+   `supabase migration repair --status applied 20261009000000`. Ne pas faire `supabase db push` avant : il rejouerait
+   `security-hardening.sql`, qui supprime puis recrée les règles d'accès (voir plus haut).
+   **Base vide** : `supabase db push` l'installe.
+3. Toute évolution suivante = une **nouvelle** migration (`supabase migration new <nom>`), jamais une modification
+   de la référence ni un changement fait à la main dans le tableau de bord.
+
+Cela ne protège de la dérive de la base (comme celle des identifiants `uuid` rencontrée plus haut) que si les
+changements passent par ces fichiers.
+
+### Sauvegardes
+
+Le plan gratuit de Supabase ne propose pas de sauvegarde téléchargeable. Avant toute migration, et régulièrement :
+- **Tableau de bord → Table Editor → table → Export → CSV** (au minimum `students`, `classes`, `subjects`, `grades`, `absences`, `payments`, `user_profiles`) ;
+- ou, avec la CLI : `supabase db dump --linked -f sauvegarde.sql` (structure) et `supabase db dump --linked --data-only -f donnees.sql`.
+
+Ces exports permettent de retrouver les données ; la restauration est une opération à part (réimport des CSV ou
+`psql -f`). L'écran *Import / Export* de l'application exporte les notes d'une classe en Excel, ce qui ne remplace
+pas une sauvegarde complète de la base.
+
 Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURATION.md).
 
 ## Fonctions Edge (Supabase)
