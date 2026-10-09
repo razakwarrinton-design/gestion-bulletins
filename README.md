@@ -61,9 +61,18 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 Ensuite, créer le premier administrateur (voir [docs/SECURITE.md](docs/SECURITE.md)). Les autres comptes s'inscrivent
 eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*.
 
+### Base de démonstration créée avec des identifiants `uuid`
+
+Les scripts créent les tables avec des identifiants numériques et ne remplacent pas une table déjà
+présente (`CREATE TABLE IF NOT EXISTS`). Une base dont les tables métier (élèves, classes, notes…) ont des
+identifiants `uuid` fait échouer l'installation. Si ses données peuvent être perdues, exécuter
+`sql/reset-legacy-schema.sql` (⚠️ destructif : il conserve seulement les comptes, leurs rôles et `app_data`),
+puis toute la chaîne d'installation ci-dessus. Cette procédure est testée dans
+`sql/__tests__/legacy-uuid-install.test.js` sur un schéma reconstitué (noms et types de colonnes uniquement).
+
 ### Mettre à jour une installation existante
 
-Les scripts sont ré-exécutables. Pour passer une base déjà en service à cette version :
+Les scripts d'installation sont ré-exécutables. Pour passer une base déjà en service à cette version :
 
 1. **Sauvegarder, ou tester sur une branche Supabase** : ces scripts modifient des tables en place.
 2. Vérifier les contraintes actuelles de `grades` (une base modifiée à la main peut différer des scripts du dépôt) :

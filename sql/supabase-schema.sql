@@ -38,22 +38,26 @@ CREATE TRIGGER update_app_data_updated_at
 ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;
 
 -- Politique : Lecture publique (tous les utilisateurs authentifiés)
+DROP POLICY IF EXISTS "Permettre lecture pour tous" ON app_data;
 CREATE POLICY "Permettre lecture pour tous" ON app_data
   FOR SELECT
   USING (true);
 
 -- Politique : Écriture publique (tous les utilisateurs authentifiés)
+DROP POLICY IF EXISTS "Permettre écriture pour tous" ON app_data;
 CREATE POLICY "Permettre écriture pour tous" ON app_data
   FOR INSERT
   WITH CHECK (true);
 
 -- Politique : Mise à jour publique
+DROP POLICY IF EXISTS "Permettre mise à jour pour tous" ON app_data;
 CREATE POLICY "Permettre mise à jour pour tous" ON app_data
   FOR UPDATE
   USING (true)
   WITH CHECK (true);
 
 -- Politique : Suppression publique
+DROP POLICY IF EXISTS "Permettre suppression pour tous" ON app_data;
 CREATE POLICY "Permettre suppression pour tous" ON app_data
   FOR DELETE
   USING (true);
@@ -146,6 +150,7 @@ BEGIN
     WHERE schemaname = 'public'
     AND tablename IN ('classes', 'students', 'subjects', 'grades', 'activities')
   LOOP
+    EXECUTE format('DROP POLICY IF EXISTS "Permettre tout pour %I" ON %I', t, t);
     EXECUTE format('CREATE POLICY "Permettre tout pour %I" ON %I FOR ALL USING (true) WITH CHECK (true)', t, t);
   END LOOP;
 END $$;
