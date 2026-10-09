@@ -17,7 +17,12 @@ export const BULLETIN_TEMPLATES = [
  */
 export function fileTitle(...parts) {
   return parts
-    .map((p) => String(p ?? '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').trim().replace(/\s+/g, '_'))
+    .map((p) => [...String(p ?? '')]
+      .filter((ch) => ch.charCodeAt(0) > 31) // caractères de contrôle
+      .join('')
+      .replace(/[\\/:*?"<>|]/g, '')
+      .trim()
+      .replace(/\s+/g, '_'))
     .filter(Boolean)
     .join('_')
     .slice(0, 120);
