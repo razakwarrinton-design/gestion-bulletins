@@ -3,6 +3,7 @@ import { Save, CheckCircle, ChevronDown, ChevronUp, User, Pen, Star, Bell, Send 
 import { supabase } from '../config/supabase';
 import { getMentionLevel } from '../utils/mentions';
 import { weightedBase, applyBonus, gradeInputProblem, MAX_BONUS, MAX_GRADE } from '../utils/finalGrade';
+import { readFunctionError } from '../utils/functionError';
 
 // ─── Hook debounce ────────────────────────────────────────────────────────────
 function useDebounce(value, delay) {
@@ -352,14 +353,16 @@ export default function GradesForm({
           appUrl: 'https://gestion-bulletins-rho.vercel.app',
         },
       });
-      if (error) throw error;
+      if (error) throw new Error(await readFunctionError(error, "Envoi impossible", 'notify-parents'));
+      if (data?.error) throw new Error(data.error);
       setNotifState('success');
       setNotifResult(data);
       setTimeout(() => setNotifState('idle'), 5000);
     } catch (err) {
       setNotifState('error');
       setNotifResult({ error: err.message });
-      setTimeout(() => setNotifState('idle'), 5000);
+      // plus long qu'un succès : le message d'erreur doit avoir le temps d'être lu
+      setTimeout(() => setNotifState('idle'), 12000);
     }
   };
 

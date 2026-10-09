@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { supabase } from '../config/supabase';
 import { sameId } from '../utils/ids';
 import { getMentionLevel } from '../utils/mentions';
+import { readFunctionError } from '../utils/functionError';
 import { Sparkles, RefreshCw, Copy, Check, ChevronDown, ChevronUp, BookOpen, AlertTriangle, Award } from 'lucide-react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -14,7 +15,7 @@ async function generateAppreciation(student, grades, subjects, trimester, classA
     const { data, error } = await supabase.functions.invoke('generate-appreciation', {
         body: { student, grades: validGrades, subjects, trimester, classAverage }
     });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(await readFunctionError(error, "Génération impossible", 'generate-appreciation'));
     if (data?.error) throw new Error(data.error);
     if (!data?.appreciation) throw new Error('Réponse vide de l\'IA');
     return data.appreciation;
