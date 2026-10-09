@@ -2,7 +2,7 @@
 
 exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`] = `
 "<!DOCTYPE html><html lang="fr"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'"><meta charset="UTF-8">
-<title>Bulletin – Koffi Mensah</title>
+<title>Bulletin_Mensah_Koffi_T1_2025-2026</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   /* @page margin:0 masque l'URL et le titre du navigateur lors de l'impression */
@@ -206,7 +206,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
 
 exports[`rendu des bulletins (instantané) > model1 : impression de toute la classe 1`] = `
 "<!DOCTYPE html><html lang="fr"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'"><meta charset="UTF-8">
-<title>Bulletins — Classe 6ème A — Trimestre 1</title>
+<title>Bulletins_6ème_A_T1_2025-2026</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   /* @page margin:0 masque l'URL et le titre du navigateur lors de l'impression */
@@ -692,7 +692,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
 exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`] = `
 "<!DOCTYPE html><html lang="fr"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'"><meta charset="UTF-8">
-<title>Bulletin – Koffi Mensah</title>
+<title>Bulletin_Mensah_Koffi_T1_2025-2026</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4 portrait; margin: 0; }
@@ -911,7 +911,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
 
 exports[`rendu des bulletins (instantané) > model2 : impression de toute la classe 1`] = `
 "<!DOCTYPE html><html lang="fr"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'"><meta charset="UTF-8">
-<title>Bulletins — Classe 6ème A — Trimestre 1</title>
+<title>Bulletins_6ème_A_T1_2025-2026</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4 portrait; margin: 0; }
@@ -1394,7 +1394,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
 
 exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`] = `
 "<!DOCTYPE html><html lang="fr"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'"><meta charset="UTF-8">
-<title>Bulletin Premium – Koffi Mensah</title>
+<title>Bulletin_Mensah_Koffi_T1_2025-2026</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4 portrait; margin: 0; }
@@ -1659,7 +1659,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
 
 exports[`rendu des bulletins (instantané) > model3 : impression de toute la classe 1`] = `
 "<!DOCTYPE html><html lang="fr"><head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'"><meta charset="UTF-8">
-<title>Bulletins — Classe 6ème A — Trimestre 1</title>
+<title>Bulletins_6ème_A_T1_2025-2026</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4 portrait; margin: 0; }

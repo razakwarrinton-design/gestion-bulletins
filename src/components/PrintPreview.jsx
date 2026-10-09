@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Printer, X, Users, ChevronDown } from 'lucide-react';
 import { supabase } from '../config/supabase';
 import { prepareBulletinHtml } from '../utils/printSecurity';
-import { buildBulletinContext, renderBulletin } from '../utils/bulletin';
+import { buildBulletinContext, renderBulletin, fileTitle, withDocumentTitle } from '../utils/bulletin';
 
 function PrintPreviewInner({
   printStudent, setShowPrintPreview, selectedTrimester,
@@ -68,10 +68,13 @@ function PrintPreviewInner({
     classInfo, classStudents, classTotal, trimLabel, fmtAvg,
   } = c;
 
+  // Le titre de la page imprimée devient le nom de fichier proposé par « Enregistrer en PDF »
+  const studentFileTitle = fileTitle('Bulletin', printStudent?.lastName, printStudent?.firstName, `T${selectedTrimester}`, c.yearLabel);
+
   const openPrint = (html) => {
     const win = window.open('', '_blank', 'width=960,height=800');
     if (!win) { alert('Autorisez les pop-ups pour imprimer.'); return; }
-    win.document.write(prepareBulletinHtml(html));
+    win.document.write(prepareBulletinHtml(withDocumentTitle(html, studentFileTitle)));
     win.document.close();
     setTimeout(() => { win.print(); setTimeout(() => win.close(), 600); }, 450);
   };
@@ -111,7 +114,7 @@ function PrintPreviewInner({
     const css = cssMatch ? cssMatch[1] : '';
 
     const batchHtml = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<title>Bulletins — Classe ${classInfo?.name} — ${trimLabel}</title>
+<title>${fileTitle('Bulletins', classInfo?.name, `T${selectedTrimester}`, c.yearLabel)}</title>
 <style>${css} @page{size:A4 portrait;margin:0;} body{padding:0;} div[style*="page-break"]:last-child{page-break-after:auto!important;}</style>
 </head><body>${pages}</body></html>`;
 
