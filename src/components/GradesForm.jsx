@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Save, CheckCircle, ChevronDown, ChevronUp, User, Pen, Star, Bell, Send } from 'lucide-react';
 import { supabase } from '../config/supabase';
 import { getMentionLevel } from '../utils/mentions';
-import { weightedBase, applyBonus } from '../utils/finalGrade';
+import { weightedBase, applyBonus, gradeInputProblem, MAX_BONUS, MAX_GRADE } from '../utils/finalGrade';
 
 // ─── Hook debounce ────────────────────────────────────────────────────────────
 function useDebounce(value, delay) {
@@ -29,10 +29,12 @@ const computeFinal = (interro, devoir, compo) => {
 // ─── Petit champ numérique réutilisable ───────────────────────────────────────
 function NoteField({ label, value, onChange, disabled, isBonus = false }) {
   const v = parseFloat(value);
-  const bg = isBonus
+  // Hors limites (la base refuserait l'enregistrement) : signalé tout de suite en rouge
+  const outOfRange = value !== '' && (isNaN(v) || v < 0 || v > (isBonus ? MAX_BONUS : MAX_GRADE));
+  const bg = outOfRange ? '#FEF2F2' : isBonus
     ? (value === '' ? '#F0FDF4' : '#DCFCE7')
     : (value === '' ? '#F8FAFF' : isNaN(v) ? '#FFF1F1' : v < 8 ? '#FFF7ED' : v < 10 ? '#FEFCE8' : v < 14 ? '#EFF6FF' : '#F0FDF4');
-  const brd = isBonus
+  const brd = outOfRange ? '#EF4444' : isBonus
     ? (value === '' ? '#BBF7D0' : '#4ADE80')
     : (value === '' ? '#E2E8F0' : isNaN(v) ? '#FCA5A5' : v < 8 ? '#FCD34D' : v < 10 ? '#FCD34D' : v < 14 ? '#93C5FD' : '#6EE7B7');
   return (
@@ -119,6 +121,15 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
 
   useEffect(() => {
     if (isFirst.current) { isFirst.current = false; return; }
+    // Tout ce qui part vers la base doit être dans les limites, sinon elle refuse (« Non sauvegardé »)
+    const problem = gradeInputProblem({
+      interro: dbInterro, devoir: dbDevoir, composition: dbCompo, bonus: dbBonus, simple: dbSimple,
+    });
+    if (problem) {
+      setSaved(false);
+      setSaveError(problem);
+      return;
+    }
     const base = mode === 'detail' ? computeFinal(dbInterro, dbDevoir, dbCompo) : dbSimple;
     const finalN = applyBonus(base, dbBonus) ?? '';
     let cancelled = false;
@@ -178,7 +189,7 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
           )}
           {saveError && (
             <span role="alert" title={saveError} style={{ fontSize: 11, fontWeight: 700, color: '#DC2626' }}>
-              ⚠ Non sauvegardé
+              ⚠ Non sauvegardé · {saveError}
             </span>
           )}
           <button

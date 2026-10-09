@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { weightedBase, applyBonus, finalGrade } from './finalGrade';
+import { weightedBase, applyBonus, finalGrade, gradeInputProblem } from './finalGrade';
 
 describe('weightedBase', () => {
   it('pondère interrogation ×1, devoir ×2, composition ×3', () => {
@@ -43,5 +43,23 @@ describe('finalGrade', () => {
   it('renvoie null sans ligne ni donnée', () => {
     expect(finalGrade(null)).toBeNull();
     expect(finalGrade({ value: null })).toBeNull();
+  });
+});
+
+describe('gradeInputProblem', () => {
+  it('accepte des valeurs dans les limites et les champs vides', () => {
+    expect(gradeInputProblem({ interro: 12, devoir: '14.5', composition: '', bonus: 5, simple: '' })).toBeNull();
+    expect(gradeInputProblem({ interro: 0, devoir: 20, composition: 20, bonus: 0 })).toBeNull();
+  });
+
+  it('refuse une note au-dessus de 20, négative ou illisible (la base la refuse aussi)', () => {
+    expect(gradeInputProblem({ interro: 21 })).toMatch(/entre 0 et 20/);
+    expect(gradeInputProblem({ devoir: 1214 })).toMatch(/entre 0 et 20/);
+    expect(gradeInputProblem({ composition: -1 })).toMatch(/entre 0 et 20/);
+    expect(gradeInputProblem({ simple: 'abc' })).toMatch(/entre 0 et 20/);
+  });
+
+  it('limite le bonus à 5', () => {
+    expect(gradeInputProblem({ bonus: 6 })).toMatch(/Bonus hors limites.*entre 0 et 5/);
   });
 });

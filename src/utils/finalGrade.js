@@ -13,6 +13,25 @@ export const MAX_GRADE = 20;
 
 const toNumber = (v) => (v === '' || v == null || Number.isNaN(Number(v)) ? null : Number(v));
 
+export const MAX_BONUS = 5;
+
+/**
+ * Valeur saisie hors limites (notes de 0 à 20, bonus de 0 à 5) : la base la refuse, donc on ne l'envoie
+ * pas et on le dit. Une saisie vide est permise (note effacée). Renvoie un message, ou null si tout va bien.
+ */
+export function gradeInputProblem({ interro, devoir, composition, bonus, simple }) {
+  const outside = (v, max) => {
+    const n = toNumber(v);
+    if (v === '' || v == null) return false;
+    return n === null || n < 0 || n > max;
+  };
+  if ([interro, devoir, composition, simple].some((v) => outside(v, MAX_GRADE))) {
+    return `Note hors limites : saisissez une valeur entre 0 et ${MAX_GRADE}.`;
+  }
+  if (outside(bonus, MAX_BONUS)) return `Bonus hors limites : saisissez une valeur entre 0 et ${MAX_BONUS}.`;
+  return null;
+}
+
 /** Note de base issue des sous-notes, ou null si aucune n'est saisie. */
 export function weightedBase({ interro, devoir, composition }) {
   const parts = [
