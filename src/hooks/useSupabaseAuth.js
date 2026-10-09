@@ -144,11 +144,18 @@ export function useSupabaseAuth() {
 
       if (error) throw error;
 
-      if (data.user) {
+      // Pour ne pas révéler quels e-mails existent, Supabase répond « succès » à une inscription avec
+      // une adresse déjà utilisée, mais sans identité ni session : rien ne se passerait à l'écran.
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        throw new Error('Un compte existe déjà avec cette adresse e-mail. Connectez-vous, ou utilisez « Oublié ? » pour réinitialiser le mot de passe.');
+      }
+
+      if (data.session && data.user) {
         await loadUserProfile(data.user.id);
       }
 
-      return { success: true, user: data.user };
+      // Sans session, le projet exige la confirmation de l'adresse e-mail avant la première connexion.
+      return { success: true, user: data.user, needsEmailConfirmation: !data.session };
     } catch (err) {
       console.error('Erreur d\'inscription:', err);
       setError(err.message);

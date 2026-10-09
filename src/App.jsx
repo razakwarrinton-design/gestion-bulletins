@@ -167,7 +167,13 @@ const BulletinApp = () => {
         const result = await signUp(email, password, firstName, lastName);
         if (result.success) {
             logActivity('Création de compte', `Nouvel utilisateur: ${firstName} ${lastName} (secretaire)`);
-            showNotification('Compte créé avec succès !');
+            if (result.needsEmailConfirmation) {
+                // Aucune session n'est ouverte : on renvoie vers la connexion en expliquant la suite.
+                setIsRegister(false);
+                showNotification('Compte créé. Ouvrez le message de confirmation reçu par e-mail, puis connectez-vous.');
+            } else {
+                showNotification('Compte créé avec succès !');
+            }
         }
         return result;
     };
@@ -214,6 +220,8 @@ const BulletinApp = () => {
                     showAlert={showAlert}
                     alertMessage={alertMessage}
                 />
+                {/* LoginPage n'affiche pas les notifications : sans ceci, « Compte créé » restait invisible */}
+                <Toast show={showAlert} message={alertMessage} />
                 {mfaChallenge.open && (
                     <MFAChallenge
                         factorId={mfaChallenge.factorId}

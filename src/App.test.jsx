@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, within, act } from '@testing-library/react';
 
-const auth = vi.hoisted(() => ({ session: null, profile: null, signInError: null }));
+const auth = vi.hoisted(() => ({ session: null, profile: null, signInError: null, signUpResult: null }));
 
 vi.mock('./config/supabase', () => {
   const query = (table) => {
@@ -42,6 +42,7 @@ vi.mock('./config/supabase', () => {
         getUser: async () => ({ data: { user: auth.session?.user ?? null }, error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
         signOut: async () => ({ error: null }),
+        signUp: async () => auth.signUpResult,
         signInWithPassword: async () => (auth.signInError
           ? { data: { user: null }, error: { message: auth.signInError } }
           : { data: {}, error: null }),
@@ -72,6 +73,7 @@ beforeEach(() => {
   auth.session = null;
   auth.profile = null;
   auth.signInError = null;
+  auth.signUpResult = null;
   window.matchMedia = window.matchMedia || (() => ({
     matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {},
   }));
@@ -98,6 +100,30 @@ describe('application : accès selon l\'état du compte', () => {
     expect(await screen.findByText('Invalid login credentials')).toBeTruthy();
     // le formulaire n'a pas été remplacé par l'écran de chargement : la saisie est conservée
     expect(screen.getByPlaceholderText('votre@email.com').value).toBe('admin@ecole.test');
+  });
+
+  const fillRegistration = async () => {
+    fireEvent.click((await screen.findAllByText('Créer un compte'))[0]);
+    fireEvent.change(await screen.findByPlaceholderText('Jean'), { target: { value: 'Awa' } });
+    fireEvent.change(screen.getByPlaceholderText('Dupont'), { target: { value: 'Kossi' } });
+    fireEvent.change(screen.getByPlaceholderText('votre@email.com'), { target: { value: 'awa@ecole.test' } });
+    fireEvent.change(document.querySelector('input[type="password"]'), { target: { value: 'secret123' } });
+    fireEvent.click(screen.getByRole('button', { name: /Créer mon compte/ }));
+  };
+
+  it('inscription avec une adresse déjà utilisée : le dit (Supabase répond « succès » sans identité)', async () => {
+    auth.signUpResult = { data: { user: { id: 'u1', identities: [] }, session: null }, error: null };
+    render(<App />);
+    await fillRegistration();
+    expect(await screen.findByText(/Un compte existe déjà avec cette adresse e-mail/)).toBeTruthy();
+  });
+
+  it('inscription sans session (e-mail à confirmer) : explique la suite et revient à la connexion', async () => {
+    auth.signUpResult = { data: { user: { id: 'u2', identities: [{ id: 'i' }] }, session: null }, error: null };
+    render(<App />);
+    await fillRegistration();
+    expect(await screen.findByText(/Ouvrez le message de confirmation/)).toBeTruthy();
+    expect(screen.getByText(/Bon retour/)).toBeTruthy();
   });
 
   it('compte de connexion sans profil : le dit au lieu de rester muet', async () => {
