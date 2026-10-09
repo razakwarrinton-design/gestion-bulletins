@@ -113,11 +113,22 @@ Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURAT
 | `create-parent-account` | Création d'un compte parent par l'administrateur | (fournis par la plateforme) |
 | `payment-initiate`, `payment-webhook` | Paiement Mobile Money via FedaPay ([docs/PAIEMENTS.md](docs/PAIEMENTS.md)) | `FEDAPAY_SECRET_KEY`, `FEDAPAY_ENV`, `APP_URL` |
 | `send-sms` | SMS via Africa's Talking, réservé à l'administrateur et au secrétariat | `AT_USERNAME`, `AT_API_KEY`, `AT_ENV` (`sandbox` ou `production`), `AT_SENDER_ID` (facultatif) |
+| `generate-appreciation` | Appréciation de bulletin rédigée par une IA, réservée à l'administrateur et aux professeurs | `AI_API_KEY`, `AI_MODEL`, `AI_BASE_URL` (service compatible avec l'API « chat completions ») |
 
-Déploiement : `supabase functions deploy <nom>`. Tant que `send-sms` n'est pas déployée et configurée, l'envoi
-d'un SMS échoue avec un message explicite (aucun envoi n'est plus simulé). Les boutons « Générer avec IA »
-(`generate-appreciation`) et « Notifier les parents » (`notify-parents`) appellent des fonctions qui ne sont
-pas encore dans ce dépôt.
+Déploiement : `supabase functions deploy <nom>`, puis `supabase secrets set NOM=valeur …`. Tant qu'une fonction
+n'est pas déployée et configurée, le bouton correspondant affiche un message explicite (« n'est pas déployée »,
+« n'est pas configurée ») : aucun envoi n'est simulé.
+
+`generate-appreciation` ne transmet au service d'IA que le prénom de l'élève, ses notes par matière, le trimestre
+et la moyenne de classe (liste blanche côté serveur : jamais le nom de famille, la date de naissance, les contacts
+ni la photo). La clé du service reste dans les secrets Supabase, jamais dans le navigateur. Le fournisseur et le
+modèle se choisissent par les secrets ; les tests (`supabase/functions/_shared/appreciation*.test.ts`) simulent le
+fournisseur : la fonction n'a pas été appelée contre un vrai service.
+
+Le bouton « Notifier les parents » (écran de saisie des notes) appelle `notify-parents`, qui **n'existe pas** :
+le projet n'a ni service d'envoi d'e-mails, et les seuls numéros disponibles sont les contacts d'urgence des élèves
+(un SMS payant vers de vraies personnes). Le canal (e-mail, SMS ou notification dans l'application) est à choisir
+avant de l'écrire ; d'ici là le bouton affiche que la fonction n'est pas déployée.
 
 ## Calcul des moyennes
 
