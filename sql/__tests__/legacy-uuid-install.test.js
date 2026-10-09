@@ -45,6 +45,12 @@ const LEGACY_SCHEMA = `
   -- politiques posées par l'ancien script de base
   ALTER TABLE app_data ENABLE ROW LEVEL SECURITY;
   CREATE POLICY "Permettre lecture pour tous" ON app_data FOR SELECT USING (true);
+  -- politiques d'une ancienne exécution du script de sécurité (relevées sur la base réelle : « Lecture pour
+  -- utilisateurs authentifiés » existait déjà et faisait échouer la création)
+  CREATE POLICY "Lecture pour utilisateurs authentifiés" ON app_data FOR SELECT USING (auth.uid() IS NOT NULL);
+  CREATE POLICY "Insertion pour admins et professeurs" ON app_data FOR INSERT WITH CHECK (true);
+  CREATE POLICY "Mise à jour selon rôle" ON app_data FOR UPDATE USING (true);
+  CREATE POLICY "Suppression pour admins seulement" ON app_data FOR DELETE USING (true);
   CREATE POLICY "Permettre tout pour classes" ON classes FOR ALL USING (true) WITH CHECK (true);
   ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
 
@@ -128,5 +134,11 @@ describe('installation sur une base aux identifiants uuid', () => {
 
   it('supporte une seconde exécution complète, sans la remise à zéro', async () => {
     await expect(db.exec(oneShot(INSTALL.slice(1)))).resolves.not.toThrow();
+  }, 120000);
+
+  it('supporte de relancer toute la procédure, remise à zéro comprise (nouvel essai après une erreur)', async () => {
+    await expect(db.exec(oneShot(INSTALL))).resolves.not.toThrow();
+    const { rows: [p] } = await db.query(`SELECT role FROM user_profiles WHERE id = '${ADMIN}'`);
+    expect(p.role).toBe('admin');
   }, 120000);
 });

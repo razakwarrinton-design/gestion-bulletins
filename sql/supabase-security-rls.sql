@@ -136,8 +136,14 @@ DROP POLICY IF EXISTS "Permettre écriture pour tous" ON app_data;
 DROP POLICY IF EXISTS "Permettre mise à jour pour tous" ON app_data;
 DROP POLICY IF EXISTS "Permettre suppression pour tous" ON app_data;
 
+-- (Ces politiques peuvent déjà exister si ce script, ou une ancienne version, a été exécuté.)
+DROP POLICY IF EXISTS "Lecture pour utilisateurs authentifiés" ON app_data;
+DROP POLICY IF EXISTS "Insertion pour admins et professeurs" ON app_data;
+DROP POLICY IF EXISTS "Mise à jour selon rôle" ON app_data;
+DROP POLICY IF EXISTS "Suppression pour admins seulement" ON app_data;
+
 -- LECTURE : Tous les utilisateurs authentifiés peuvent lire
-CREATE POLICY "Lecture pour utilisateurs authentifiés" 
+CREATE POLICY "Lecture pour utilisateurs authentifiés"
   ON app_data FOR SELECT 
   USING (auth.uid() IS NOT NULL);
 
