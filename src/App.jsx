@@ -34,6 +34,7 @@ import Sidebar from './layout/Sidebar';
 import Topbar from './layout/Topbar';
 import Toast from './layout/Toast';
 import AppViews from './layout/AppViews';
+import ErrorBoundary from './components/ErrorBoundary';
 import { resolveId } from './utils/ids';
 import PendingApproval from './components/PendingApproval';
 
@@ -306,6 +307,7 @@ const BulletinApp = () => {
 
                     {/* ── Views ─────────────────────────────────────────────────────── */}
                     <div className="bg-white rounded-2xl shadow-sm p-6 min-h-full" style={{ border: '1px solid #EFF6FF' }}>
+                        <ErrorBoundary resetKey={currentView}>
                         <Suspense fallback={<Spinner text="Chargement..." />}>
                         <AppViews currentView={currentView} ctx={{
                             academicYears, activities, appColors, appreciationsApi, authLoading, calculateAverage,
@@ -320,6 +322,7 @@ const BulletinApp = () => {
                             subjects, updateColor, updateGrade, updateSchoolInfo,
                         }} />
                         </Suspense>
+                        </ErrorBoundary>
                     </div>
                 </main>
             </div>
