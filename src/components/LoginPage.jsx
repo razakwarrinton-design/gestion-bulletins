@@ -8,12 +8,6 @@ const FEATURES = [
     { icon: Shield, label: 'Sécurisé avec 2FA' },
 ];
 
-const DEMO_ACCOUNTS = [
-    { label: '🛡️ Admin', email: 'admin@ecole.com', password: 'admin123' },
-    { label: '👨‍🏫 Prof', email: 'prof@ecole.com', password: 'prof123' },
-    { label: '💼 Secr.', email: 'secret@ecole.com', password: 'secret123' },
-];
-
 export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignUp, loading }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -31,12 +25,6 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
     const switchMode = (register) => {
         setIsRegister(register);
         resetForm();
-    };
-
-    const fillDemo = (acc) => {
-        setEmail(acc.email);
-        setPassword(acc.password);
-        setError('');
     };
 
     const handleSubmit = async (e) => {
@@ -294,32 +282,6 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
                             {isRegister ? 'Se connecter' : 'Créer un compte'}
                         </span>
                     </p>
-
-                    {/* Demo accounts — login only */}
-                    {!isRegister && (
-                        <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                                <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
-                                <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 700, letterSpacing: '.05em' }}>DÉMO</span>
-                                <div style={{ flex: 1, height: 1, background: '#E2E8F0' }} />
-                            </div>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                                {DEMO_ACCOUNTS.map(acc => (
-                                    <button key={acc.label} onClick={() => fillDemo(acc)} style={{
-                                        flex: 1, padding: '7px 6px', borderRadius: 9,
-                                        border: '1.5px solid #E2E8F0', background: '#F8FAFF',
-                                        fontSize: 12, fontWeight: 600, fontFamily: 'inherit',
-                                        color: '#475569', cursor: 'pointer', transition: 'all .15s',
-                                    }}
-                                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.color = '#2563EB'; e.currentTarget.style.background = '#EFF6FF'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#475569'; e.currentTarget.style.background = '#F8FAFF'; }}
-                                    >
-                                        {acc.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </>
-                    )}
                 </div>
             </div>
 

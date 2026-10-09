@@ -88,6 +88,10 @@ describe('application : accès selon l\'état du compte', () => {
     render(<App />);
     expect(await screen.findByText(/Bon retour/)).toBeTruthy();
     expect(screen.queryByText('Classes')).toBeNull();
+    // aucun compte de démonstration ni mot de passe prérempli sur la page de connexion publique
+    expect(screen.queryByText('DÉMO')).toBeNull();
+    expect(document.querySelector('input[type="password"]').value).toBe('');
+    expect(screen.getByPlaceholderText('votre@email.com').value).toBe('');
   });
 
   it('connexion refusée : la page de connexion reste affichée avec le message d\'erreur', async () => {

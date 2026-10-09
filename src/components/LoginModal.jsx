@@ -137,13 +137,6 @@ export default function LoginModal({
             {isRegister ? 'Déjà un compte ? Se connecter' : 'Créer un compte'}
           </button>
         </div>
-
-        {!isRegister && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-xs text-blue-800 font-bold mb-2">🔐 Comptes de test :</p>
-            <p className="text-xs text-blue-700">Admin: admin@ecole.com / admin123</p>
-          </div>
-        )}
       </div>
     </div>
   );

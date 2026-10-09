@@ -58,8 +58,21 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 9. `sql/appreciations-activities.sql` : appréciations et journal d'activité dans des tables (une ligne par élément) au lieu d'un bloc partagé que deux utilisateurs pouvaient s'écraser ; reprend les données existantes. **À exécuter avant de déployer cette version.** À lancer après `security-hardening.sql`
 10. `sql/audit-log.sql` : journal d'audit tenu par la base (qui a créé, modifié ou supprimé quoi), lisible par les administrateurs dans le menu *Journal d'audit*. À exécuter après `security-hardening.sql`
 
-Ensuite, créer le premier administrateur (voir [docs/SECURITE.md](docs/SECURITE.md)). Les autres comptes s'inscrivent
-eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*.
+### Créer le premier administrateur
+
+Aucun compte n'est fourni (la page de connexion n'affiche plus de comptes de démonstration). Les inscriptions
+publiques sont « en attente » et n'ont accès à rien : le premier administrateur se promeut donc par SQL.
+
+1. Dans l'application, **Créer un compte** avec votre e-mail (si le projet Supabase exige la confirmation de
+   l'adresse, ouvrir d'abord le message reçu). L'écran « Compte en attente de validation » est normal.
+2. Dans l'éditeur SQL de Supabase :
+   ```sql
+   UPDATE public.user_profiles SET role = 'admin' WHERE email = 'votre.adresse@exemple.com';
+   ```
+3. Se reconnecter : tous les écrans, dont *Utilisateurs*, sont accessibles.
+
+Les autres comptes s'inscrivent eux-mêmes et sont validés par l'administrateur dans le menu *Utilisateurs*
+(voir aussi [docs/SECURITE.md](docs/SECURITE.md)).
 
 ### Base de démonstration créée avec des identifiants `uuid`
 

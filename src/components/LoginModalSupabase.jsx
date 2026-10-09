@@ -144,20 +144,6 @@ export default function LoginModalSupabase({
                     {isRegister ? 'Se connecter' : 'Créer un compte'}
                 </button>
             </p>
-
-            {/* Demo accounts */}
-            {!isRegister && (
-                <div className="mt-5 p-4 rounded-xl" style={{ background: '#F0F5FF', border: '1px solid #DBEAFE' }}>
-                    <p className="text-xs font-bold text-blue-700 mb-2 flex items-center gap-1.5">
-                        <Shield className="w-3.5 h-3.5" /> Comptes de démonstration
-                    </p>
-                    <div className="space-y-1 text-xs text-blue-600">
-                        <p><span className="font-semibold">Admin :</span> admin@ecole.com / admin123</p>
-                        <p><span className="font-semibold">Prof :</span> prof@ecole.com / prof123</p>
-                        <p><span className="font-semibold">Secrétaire :</span> secret@ecole.com / secret123</p>
-                    </div>
-                </div>
-            )}
         </div>
     );
 
