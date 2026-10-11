@@ -3,6 +3,7 @@ import { currentAcademicYear } from '../studentUtils';
 import { getMentionLevel } from '../mentions';
 import { finalGrade } from '../finalGrade';
 import { getClassRank, hasGrade } from '../grades';
+import { esc, scaleLegend } from './shared';
 
 const NO_ABSENCES = { absents: 0, retards: 0, injustifies: 0 };
 
@@ -63,22 +64,25 @@ export function buildBulletinContext({
     return sum + ((g.value || 0) * coef);
   }, 0);
 
-  const studentStatus = average >= 12 ? { text: 'ADMIS(E)', color: '#059669' }
-    : average >= 8 ? { text: 'À SUIVRE', color: '#d97706' }
-      : { text: 'EN DIFFICULTÉ', color: '#dc2626' };
+  // Décision selon la moyenne générale (la légende imprimée lit ces seuils par cette fonction)
+  const decisionFor = (avg) => (avg >= 12 ? { text: 'ADMIS(E)', color: '#059669' }
+    : avg >= 8 ? { text: 'À SUIVRE', color: '#d97706' }
+      : { text: 'EN DIFFICULTÉ', color: '#dc2626' });
+  const studentStatus = decisionFor(average);
 
-  const schoolName = schoolInfo?.name || 'ÉTABLISSEMENT SCOLAIRE';
-  const schoolAddr = schoolInfo?.address || '';
-  const schoolPhone = schoolInfo?.phone || '';
-  const schoolEmail = schoolInfo?.email || '';
+  // Textes saisis par l'école : insérés dans le HTML après échappement
+  const schoolName = esc(schoolInfo?.name || 'ÉTABLISSEMENT SCOLAIRE');
+  const schoolAddr = esc(schoolInfo?.address || '');
+  const schoolPhone = esc(schoolInfo?.phone || '');
+  const schoolEmail = esc(schoolInfo?.email || '');
   const trimLabel = `Trimestre ${selectedTrimester}`;
-  const yearLabel = schoolInfo?.year || currentAcademicYear();
+  const yearLabel = esc(schoolInfo?.year || currentAcademicYear());
 
   // ── Champs personnalisables pays/ministère (issus de schoolInfo) ──────────
-  const republic = schoolInfo?.republic || '';   // ex: "REPUBLIQUE TOGOLAISE"
-  const countryMotto = schoolInfo?.countryMotto || '';   // ex: "Travail · Liberté · Patrie"
-  const ministry = schoolInfo?.ministry || '';   // ex: "Ministère des Enseignements Primaire et Secondaire"
-  const schoolDevise = schoolInfo?.devise || '';   // devise de l'école
+  const republic = esc(schoolInfo?.republic || '');   // ex: "REPUBLIQUE TOGOLAISE"
+  const countryMotto = esc(schoolInfo?.countryMotto || '');   // ex: "Travail · Liberté · Patrie"
+  const ministry = esc(schoolInfo?.ministry || '');   // ex: "Ministère des Enseignements Primaire et Secondaire"
+  const schoolDevise = esc(schoolInfo?.devise || '');   // devise de l'école
 
   const fmtAvg = (v) => { const n = parseFloat(v); return isNaN(n) ? '-' : n.toFixed(2); };
   const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
@@ -115,13 +119,13 @@ export function buildBulletinContext({
 
   // ── Signature numérique (inchangée) ──────────────────────────────────────
   const digitalSigBox = (title, name, role = '') => `
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
-      <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">${title}</div>
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+      <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">${esc(title)}</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
           ${name
-      ? `<div style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:13pt;color:#1e3a5f;line-height:1.1;border-bottom:1.5px solid #94a3b8;padding-bottom:3px;min-width:110px;">${name}</div>
-         <div style="font-size:7pt;color:#64748b;margin-top:3px;">${role ? role + ' — ' : ''}${new Date().toLocaleDateString('fr-FR')}</div>
+      ? `<div style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:13pt;color:#1e3a5f;line-height:1.1;border-bottom:1.5px solid #94a3b8;padding-bottom:3px;min-width:110px;">${esc(name)}</div>
+         <div style="font-size:7pt;color:#64748b;margin-top:3px;">${role ? esc(role) + ' — ' : ''}${new Date().toLocaleDateString('fr-FR')}</div>
          <div style="margin-top:4px;display:inline-block;background:#dbeafe;color:#1d4ed8;font-size:6pt;font-weight:700;padding:1px 6px;border-radius:20px;">✓ Signé numériquement</div>`
       : `<div style="font-size:7.5pt;color:#cbd5e1;font-style:italic;">En attente de signature</div>`}
         </div>
@@ -134,6 +138,7 @@ export function buildBulletinContext({
   const appreciationFor = (studentId) => (studentId === student.id ? generalAppreciation : '');
 
   return {
+    legend: (options = {}) => scaleLegend({ ...options, decisionFor }),
     student, studentGrades, average, mention, ranking, studentRank, studentStatus, totalCoef, totalPoints, classInfo, classStudents, classTotal, classAverage, classMax, classMin, strengths, weaknesses, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, fmtAvg, gradeColor, gradeLabel, computeFinal, officialTopBar, qrCodeImg, digitalSigBox, subjects, grades, selectedTrimester, calculateAverage, schoolInfo, schoolLogo, absencesFor, appreciationFor, rankOf, effectif,
   };
 }

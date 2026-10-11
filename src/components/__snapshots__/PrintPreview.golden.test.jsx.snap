@@ -7,9 +7,10 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
   * { box-sizing: border-box; margin: 0; padding: 0; }
   /* @page margin:0 masque l'URL et le titre du navigateur lors de l'impression */
   @page { size: A4 portrait; margin: 0; }
-  body { font-family: 'Times New Roman', serif; font-size: 9.5pt; color: #111; background: #fff;
-         padding: 9mm 10mm 6mm; width: 210mm; min-height: 297mm; }
-  @media print { body { padding: 9mm 10mm 6mm; } }
+  body { font-family: 'Times New Roman', serif; font-size: 9.5pt; color: #111; background: #fff; }
+  /* Les marges sont portées par la page (et non par le body) : en impression de classe, seul le contenu du
+     body de chaque bulletin est repris, et les marges doivent rester. */
+  .page { width: 210mm; min-height: 297mm; padding: 9mm 10mm 6mm; }
   .header { display: flex; justify-content: space-between; align-items: center;
             border-bottom: 3px double #1e40af; padding-bottom: 7px; margin-bottom: 8px; gap: 8px; }
   .header-left { font-size: 8.5pt; line-height: 1.5; }
@@ -46,7 +47,23 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
   .council-box { border: 1.5px solid #1e40af; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; background: #f8faff; }
   .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
   .footer { text-align: center; font-size: 7pt; color: #9ca3af; margin-top: 8px; border-top: 1px solid #e5e7eb; padding-top: 4px; }
-</style></head><body>
+  /* Mise en page compacte (plus de 11 matières) */
+  .dense { font-size: 8.5pt; padding-top: 6mm; }
+  .dense td { padding: 1.5px 4px; }
+  .dense th { padding: 3px 4px; }
+  .dense .student-box { padding: 4px 8px; margin-bottom: 5px; }
+  .dense .result-cell { padding: 3px 4px; }
+  .dense .signatures > div { min-height: 60px !important; }
+  
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, .keep { break-inside: avoid; page-break-inside: avoid; }
+  p { orphans: 3; widows: 3; }
+  .scale-legend { font-size: 6.3pt; line-height: 1.5; color: #64748b; margin: 3px 0 6px; }
+  .scale-legend b { color: #334155; font-weight: 700; }
+  .hand-lines { min-height: 15mm; background-image: repeating-linear-gradient(transparent 0, transparent 6.3mm, #cbd5e1 6.3mm, #cbd5e1 6.6mm); }
+</style></head><body><div class="page">
 
   
       <div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:7pt;line-height:1.45;border-bottom:1px solid #bfdbfe;padding-bottom:5px;margin-bottom:6px;">
@@ -77,13 +94,13 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
 
   <div class="bulletin-title">Bulletin Scolaire — Trimestre 1</div>
 
-  <div class="student-box">
+  <div class="student-box keep">
     <div class="student-fields">
       <div class="info-row"><div class="info-label">Nom</div><div class="info-value">MENSAH</div></div>
       <div class="info-row"><div class="info-label">Prénom</div><div class="info-value">Koffi</div></div>
       <div class="info-row"><div class="info-label">Classe</div><div class="info-value">6ème A</div></div>
       <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">3 élèves</div></div>
-      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">1 / 2</div></div>
+      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">1er / 2</div></div>
       <div class="info-row"><div class="info-label">Trimestre</div><div class="info-value">Trimestre 1</div></div>
       <div class="info-row"><div class="info-label">Date de naissance</div><div class="info-value">02/04/2013</div></div>
       <div class="info-row"><div class="info-label">Absences</div><div class="info-value" style="color:#374151;">2 abs. · 1 ret. · 2 injust.</div></div>
@@ -110,7 +127,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
     <tbody>
       
         <tr>
-          <td class="subj-name">Maths &amp; <b>Physique</b><br>
+          <td class="subj-name">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;<br>
             <span style="font-size:6.5pt;color:#94a3b8;font-weight:400;">M. Kodjo</span></td>
           <td class="center">4</td>
           <td class="center sub-note">14.00</td>
@@ -141,23 +158,26 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
       <tr style="background:#1e3a5f !important;">
         <td colspan="6" style="font-weight:bold;color:white;font-size:9pt;">TOTAL GÉNÉRAL</td>
         <td class="center" style="font-weight:bold;color:white;font-size:11pt;">13.29/20</td>
+        <td class="center" style="color:white;font-size:8pt;">10.93</td>
         <td class="center" style="color:white;font-size:8.5pt;">93.00</td>
-        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff.: 7</td>
+        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff. total : 7</td>
         <td></td>
       </tr>
     </tbody>
   </table>
 
-  <div class="results-band">
+  <div class="results-band keep">
     <div class="result-cell"><div class="result-label">Moy. générale</div><div class="result-value">13.29<span style="font-size:8pt;">/20</span></div></div>
-    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">10.93</div></div>
-    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">1<span style="font-size:8pt;">/2</span></div></div>
+    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">10.93</div><div style="font-size:6pt;color:#94a3b8;">max 13.29 · min 8.57</div></div>
+    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">1er<span style="font-size:8pt;">/2</span></div></div>
     <div class="result-cell"><div class="result-label">Mention</div><div class="result-value" style="font-size:9.5pt;color:#8b5cf6;">Encouragements</div></div>
     <div class="result-cell"><div class="result-label">Décision</div><div class="result-value" style="font-size:9.5pt;color:#059669;">ADMIS(E)</div></div>
     <div class="result-cell" style="background:#f8fafc"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:#374151;">2<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">1 retard</div></div>
   </div>
 
-  <div class="council-box">
+  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+
+  <div class="council-box keep">
     <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
     <div style="font-family:'Brush Script MT',cursive;font-size:12pt;color:#1e3a5f;min-height:22px;border-bottom:1px solid #cbd5e1;padding-bottom:3px;">
       Trimestre sérieux.
@@ -167,7 +187,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
 
   <div class="signatures">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -178,7 +198,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -189,7 +209,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -201,7 +221,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
 
   <div class="footer">Collège Test — Bulletin officiel — 2025-2026 — Trimestre 1</div>
 
-</body></html>"
+</div></body></html>"
 `;
 
 exports[`rendu des bulletins (instantané) > model1 : impression de toute la classe 1`] = `
@@ -211,9 +231,10 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
   * { box-sizing: border-box; margin: 0; padding: 0; }
   /* @page margin:0 masque l'URL et le titre du navigateur lors de l'impression */
   @page { size: A4 portrait; margin: 0; }
-  body { font-family: 'Times New Roman', serif; font-size: 9.5pt; color: #111; background: #fff;
-         padding: 9mm 10mm 6mm; width: 210mm; min-height: 297mm; }
-  @media print { body { padding: 9mm 10mm 6mm; } }
+  body { font-family: 'Times New Roman', serif; font-size: 9.5pt; color: #111; background: #fff; }
+  /* Les marges sont portées par la page (et non par le body) : en impression de classe, seul le contenu du
+     body de chaque bulletin est repris, et les marges doivent rester. */
+  .page { width: 210mm; min-height: 297mm; padding: 9mm 10mm 6mm; }
   .header { display: flex; justify-content: space-between; align-items: center;
             border-bottom: 3px double #1e40af; padding-bottom: 7px; margin-bottom: 8px; gap: 8px; }
   .header-left { font-size: 8.5pt; line-height: 1.5; }
@@ -250,8 +271,24 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
   .council-box { border: 1.5px solid #1e40af; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; background: #f8faff; }
   .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
   .footer { text-align: center; font-size: 7pt; color: #9ca3af; margin-top: 8px; border-top: 1px solid #e5e7eb; padding-top: 4px; }
+  /* Mise en page compacte (plus de 11 matières) */
+  .dense { font-size: 8.5pt; padding-top: 6mm; }
+  .dense td { padding: 1.5px 4px; }
+  .dense th { padding: 3px 4px; }
+  .dense .student-box { padding: 4px 8px; margin-bottom: 5px; }
+  .dense .result-cell { padding: 3px 4px; }
+  .dense .signatures > div { min-height: 60px !important; }
+  
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, .keep { break-inside: avoid; page-break-inside: avoid; }
+  p { orphans: 3; widows: 3; }
+  .scale-legend { font-size: 6.3pt; line-height: 1.5; color: #64748b; margin: 3px 0 6px; }
+  .scale-legend b { color: #334155; font-weight: 700; }
+  .hand-lines { min-height: 15mm; background-image: repeating-linear-gradient(transparent 0, transparent 6.3mm, #cbd5e1 6.3mm, #cbd5e1 6.6mm); }
  @page{size:A4 portrait;margin:0;} body{padding:0;} div[style*="page-break"]:last-child{page-break-after:auto!important;}</style>
-</head><body><div style="page-break-after:always;">
+</head><body><div style="page-break-after:always;"><div class="page">
 
   
       <div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:7pt;line-height:1.45;border-bottom:1px solid #bfdbfe;padding-bottom:5px;margin-bottom:6px;">
@@ -282,13 +319,13 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
   <div class="bulletin-title">Bulletin Scolaire — Trimestre 1</div>
 
-  <div class="student-box">
+  <div class="student-box keep">
     <div class="student-fields">
       <div class="info-row"><div class="info-label">Nom</div><div class="info-value">MENSAH</div></div>
       <div class="info-row"><div class="info-label">Prénom</div><div class="info-value">Koffi</div></div>
       <div class="info-row"><div class="info-label">Classe</div><div class="info-value">6ème A</div></div>
       <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">3 élèves</div></div>
-      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">1 / 2</div></div>
+      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">1er / 2</div></div>
       <div class="info-row"><div class="info-label">Trimestre</div><div class="info-value">Trimestre 1</div></div>
       <div class="info-row"><div class="info-label">Date de naissance</div><div class="info-value">02/04/2013</div></div>
       <div class="info-row"><div class="info-label">Absences</div><div class="info-value" style="color:#374151;">2 abs. · 1 ret. · 2 injust.</div></div>
@@ -315,7 +352,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
     <tbody>
       
         <tr>
-          <td class="subj-name">Maths &amp; <b>Physique</b><br>
+          <td class="subj-name">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;<br>
             <span style="font-size:6.5pt;color:#94a3b8;font-weight:400;">M. Kodjo</span></td>
           <td class="center">4</td>
           <td class="center sub-note">14.00</td>
@@ -346,23 +383,26 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
       <tr style="background:#1e3a5f !important;">
         <td colspan="6" style="font-weight:bold;color:white;font-size:9pt;">TOTAL GÉNÉRAL</td>
         <td class="center" style="font-weight:bold;color:white;font-size:11pt;">13.29/20</td>
+        <td class="center" style="color:white;font-size:8pt;">10.93</td>
         <td class="center" style="color:white;font-size:8.5pt;">93.00</td>
-        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff.: 7</td>
+        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff. total : 7</td>
         <td></td>
       </tr>
     </tbody>
   </table>
 
-  <div class="results-band">
+  <div class="results-band keep">
     <div class="result-cell"><div class="result-label">Moy. générale</div><div class="result-value">13.29<span style="font-size:8pt;">/20</span></div></div>
-    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">10.93</div></div>
-    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">1<span style="font-size:8pt;">/2</span></div></div>
+    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">10.93</div><div style="font-size:6pt;color:#94a3b8;">max 13.29 · min 8.57</div></div>
+    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">1er<span style="font-size:8pt;">/2</span></div></div>
     <div class="result-cell"><div class="result-label">Mention</div><div class="result-value" style="font-size:9.5pt;color:#8b5cf6;">Encouragements</div></div>
     <div class="result-cell"><div class="result-label">Décision</div><div class="result-value" style="font-size:9.5pt;color:#059669;">ADMIS(E)</div></div>
     <div class="result-cell" style="background:#f8fafc"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:#374151;">2<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">1 retard</div></div>
   </div>
 
-  <div class="council-box">
+  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+
+  <div class="council-box keep">
     <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
     <div style="font-family:'Brush Script MT',cursive;font-size:12pt;color:#1e3a5f;min-height:22px;border-bottom:1px solid #cbd5e1;padding-bottom:3px;">
       M. Kodjo
@@ -372,7 +412,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
   <div class="signatures">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -383,7 +423,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -394,7 +434,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -406,7 +446,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
   <div class="footer">Collège Test — Bulletin officiel — 2025-2026 — Trimestre 1</div>
 
-</div><div style="page-break-after:always;">
+</div></div><div style="page-break-after:always;"><div class="page">
 
   
       <div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:7pt;line-height:1.45;border-bottom:1px solid #bfdbfe;padding-bottom:5px;margin-bottom:6px;">
@@ -437,13 +477,13 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
   <div class="bulletin-title">Bulletin Scolaire — Trimestre 1</div>
 
-  <div class="student-box">
+  <div class="student-box keep">
     <div class="student-fields">
       <div class="info-row"><div class="info-label">Nom</div><div class="info-value">DOSSOU</div></div>
       <div class="info-row"><div class="info-label">Prénom</div><div class="info-value">Ama</div></div>
       <div class="info-row"><div class="info-label">Classe</div><div class="info-value">6ème A</div></div>
       <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">3 élèves</div></div>
-      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">2 / 2</div></div>
+      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">2e / 2</div></div>
       <div class="info-row"><div class="info-label">Trimestre</div><div class="info-value">Trimestre 1</div></div>
       
       <div class="info-row"><div class="info-label">Absences</div><div class="info-value" style="color:#374151;">1 abs. · 0 ret. · 1 injust.</div></div>
@@ -470,7 +510,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
     <tbody>
       
         <tr>
-          <td class="subj-name">Maths &amp; <b>Physique</b><br>
+          <td class="subj-name">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;<br>
             <span style="font-size:6.5pt;color:#94a3b8;font-weight:400;">M. Kodjo</span></td>
           <td class="center">4</td>
           <td class="center sub-note">—</td>
@@ -501,23 +541,26 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
       <tr style="background:#1e3a5f !important;">
         <td colspan="6" style="font-weight:bold;color:white;font-size:9pt;">TOTAL GÉNÉRAL</td>
         <td class="center" style="font-weight:bold;color:white;font-size:11pt;">8.57/20</td>
+        <td class="center" style="color:white;font-size:8pt;">10.93</td>
         <td class="center" style="color:white;font-size:8.5pt;">60.00</td>
-        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff.: 7</td>
+        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff. total : 7</td>
         <td></td>
       </tr>
     </tbody>
   </table>
 
-  <div class="results-band">
+  <div class="results-band keep">
     <div class="result-cell"><div class="result-label">Moy. générale</div><div class="result-value">8.57<span style="font-size:8pt;">/20</span></div></div>
-    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">10.93</div></div>
-    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">2<span style="font-size:8pt;">/2</span></div></div>
+    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">10.93</div><div style="font-size:6pt;color:#94a3b8;">max 13.29 · min 8.57</div></div>
+    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">2e<span style="font-size:8pt;">/2</span></div></div>
     <div class="result-cell"><div class="result-label">Mention</div><div class="result-value" style="font-size:9.5pt;color:#ef4444;">Insuffisant</div></div>
     <div class="result-cell"><div class="result-label">Décision</div><div class="result-value" style="font-size:9.5pt;color:#d97706;">À SUIVRE</div></div>
     <div class="result-cell" style="background:#f8fafc"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:#374151;">1<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">0 retard</div></div>
   </div>
 
-  <div class="council-box">
+  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+
+  <div class="council-box keep">
     <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
     <div style="font-family:'Brush Script MT',cursive;font-size:12pt;color:#1e3a5f;min-height:22px;border-bottom:1px solid #cbd5e1;padding-bottom:3px;">
       M. Kodjo
@@ -527,7 +570,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
   <div class="signatures">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -538,7 +581,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -549,7 +592,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -561,7 +604,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
   <div class="footer">Collège Test — Bulletin officiel — 2025-2026 — Trimestre 1</div>
 
-</div><div style="page-break-after:always;">
+</div></div><div style="page-break-after:always;"><div class="page">
 
   
       <div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:7pt;line-height:1.45;border-bottom:1px solid #bfdbfe;padding-bottom:5px;margin-bottom:6px;">
@@ -592,7 +635,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
   <div class="bulletin-title">Bulletin Scolaire — Trimestre 1</div>
 
-  <div class="student-box">
+  <div class="student-box keep">
     <div class="student-fields">
       <div class="info-row"><div class="info-label">Nom</div><div class="info-value">AGBO</div></div>
       <div class="info-row"><div class="info-label">Prénom</div><div class="info-value">Yao</div></div>
@@ -627,23 +670,26 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
       <tr style="background:#1e3a5f !important;">
         <td colspan="6" style="font-weight:bold;color:white;font-size:9pt;">TOTAL GÉNÉRAL</td>
         <td class="center" style="font-weight:bold;color:white;font-size:11pt;">0.00/20</td>
+        <td class="center" style="color:white;font-size:8pt;">10.93</td>
         <td class="center" style="color:white;font-size:8.5pt;">0.00</td>
-        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff.: 0</td>
+        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff. total : 0</td>
         <td></td>
       </tr>
     </tbody>
   </table>
 
-  <div class="results-band">
+  <div class="results-band keep">
     <div class="result-cell"><div class="result-label">Moy. générale</div><div class="result-value">0.00<span style="font-size:8pt;">/20</span></div></div>
-    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">10.93</div></div>
+    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">10.93</div><div style="font-size:6pt;color:#94a3b8;">max 13.29 · min 8.57</div></div>
     <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">-<span style="font-size:8pt;">/2</span></div></div>
     <div class="result-cell"><div class="result-label">Mention</div><div class="result-value" style="font-size:9.5pt;color:#ef4444;">Insuffisant</div></div>
     <div class="result-cell"><div class="result-label">Décision</div><div class="result-value" style="font-size:9.5pt;color:#dc2626;">EN DIFFICULTÉ</div></div>
     <div class="result-cell" style="background:#f8fafc"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:#374151;">0<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">0 retard</div></div>
   </div>
 
-  <div class="council-box">
+  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+
+  <div class="council-box keep">
     <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
     <div style="font-family:'Brush Script MT',cursive;font-size:12pt;color:#1e3a5f;min-height:22px;border-bottom:1px solid #cbd5e1;padding-bottom:3px;">
       M. Kodjo
@@ -653,7 +699,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
   <div class="signatures">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -664,7 +710,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -675,7 +721,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -687,7 +733,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
 
   <div class="footer">Collège Test — Bulletin officiel — 2025-2026 — Trimestre 1</div>
 
-</div></body></html>"
+</div></div></body></html>"
 `;
 
 exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`] = `
@@ -700,7 +746,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
   .page { width: 210mm; min-height: 297mm; background: white; padding: 0 0 8mm; }
   @media print { .page { padding-bottom: 0; } }
   .official-top { font-size: 6.5pt; padding: 4px 20px; border-bottom: 1px solid #bfdbfe; display: flex; justify-content: space-between; color: #374151; }
-  .top-banner { background: linear-gradient(135deg,#1e40af 0%,#3b82f6 50%,#06b6d4 100%); color:white; padding: 14px 20px 12px; }
+  .top-banner { background: linear-gradient(135deg,#1e40af 0%,#3b82f6 50%,#06b6d4 100%); color:white; padding: 14px 20px 26px; }
   .top-row { display: flex; justify-content: space-between; align-items: center; }
   .school-name { font-size: 15pt; font-weight: 700; letter-spacing: .5px; }
   .school-sub  { font-size: 8pt; opacity: .85; margin-top: 1px; }
@@ -721,7 +767,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
   .section { margin: 0 16px 10px; }
   .section-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; margin-bottom: 7px; }
   .grade-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
-  .grade-left { width: 150px; display: flex; align-items: flex-start; gap: 5px; flex-shrink: 0; }
+  .grade-left { width: 130px; display: flex; align-items: flex-start; gap: 5px; flex-shrink: 0; }
   .grade-subject { font-weight: 600; font-size: 9pt; }
   .grade-coef { font-size: 7.5pt; color: #94a3b8; }
   .grade-bar-wrap { flex: 1; height: 9px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
@@ -736,6 +782,27 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
   .cstat-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; }
   .sigs { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0 16px 12px; }
   .footer { background: #f1f5f9; padding: 6px 16px; font-size: 7pt; color: #94a3b8; display: flex; justify-content: space-between; }
+  .legend-wrap { margin: 0 16px 8px; }
+  /* Mise en page compacte (plus de 11 matières) */
+  .dense .grade-row { padding: 1px 0; gap: 6px; }
+  .dense .section-title { margin-bottom: 3px; }
+  .dense .top-banner { padding: 8px 20px 22px; }
+  .dense .student-card { padding: 5px 14px; }
+  .dense .mention-bar { margin: 6px 16px 5px; padding: 4px 14px; }
+  .dense .class-stats { margin-bottom: 5px; }
+  .dense .cstat { padding: 3px; }
+  .dense .section, .dense .graph-section { margin-bottom: 5px; }
+  .dense .sigs > div { min-height: 50px !important; }
+  .dense .hand-lines { min-height: 9mm; }
+  
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, .keep { break-inside: avoid; page-break-inside: avoid; }
+  p { orphans: 3; widows: 3; }
+  .scale-legend { font-size: 6.3pt; line-height: 1.5; color: #64748b; margin: 3px 0 6px; }
+  .scale-legend b { color: #334155; font-weight: 700; }
+  .hand-lines { min-height: 15mm; background-image: repeating-linear-gradient(transparent 0, transparent 6.3mm, #cbd5e1 6.3mm, #cbd5e1 6.6mm); }
 </style></head><body><div class="page">
 
   <div class="official-top">
@@ -767,7 +834,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
     </div>
     <div class="student-stats">
       <div class="stat-pill"><div class="stat-val">13.29</div><div class="stat-lbl">Moyenne</div></div>
-      <div class="stat-pill"><div class="stat-val">1</div><div class="stat-lbl">Rang</div></div>
+      <div class="stat-pill"><div class="stat-val">1er</div><div class="stat-lbl">Rang / 2</div></div>
       <img src="data:image/gif;base64,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" width="80" height="80" alt="QR" style="display:block;image-rendering:pixelated;">
     </div>
   </div>
@@ -785,22 +852,22 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
     <div class="cstat"><div class="cstat-val">13.29</div><div class="cstat-lbl">Meilleure</div></div>
     <div class="cstat"><div class="cstat-val">8.57</div><div class="cstat-lbl">Plus basse</div></div>
     <div class="cstat"><div class="cstat-val">7</div><div class="cstat-lbl">Total coeff.</div></div>
-    <div class="cstat" style="background:#f8fafc;"><div class="cstat-val" style="color:#1e40af;">2</div><div class="cstat-lbl">Absences</div></div>
+    <div class="cstat" style="background:#f8fafc;"><div class="cstat-val" style="color:#1e40af;">2</div><div class="cstat-lbl">Absences (dont 2 injust.)</div></div>
     <div class="cstat"><div class="cstat-val" style="color:#d97706;">1</div><div class="cstat-lbl">Retards</div></div>
   </div>
 
   <div class="section">
     <div class="section-title">Résultats par matière</div>
     
-        <div class="grade-row">
+        <div class="grade-row keep">
           <div class="grade-left">
             <div>
-              <span class="grade-subject">Maths &amp; <b>Physique</b></span>
+              <span class="grade-subject">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;</span>
               <span class="grade-coef">×4</span>
               <div style="font-size:6.5pt;color:#94a3b8;margin-top:1px;">M. Kodjo</div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:7pt;color:#64748b;width:120px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:3px;font-size:7pt;color:#64748b;width:158px;flex-shrink:0;white-space:nowrap;">
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:14.00</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:15.00</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:16.00</span>
@@ -819,7 +886,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
           </div>
           <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;">Bon travail</div>
         </div>
-        <div class="grade-row">
+        <div class="grade-row keep">
           <div class="grade-left">
             <div>
               <span class="grade-subject">Français</span>
@@ -827,7 +894,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
               
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:7pt;color:#64748b;width:120px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:3px;font-size:7pt;color:#64748b;width:158px;flex-shrink:0;white-space:nowrap;">
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:—</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:—</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:—</span>
@@ -845,6 +912,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
           </div>
           <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;"></div>
         </div>
+    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
   </div>
 
   
@@ -852,7 +920,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
     
     <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:8px 12px;">
       <div style="font-size:7.5pt;font-weight:800;color:#166534;text-transform:uppercase;margin-bottom:5px;">💪 Points forts</div>
-      <div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #bbf7d0;"><span style="font-weight:600;color:#166534;">Maths &amp; <b>Physique</b></span><span style="font-weight:800;color:#059669;">15.00</span></div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #bbf7d0;"><span style="font-weight:600;color:#166534;">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;</span><span style="font-weight:800;color:#059669;">15.00</span></div>
     </div>
     
     <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;">
@@ -861,15 +929,14 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
     </div>
   </div>
 
-  
-  <div style="margin:0 16px 10px;border:1.5px solid #3b82f6;border-radius:8px;padding:8px 14px;background:#eff6ff;">
+  <div class="keep" style="margin:0 16px 10px;border:1.5px solid #3b82f6;border-radius:8px;padding:8px 14px;background:#eff6ff;">
     <div style="font-size:7.5pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe</div>
     <div style="font-size:10pt;color:#1e3a5f;">Trimestre sérieux.</div>
   </div>
 
   <div class="sigs">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -880,7 +947,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -891,7 +958,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -919,7 +986,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
   .page { width: 210mm; min-height: 297mm; background: white; padding: 0 0 8mm; }
   @media print { .page { padding-bottom: 0; } }
   .official-top { font-size: 6.5pt; padding: 4px 20px; border-bottom: 1px solid #bfdbfe; display: flex; justify-content: space-between; color: #374151; }
-  .top-banner { background: linear-gradient(135deg,#1e40af 0%,#3b82f6 50%,#06b6d4 100%); color:white; padding: 14px 20px 12px; }
+  .top-banner { background: linear-gradient(135deg,#1e40af 0%,#3b82f6 50%,#06b6d4 100%); color:white; padding: 14px 20px 26px; }
   .top-row { display: flex; justify-content: space-between; align-items: center; }
   .school-name { font-size: 15pt; font-weight: 700; letter-spacing: .5px; }
   .school-sub  { font-size: 8pt; opacity: .85; margin-top: 1px; }
@@ -940,7 +1007,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
   .section { margin: 0 16px 10px; }
   .section-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; margin-bottom: 7px; }
   .grade-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
-  .grade-left { width: 150px; display: flex; align-items: flex-start; gap: 5px; flex-shrink: 0; }
+  .grade-left { width: 130px; display: flex; align-items: flex-start; gap: 5px; flex-shrink: 0; }
   .grade-subject { font-weight: 600; font-size: 9pt; }
   .grade-coef { font-size: 7.5pt; color: #94a3b8; }
   .grade-bar-wrap { flex: 1; height: 9px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
@@ -955,6 +1022,27 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
   .cstat-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; }
   .sigs { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0 16px 12px; }
   .footer { background: #f1f5f9; padding: 6px 16px; font-size: 7pt; color: #94a3b8; display: flex; justify-content: space-between; }
+  .legend-wrap { margin: 0 16px 8px; }
+  /* Mise en page compacte (plus de 11 matières) */
+  .dense .grade-row { padding: 1px 0; gap: 6px; }
+  .dense .section-title { margin-bottom: 3px; }
+  .dense .top-banner { padding: 8px 20px 22px; }
+  .dense .student-card { padding: 5px 14px; }
+  .dense .mention-bar { margin: 6px 16px 5px; padding: 4px 14px; }
+  .dense .class-stats { margin-bottom: 5px; }
+  .dense .cstat { padding: 3px; }
+  .dense .section, .dense .graph-section { margin-bottom: 5px; }
+  .dense .sigs > div { min-height: 50px !important; }
+  .dense .hand-lines { min-height: 9mm; }
+  
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, .keep { break-inside: avoid; page-break-inside: avoid; }
+  p { orphans: 3; widows: 3; }
+  .scale-legend { font-size: 6.3pt; line-height: 1.5; color: #64748b; margin: 3px 0 6px; }
+  .scale-legend b { color: #334155; font-weight: 700; }
+  .hand-lines { min-height: 15mm; background-image: repeating-linear-gradient(transparent 0, transparent 6.3mm, #cbd5e1 6.3mm, #cbd5e1 6.6mm); }
  @page{size:A4 portrait;margin:0;} body{padding:0;} div[style*="page-break"]:last-child{page-break-after:auto!important;}</style>
 </head><body><div style="page-break-after:always;"><div class="page">
 
@@ -987,7 +1075,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
     </div>
     <div class="student-stats">
       <div class="stat-pill"><div class="stat-val">13.29</div><div class="stat-lbl">Moyenne</div></div>
-      <div class="stat-pill"><div class="stat-val">1</div><div class="stat-lbl">Rang</div></div>
+      <div class="stat-pill"><div class="stat-val">1er</div><div class="stat-lbl">Rang / 2</div></div>
       <img src="data:image/gif;base64,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" width="80" height="80" alt="QR" style="display:block;image-rendering:pixelated;">
     </div>
   </div>
@@ -1005,22 +1093,22 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
     <div class="cstat"><div class="cstat-val">13.29</div><div class="cstat-lbl">Meilleure</div></div>
     <div class="cstat"><div class="cstat-val">8.57</div><div class="cstat-lbl">Plus basse</div></div>
     <div class="cstat"><div class="cstat-val">7</div><div class="cstat-lbl">Total coeff.</div></div>
-    <div class="cstat" style="background:#f8fafc;"><div class="cstat-val" style="color:#1e40af;">2</div><div class="cstat-lbl">Absences</div></div>
+    <div class="cstat" style="background:#f8fafc;"><div class="cstat-val" style="color:#1e40af;">2</div><div class="cstat-lbl">Absences (dont 2 injust.)</div></div>
     <div class="cstat"><div class="cstat-val" style="color:#d97706;">1</div><div class="cstat-lbl">Retards</div></div>
   </div>
 
   <div class="section">
     <div class="section-title">Résultats par matière</div>
     
-        <div class="grade-row">
+        <div class="grade-row keep">
           <div class="grade-left">
             <div>
-              <span class="grade-subject">Maths &amp; <b>Physique</b></span>
+              <span class="grade-subject">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;</span>
               <span class="grade-coef">×4</span>
               <div style="font-size:6.5pt;color:#94a3b8;margin-top:1px;">M. Kodjo</div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:7pt;color:#64748b;width:120px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:3px;font-size:7pt;color:#64748b;width:158px;flex-shrink:0;white-space:nowrap;">
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:14.00</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:15.00</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:16.00</span>
@@ -1039,7 +1127,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
           </div>
           <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;">Bon travail</div>
         </div>
-        <div class="grade-row">
+        <div class="grade-row keep">
           <div class="grade-left">
             <div>
               <span class="grade-subject">Français</span>
@@ -1047,7 +1135,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
               
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:7pt;color:#64748b;width:120px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:3px;font-size:7pt;color:#64748b;width:158px;flex-shrink:0;white-space:nowrap;">
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:—</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:—</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:—</span>
@@ -1065,6 +1153,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
           </div>
           <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;"></div>
         </div>
+    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
   </div>
 
   
@@ -1072,7 +1161,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
     
     <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:8px 12px;">
       <div style="font-size:7.5pt;font-weight:800;color:#166534;text-transform:uppercase;margin-bottom:5px;">💪 Points forts</div>
-      <div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #bbf7d0;"><span style="font-weight:600;color:#166534;">Maths &amp; <b>Physique</b></span><span style="font-weight:800;color:#059669;">15.00</span></div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #bbf7d0;"><span style="font-weight:600;color:#166534;">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;</span><span style="font-weight:800;color:#059669;">15.00</span></div>
     </div>
     
     <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;">
@@ -1081,11 +1170,14 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
     </div>
   </div>
 
-  
+  <div class="keep" style="margin:0 16px 10px;border:1.5px solid #3b82f6;border-radius:8px;padding:8px 14px;background:#eff6ff;">
+    <div style="font-size:7.5pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe</div>
+    <div class="hand-lines"></div>
+  </div>
 
   <div class="sigs">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1096,7 +1188,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1107,7 +1199,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1153,7 +1245,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
     </div>
     <div class="student-stats">
       <div class="stat-pill"><div class="stat-val">8.57</div><div class="stat-lbl">Moyenne</div></div>
-      <div class="stat-pill"><div class="stat-val">2</div><div class="stat-lbl">Rang</div></div>
+      <div class="stat-pill"><div class="stat-val">2e</div><div class="stat-lbl">Rang / 2</div></div>
       <img src="data:image/gif;base64,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" width="80" height="80" alt="QR" style="display:block;image-rendering:pixelated;">
     </div>
   </div>
@@ -1171,22 +1263,22 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
     <div class="cstat"><div class="cstat-val">13.29</div><div class="cstat-lbl">Meilleure</div></div>
     <div class="cstat"><div class="cstat-val">8.57</div><div class="cstat-lbl">Plus basse</div></div>
     <div class="cstat"><div class="cstat-val">7</div><div class="cstat-lbl">Total coeff.</div></div>
-    <div class="cstat" style="background:#f8fafc;"><div class="cstat-val" style="color:#1e40af;">1</div><div class="cstat-lbl">Absences</div></div>
+    <div class="cstat" style="background:#f8fafc;"><div class="cstat-val" style="color:#1e40af;">1</div><div class="cstat-lbl">Absences (dont 1 injust.)</div></div>
     <div class="cstat"><div class="cstat-val" style="color:#d97706;">0</div><div class="cstat-lbl">Retards</div></div>
   </div>
 
   <div class="section">
     <div class="section-title">Résultats par matière</div>
     
-        <div class="grade-row">
+        <div class="grade-row keep">
           <div class="grade-left">
             <div>
-              <span class="grade-subject">Maths &amp; <b>Physique</b></span>
+              <span class="grade-subject">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;</span>
               <span class="grade-coef">×4</span>
               <div style="font-size:6.5pt;color:#94a3b8;margin-top:1px;">M. Kodjo</div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:7pt;color:#64748b;width:120px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:3px;font-size:7pt;color:#64748b;width:158px;flex-shrink:0;white-space:nowrap;">
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:—</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:—</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:—</span>
@@ -1205,7 +1297,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
           </div>
           <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;"></div>
         </div>
-        <div class="grade-row">
+        <div class="grade-row keep">
           <div class="grade-left">
             <div>
               <span class="grade-subject">Français</span>
@@ -1213,7 +1305,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
               
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:7pt;color:#64748b;width:120px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:3px;font-size:7pt;color:#64748b;width:158px;flex-shrink:0;white-space:nowrap;">
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:—</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:—</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:—</span>
@@ -1231,6 +1323,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
           </div>
           <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;"></div>
         </div>
+    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
   </div>
 
   
@@ -1238,7 +1331,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
     
     <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:8px 12px;">
       <div style="font-size:7.5pt;font-weight:800;color:#166534;text-transform:uppercase;margin-bottom:5px;">💪 Points forts</div>
-      <div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #bbf7d0;"><span style="font-weight:600;color:#166534;">Maths &amp; <b>Physique</b></span><span style="font-weight:800;color:#059669;">9.00</span></div>
+      <div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #bbf7d0;"><span style="font-weight:600;color:#166534;">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;</span><span style="font-weight:800;color:#059669;">9.00</span></div>
     </div>
     
     <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;">
@@ -1247,11 +1340,14 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
     </div>
   </div>
 
-  
+  <div class="keep" style="margin:0 16px 10px;border:1.5px solid #3b82f6;border-radius:8px;padding:8px 14px;background:#eff6ff;">
+    <div style="font-size:7.5pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe</div>
+    <div class="hand-lines"></div>
+  </div>
 
   <div class="sigs">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1262,7 +1358,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1273,7 +1369,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1319,7 +1415,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
     </div>
     <div class="student-stats">
       <div class="stat-pill"><div class="stat-val">0.00</div><div class="stat-lbl">Moyenne</div></div>
-      <div class="stat-pill"><div class="stat-val">-</div><div class="stat-lbl">Rang</div></div>
+      <div class="stat-pill"><div class="stat-val">-</div><div class="stat-lbl">Rang / 2</div></div>
       <img src="data:image/gif;base64,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" width="80" height="80" alt="QR" style="display:block;image-rendering:pixelated;">
     </div>
   </div>
@@ -1344,15 +1440,19 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
   <div class="section">
     <div class="section-title">Résultats par matière</div>
     
+    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
   </div>
 
   
 
-  
+  <div class="keep" style="margin:0 16px 10px;border:1.5px solid #3b82f6;border-radius:8px;padding:8px 14px;background:#eff6ff;">
+    <div style="font-size:7.5pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe</div>
+    <div class="hand-lines"></div>
+  </div>
 
   <div class="sigs">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1363,7 +1463,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1374,7 +1474,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1399,50 +1499,69 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4 portrait; margin: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #1e293b; font-size: 9pt; }
-  .page { width: 210mm; background: white; }
+  .page { width: 210mm; background: white; overflow: hidden; }
   .official-top { font-size: 6.5pt; padding: 4px 18px; background: #f8fafc; display: flex; justify-content: space-between; color: #374151; border-bottom: 1px solid #e2e8f0; }
-  .cover { background: linear-gradient(160deg,#0f172a 0%,#1e3a8a 60%,#1e40af 100%); padding: 16px 20px 12px; color: white; position: relative; overflow: hidden; }
+  .cover { background: linear-gradient(160deg,#0f172a 0%,#1e3a8a 60%,#1e40af 100%); padding: 14px 20px 10px; color: white; position: relative; overflow: hidden; }
   .cover::before { content:''; position:absolute; right:-40px; top:-40px; width:180px; height:180px; background:rgba(255,255,255,.04); border-radius:50%; }
   .cover-row { display: flex; justify-content: space-between; align-items: flex-start; }
   .cover-left { flex: 1; }
   .school-name { font-size: 14pt; font-weight: 800; letter-spacing: .5px; margin-bottom: 1px; }
   .school-info { font-size: 7.5pt; opacity: .7; line-height: 1.5; }
   .school-devise-m3 { font-size: 8pt; opacity: .85; font-style: italic; margin-top: 2px; }
-  .cover-badge { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 8px 14px; text-align: center; }
+  .cover-badge { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 6px 14px; text-align: center; }
   .cover-badge-year { font-size: 7.5pt; opacity: .7; }
   .cover-badge-trim { font-size: 11pt; font-weight: 800; margin: 1px 0; }
   .logo-img { width: 50px; height: 50px; object-fit: contain; border-radius: 6px; background: white; padding: 3px; }
-  .student-banner { background: #f8fafc; border-left: 6px solid #2563eb; padding: 9px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .student-banner { background: #f8fafc; border-left: 6px solid #2563eb; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; }
   .student-fullname { font-size: 13pt; font-weight: 800; color: #0f172a; }
   .student-class { font-size: 8.5pt; color: #64748b; margin-top: 1px; }
-  .avg-display { text-align: center; background: #1e40af; color: white; padding: 8px 16px; border-radius: 8px; }
+  .avg-display { text-align: center; background: #1e40af; color: white; padding: 6px 16px; border-radius: 8px; }
   .avg-num { font-size: 18pt; font-weight: 900; line-height: 1; }
   .avg-label { font-size: 7pt; opacity: .8; }
   .kpis { display: grid; grid-template-columns: repeat(6,1fr); border: 1.5px solid #e2e8f0; }
-  .kpi { padding: 7px; text-align: center; border-right: 1px solid #e2e8f0; }
+  .kpi { padding: 6px; text-align: center; border-right: 1px solid #e2e8f0; }
   .kpi:last-child { border-right: none; }
   .kpi-val { font-size: 11pt; font-weight: 800; color: #1e40af; }
   .kpi-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: 1px; }
-  .body-grid { display: grid; grid-template-columns: 3fr 1.5fr; padding: 10px 14px; gap: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  /* minmax(0, …) : la colonne du tableau ne déborde plus sur le panneau de droite, qui n'est plus coupé */
+  .body-grid { display: grid; grid-template-columns: minmax(0, 1fr) 152px; padding: 10px 14px; gap: 10px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.5pt; }
   thead tr { background: #0f172a; color: white; }
-  th { padding: 5px 6px; font-size: 7.5pt; text-align: left; font-weight: 600; }
+  th { padding: 5px 4px; font-size: 7.5pt; text-align: left; font-weight: 600; }
   th.center { text-align: center; }
-  td { padding: 4px 5px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  td { padding: 4px 4px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; overflow-wrap: anywhere; }
   .subj-name { font-weight: 700; }
   .center { text-align: center; }
+  .idc { font-size: 7.5pt; color: #475569; white-space: nowrap; }
+  .bonus-chip { display: inline-block; margin-left: 3px; background: #d1fae5; color: #059669; border-radius: 3px; padding: 0 3px; font-weight: 700; }
   .coef-badge { background: #e0e7ff; color: #3730a3; padding: 1px 5px; border-radius: 8px; font-size: 7.5pt; font-weight: 700; }
   .total-row td { background: #0f172a !important; color: white; font-weight: 700; }
   .side-panel { display: flex; flex-direction: column; gap: 8px; }
-  .panel-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px; }
-  .panel-title { font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #64748b; margin-bottom: 6px; }
-  .mention-box { border-radius: 8px; padding: 9px; text-align: center; }
-  .mention-val { font-size: 12pt; font-weight: 900; }
-  .decision-tag { display:inline-block; padding:2px 10px; border-radius:20px; font-size:7.5pt; font-weight:800; margin-top:5px; }
-  .evol-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px; }
-  .strength-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; font-size: 8pt; }
+  .panel-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 8px; }
+  .panel-title { font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #64748b; margin-bottom: 5px; }
+  .mention-box { border-radius: 8px; padding: 8px; text-align: center; }
+  .mention-val { font-size: 11pt; font-weight: 900; }
+  .decision-tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:7pt; font-weight:800; margin-top:5px; }
+  .evol-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 8px; }
+  .strength-item { display: flex; justify-content: space-between; align-items: center; gap: 4px; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; font-size: 8pt; }
   .sigs { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 0 14px 10px; }
   .footer { background: #0f172a; color: #64748b; padding: 5px 14px; font-size: 6.5pt; display: flex; justify-content: space-between; }
+  /* Mise en page compacte (plus de 11 matières) */
+  .dense td { padding: 2px 4px; }
+  .dense .body-grid { padding-top: 6px; padding-bottom: 6px; }
+  .dense .cover { padding: 8px 20px 6px; }
+  .dense .kpi { padding: 3px; }
+  .dense .sigs > div { min-height: 56px !important; }
+  .dense .hand-lines { min-height: 10mm; }
+  
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, .keep { break-inside: avoid; page-break-inside: avoid; }
+  p { orphans: 3; widows: 3; }
+  .scale-legend { font-size: 6.3pt; line-height: 1.5; color: #64748b; margin: 3px 0 6px; }
+  .scale-legend b { color: #334155; font-weight: 700; }
+  .hand-lines { min-height: 15mm; background-image: repeating-linear-gradient(transparent 0, transparent 6.3mm, #cbd5e1 6.3mm, #cbd5e1 6.6mm); }
 </style></head><body><div class="page">
 
   <div class="official-top">
@@ -1462,7 +1581,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
         <div class="school-info">12 rue des Écoles | +228 90 00 00 00 | contact@test.tg</div>
         <div class="school-devise-m3">"L'excellence avant tout"</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
         <div class="cover-badge">
           <div class="cover-badge-year">2025-2026</div>
           <div class="cover-badge-trim">Trimestre 1</div>
@@ -1473,10 +1592,10 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
     </div>
   </div>
 
-  <div class="student-banner">
+  <div class="student-banner keep">
     <div>
       <div class="student-fullname">Koffi MENSAH</div>
-      <div class="student-class">Classe: <strong>6ème A</strong> &nbsp;·&nbsp; Effectif: <strong>3</strong> &nbsp;·&nbsp; Rang: <strong>1/2</strong> &nbsp;·&nbsp; Né(e) le: <strong>02/04/2013</strong></div>
+      <div class="student-class">Classe: <strong>6ème A</strong> &nbsp;·&nbsp; Effectif: <strong>3</strong> &nbsp;·&nbsp; Rang: <strong>1er/2</strong> &nbsp;·&nbsp; Né(e) le: <strong>02/04/2013</strong></div>
     </div>
     <div class="avg-display">
       <div class="avg-num">13.29</div>
@@ -1484,13 +1603,13 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
     </div>
   </div>
 
-  <div class="kpis">
+  <div class="kpis keep">
     <div class="kpi"><div class="kpi-val">10.93</div><div class="kpi-lbl">Moy. classe</div></div>
     <div class="kpi"><div class="kpi-val">13.29</div><div class="kpi-lbl">Max classe</div></div>
     <div class="kpi"><div class="kpi-val">8.57</div><div class="kpi-lbl">Min classe</div></div>
     <div class="kpi"><div class="kpi-val">7</div><div class="kpi-lbl">Coeff. total</div></div>
     <div class="kpi"><div class="kpi-val">93.0</div><div class="kpi-lbl">Total pts</div></div>
-    <div class="kpi" style="background:inherit;"><div class="kpi-val" style="color:#1e40af;">2</div><div class="kpi-lbl">Absences</div><div style="font-size:6pt;color:#94a3b8;">1 ret.</div></div>
+    <div class="kpi" style="background:inherit;"><div class="kpi-val" style="color:#1e40af;">2</div><div class="kpi-lbl">Absences</div><div style="font-size:6pt;color:#94a3b8;">1 ret. · 2 injust.</div></div>
   </div>
 
   <div class="body-grid">
@@ -1498,64 +1617,50 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
       <table>
         <thead><tr>
           <th>Matière / Prof.</th>
-          <th class="center" style="width:32px;">Coef.</th>
-          <th class="center" style="width:110px;">I / D / C / Bonus</th>
-          <th style="width:120px;">Note /20</th>
-          <th class="center" style="width:46px;">Moy.cl.</th>
-          <th style="width:52px;">Niveau</th>
+          <th class="center" style="width:30px;">Coef.</th>
+          <th class="center" style="width:84px;">I · D · C</th>
+          <th style="width:98px;">Note /20</th>
+          <th class="center" style="width:38px;">Moy.cl.</th>
+          <th style="width:66px;">Niveau</th>
           <th>Appréciation</th>
-          <th class="center" style="width:68px;">Signature</th>
+          <th class="center" style="width:50px;">Signature</th>
         </tr></thead>
         <tbody>
           
         <tr>
-          <td class="subj-name">Maths &amp; <b>Physique</b><br><span style="font-size:6.5pt;color:#94a3b8;">M. Kodjo</span></td>
+          <td class="subj-name">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;<br><span style="font-size:6.5pt;color:#94a3b8;font-weight:400;">M. Kodjo</span></td>
           <td class="center"><span class="coef-badge">4</span></td>
-          <td class="center" style="font-size:7.5pt;color:#64748b;">
-            <div style="display:flex;gap:2px;justify-content:center;flex-wrap:wrap;">
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:14.00</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:15.00</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:16.00</span>
-              <span style="background:#d1fae5;border-radius:3px;padding:1px 4px;color:#059669;font-weight:700;">B:—</span>
-            </div>
-          </td>
+          <td class="center idc">14 · 15 · 16</td>
           <td class="center">
-            <div style="display:flex;align-items:center;gap:5px;">
-              <div style="flex:1;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
                 <div style="width:75%;height:100%;background:#059669;border-radius:3px;"></div>
               </div>
-              <span style="color:#059669;font-weight:800;font-size:10.5pt;min-width:34px;">15.00</span>
+              <span style="color:#059669;font-weight:800;font-size:10pt;min-width:32px;text-align:right;">15.00</span>
             </div>
           </td>
           <td class="center" style="font-size:7.5pt;color:#64748b;">12.00</td>
-          <td><span style="color:#059669;font-size:7.5pt;font-style:italic;">Bien</span></td>
+          <td style="overflow-wrap:normal;"><span style="color:#059669;font-size:7.5pt;font-style:italic;font-weight:600;">Bien</span></td>
           <td style="font-size:7pt;color:#475569;font-style:italic;">Bon travail</td>
           <td class="center" style="font-size:7.5pt;">
-            <div style="font-family:'Brush Script MT',cursive;font-size:8.5pt;color:#1e3a5f;">M. Kodjo</div>
+            <div style="font-family:'Brush Script MT',cursive;font-size:8pt;color:#1e3a5f;line-height:1.1;">M. Kodjo</div>
              <div style="font-size:5.5pt;color:#2563eb;">✓ Signé</div>
           </td>
         </tr>
         <tr>
-          <td class="subj-name">Français<br><span style="font-size:6.5pt;color:#94a3b8;"></span></td>
+          <td class="subj-name">Français<br><span style="font-size:6.5pt;color:#94a3b8;font-weight:400;"></span></td>
           <td class="center"><span class="coef-badge">3</span></td>
-          <td class="center" style="font-size:7.5pt;color:#64748b;">
-            <div style="display:flex;gap:2px;justify-content:center;flex-wrap:wrap;">
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:—</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:—</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:—</span>
-              <span style="background:#d1fae5;border-radius:3px;padding:1px 4px;color:#059669;font-weight:700;">B:—</span>
-            </div>
-          </td>
+          <td class="center idc">— · — · —</td>
           <td class="center">
-            <div style="display:flex;align-items:center;gap:5px;">
-              <div style="flex:1;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
                 <div style="width:55.00000000000001%;height:100%;background:#2563eb;border-radius:3px;"></div>
               </div>
-              <span style="color:#2563eb;font-weight:800;font-size:10.5pt;min-width:34px;">11.00</span>
+              <span style="color:#2563eb;font-weight:800;font-size:10pt;min-width:32px;text-align:right;">11.00</span>
             </div>
           </td>
           <td class="center" style="font-size:7.5pt;color:#64748b;">9.50</td>
-          <td><span style="color:#2563eb;font-size:7.5pt;font-style:italic;">Passable</span></td>
+          <td style="overflow-wrap:normal;"><span style="color:#2563eb;font-size:7.5pt;font-style:italic;font-weight:600;">Passable</span></td>
           <td style="font-size:7pt;color:#475569;font-style:italic;"></td>
           <td class="center" style="font-size:7.5pt;">
             <span style="color:#d1d5db;">—</span>
@@ -1564,50 +1669,50 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
           <tr class="total-row">
             <td>MOYENNE GÉNÉRALE</td>
             <td class="center">7</td><td></td>
-            <td><strong style="font-size:11pt;">13.29/20</strong></td>
+            <td><strong style="font-size:10.5pt;">13.29/20</strong></td>
             <td class="center">10.93</td>
-            <td>Encouragements</td><td></td><td></td>
+            <td colspan="3">Encouragements</td>
           </tr>
         </tbody>
       </table>
-      
-      <div style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
+      <div class="scale-legend keep">I = interrogation · D = devoir · C = composition · le bonus éventuel s'ajoute à la note (plafonnée à 20)</div>
+      <div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+      <div class="keep" style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
         <div style="font-size:7pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">Appréciation du conseil de classe</div>
         <div style="font-size:9.5pt;color:#1e3a5f;">Trimestre sérieux.</div>
       </div>
     </div>
 
     <div class="side-panel">
-      <div class="mention-box" style="background:linear-gradient(135deg,#8b5cf615,#8b5cf608);border:2px solid #8b5cf6;">
+      <div class="mention-box keep" style="background:linear-gradient(135deg,#8b5cf615,#8b5cf608);border:2px solid #8b5cf6;">
         <div style="font-size:7pt;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:3px;">Mention</div>
         <div class="mention-val" style="color:#8b5cf6;">Encouragements</div>
         <div class="decision-tag" style="background:#05966918;color:#059669;border:1.5px solid #059669;">ADMIS(E)</div>
       </div>
-      <div class="evol-box">
-        <div class="panel-title">📈 Évolution des moyennes</div>
+      <div class="evol-box keep">
+        <div class="panel-title">📈 Évolution</div>
         
-      <svg width="270" height="75" viewBox="0 0 270 75">
-        <line x1="28" y1="60" x2="260" y2="60" stroke="#f1f5f9" stroke-width="1"></line>
-          <text x="22" y="64" text-anchor="end" font-size="6.5" fill="#94a3b8">0</text><line x1="28" y1="35" x2="260" y2="35" stroke="#f1f5f9" stroke-width="1"></line>
-          <text x="22" y="39" text-anchor="end" font-size="6.5" fill="#94a3b8">10</text><line x1="28" y1="10" x2="260" y2="10" stroke="#f1f5f9" stroke-width="1"></line>
-          <text x="22" y="14" text-anchor="end" font-size="6.5" fill="#94a3b8">20</text>
-        <polyline points="28,26.775 143,28.574999999999996" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round"></polyline>
+      <svg viewBox="0 0 148 72" width="100%" style="display:block;">
+        <line x1="20" y1="52" x2="144" y2="52" stroke="#e2e8f0" stroke-width="1"></line>
+          <text x="16" y="54.5" text-anchor="end" font-size="6.5" fill="#94a3b8">0</text><line x1="20" y1="33" x2="144" y2="33" stroke="#e2e8f0" stroke-width="1"></line>
+          <text x="16" y="35.5" text-anchor="end" font-size="6.5" fill="#94a3b8">10</text><line x1="20" y1="14" x2="144" y2="14" stroke="#e2e8f0" stroke-width="1"></line>
+          <text x="16" y="16.5" text-anchor="end" font-size="6.5" fill="#94a3b8">20</text>
+        <polyline points="24,26.749000000000002 74,28.116999999999997" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round"></polyline>
         
-          <circle cx="28" cy="26.775" r="4.5" fill="#3b82f6"></circle>
-          <text x="28" y="19.775" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">13.29</text>
-          <text x="28" y="72" text-anchor="middle" font-size="7" fill="#64748b">T1</text>
-          <circle cx="143" cy="28.574999999999996" r="4.5" fill="#3b82f6"></circle>
-          <text x="143" y="21.574999999999996" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">12.57</text>
-          <text x="143" y="72" text-anchor="middle" font-size="7" fill="#64748b">T2</text>
+          <circle cx="24" cy="26.749000000000002" r="3.5" fill="#3b82f6"></circle>
+          <text x="24" y="20.749000000000002" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">13.3</text>
+          <circle cx="74" cy="28.116999999999997" r="3.5" fill="#3b82f6"></circle>
+          <text x="74" y="22.116999999999997" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">12.6</text>
+        <text x="24" y="68" text-anchor="middle" font-size="7.5" fill="#64748b">T1</text><text x="74" y="68" text-anchor="middle" font-size="7.5" fill="#64748b">T2</text><text x="124" y="68" text-anchor="middle" font-size="7.5" fill="#64748b">T3</text>
       </svg>
       </div>
       
-      <div class="panel-box">
+      <div class="panel-box keep">
         <div class="panel-title">💪 Points forts</div>
-        <div class="strength-item"><span style="font-weight:600;">Maths &amp; <b>Physique</b></span><span style="font-weight:800;color:#059669;">15.00</span></div>
+        <div class="strength-item"><span style="font-weight:600;">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;</span><span style="font-weight:800;color:#059669;">15.00</span></div>
       </div>
       
-      <div class="panel-box">
+      <div class="panel-box keep">
         <div class="panel-title">⚠️ À renforcer</div>
         <div class="strength-item"><span style="font-weight:600;">Français</span><span style="font-weight:800;color:#dc2626;">11.00</span></div>
       </div>
@@ -1616,7 +1721,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
 
   <div class="sigs">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1627,7 +1732,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1638,7 +1743,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1664,50 +1769,69 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4 portrait; margin: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #1e293b; font-size: 9pt; }
-  .page { width: 210mm; background: white; }
+  .page { width: 210mm; background: white; overflow: hidden; }
   .official-top { font-size: 6.5pt; padding: 4px 18px; background: #f8fafc; display: flex; justify-content: space-between; color: #374151; border-bottom: 1px solid #e2e8f0; }
-  .cover { background: linear-gradient(160deg,#0f172a 0%,#1e3a8a 60%,#1e40af 100%); padding: 16px 20px 12px; color: white; position: relative; overflow: hidden; }
+  .cover { background: linear-gradient(160deg,#0f172a 0%,#1e3a8a 60%,#1e40af 100%); padding: 14px 20px 10px; color: white; position: relative; overflow: hidden; }
   .cover::before { content:''; position:absolute; right:-40px; top:-40px; width:180px; height:180px; background:rgba(255,255,255,.04); border-radius:50%; }
   .cover-row { display: flex; justify-content: space-between; align-items: flex-start; }
   .cover-left { flex: 1; }
   .school-name { font-size: 14pt; font-weight: 800; letter-spacing: .5px; margin-bottom: 1px; }
   .school-info { font-size: 7.5pt; opacity: .7; line-height: 1.5; }
   .school-devise-m3 { font-size: 8pt; opacity: .85; font-style: italic; margin-top: 2px; }
-  .cover-badge { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 8px 14px; text-align: center; }
+  .cover-badge { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: 6px 14px; text-align: center; }
   .cover-badge-year { font-size: 7.5pt; opacity: .7; }
   .cover-badge-trim { font-size: 11pt; font-weight: 800; margin: 1px 0; }
   .logo-img { width: 50px; height: 50px; object-fit: contain; border-radius: 6px; background: white; padding: 3px; }
-  .student-banner { background: #f8fafc; border-left: 6px solid #2563eb; padding: 9px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .student-banner { background: #f8fafc; border-left: 6px solid #2563eb; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; }
   .student-fullname { font-size: 13pt; font-weight: 800; color: #0f172a; }
   .student-class { font-size: 8.5pt; color: #64748b; margin-top: 1px; }
-  .avg-display { text-align: center; background: #1e40af; color: white; padding: 8px 16px; border-radius: 8px; }
+  .avg-display { text-align: center; background: #1e40af; color: white; padding: 6px 16px; border-radius: 8px; }
   .avg-num { font-size: 18pt; font-weight: 900; line-height: 1; }
   .avg-label { font-size: 7pt; opacity: .8; }
   .kpis { display: grid; grid-template-columns: repeat(6,1fr); border: 1.5px solid #e2e8f0; }
-  .kpi { padding: 7px; text-align: center; border-right: 1px solid #e2e8f0; }
+  .kpi { padding: 6px; text-align: center; border-right: 1px solid #e2e8f0; }
   .kpi:last-child { border-right: none; }
   .kpi-val { font-size: 11pt; font-weight: 800; color: #1e40af; }
   .kpi-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: 1px; }
-  .body-grid { display: grid; grid-template-columns: 3fr 1.5fr; padding: 10px 14px; gap: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  /* minmax(0, …) : la colonne du tableau ne déborde plus sur le panneau de droite, qui n'est plus coupé */
+  .body-grid { display: grid; grid-template-columns: minmax(0, 1fr) 152px; padding: 10px 14px; gap: 10px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.5pt; }
   thead tr { background: #0f172a; color: white; }
-  th { padding: 5px 6px; font-size: 7.5pt; text-align: left; font-weight: 600; }
+  th { padding: 5px 4px; font-size: 7.5pt; text-align: left; font-weight: 600; }
   th.center { text-align: center; }
-  td { padding: 4px 5px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  td { padding: 4px 4px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; overflow-wrap: anywhere; }
   .subj-name { font-weight: 700; }
   .center { text-align: center; }
+  .idc { font-size: 7.5pt; color: #475569; white-space: nowrap; }
+  .bonus-chip { display: inline-block; margin-left: 3px; background: #d1fae5; color: #059669; border-radius: 3px; padding: 0 3px; font-weight: 700; }
   .coef-badge { background: #e0e7ff; color: #3730a3; padding: 1px 5px; border-radius: 8px; font-size: 7.5pt; font-weight: 700; }
   .total-row td { background: #0f172a !important; color: white; font-weight: 700; }
   .side-panel { display: flex; flex-direction: column; gap: 8px; }
-  .panel-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px; }
-  .panel-title { font-size: 8pt; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #64748b; margin-bottom: 6px; }
-  .mention-box { border-radius: 8px; padding: 9px; text-align: center; }
-  .mention-val { font-size: 12pt; font-weight: 900; }
-  .decision-tag { display:inline-block; padding:2px 10px; border-radius:20px; font-size:7.5pt; font-weight:800; margin-top:5px; }
-  .evol-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px; }
-  .strength-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; font-size: 8pt; }
+  .panel-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 8px; }
+  .panel-title { font-size: 7.5pt; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #64748b; margin-bottom: 5px; }
+  .mention-box { border-radius: 8px; padding: 8px; text-align: center; }
+  .mention-val { font-size: 11pt; font-weight: 900; }
+  .decision-tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:7pt; font-weight:800; margin-top:5px; }
+  .evol-box { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 8px; }
+  .strength-item { display: flex; justify-content: space-between; align-items: center; gap: 4px; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; font-size: 8pt; }
   .sigs { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 0 14px 10px; }
   .footer { background: #0f172a; color: #64748b; padding: 5px 14px; font-size: 6.5pt; display: flex; justify-content: space-between; }
+  /* Mise en page compacte (plus de 11 matières) */
+  .dense td { padding: 2px 4px; }
+  .dense .body-grid { padding-top: 6px; padding-bottom: 6px; }
+  .dense .cover { padding: 8px 20px 6px; }
+  .dense .kpi { padding: 3px; }
+  .dense .sigs > div { min-height: 56px !important; }
+  .dense .hand-lines { min-height: 10mm; }
+  
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr, .keep { break-inside: avoid; page-break-inside: avoid; }
+  p { orphans: 3; widows: 3; }
+  .scale-legend { font-size: 6.3pt; line-height: 1.5; color: #64748b; margin: 3px 0 6px; }
+  .scale-legend b { color: #334155; font-weight: 700; }
+  .hand-lines { min-height: 15mm; background-image: repeating-linear-gradient(transparent 0, transparent 6.3mm, #cbd5e1 6.3mm, #cbd5e1 6.6mm); }
  @page{size:A4 portrait;margin:0;} body{padding:0;} div[style*="page-break"]:last-child{page-break-after:auto!important;}</style>
 </head><body><div style="page-break-after:always;"><div class="page">
 
@@ -1728,7 +1852,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
         <div class="school-info">12 rue des Écoles | +228 90 00 00 00 | contact@test.tg</div>
         <div class="school-devise-m3">"L'excellence avant tout"</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
         <div class="cover-badge">
           <div class="cover-badge-year">2025-2026</div>
           <div class="cover-badge-trim">Trimestre 1</div>
@@ -1739,10 +1863,10 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
     </div>
   </div>
 
-  <div class="student-banner">
+  <div class="student-banner keep">
     <div>
       <div class="student-fullname">Koffi MENSAH</div>
-      <div class="student-class">Classe: <strong>6ème A</strong> &nbsp;·&nbsp; Effectif: <strong>3</strong> &nbsp;·&nbsp; Rang: <strong>1/2</strong> &nbsp;·&nbsp; Né(e) le: <strong>02/04/2013</strong></div>
+      <div class="student-class">Classe: <strong>6ème A</strong> &nbsp;·&nbsp; Effectif: <strong>3</strong> &nbsp;·&nbsp; Rang: <strong>1er/2</strong> &nbsp;·&nbsp; Né(e) le: <strong>02/04/2013</strong></div>
     </div>
     <div class="avg-display">
       <div class="avg-num">13.29</div>
@@ -1750,13 +1874,13 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
     </div>
   </div>
 
-  <div class="kpis">
+  <div class="kpis keep">
     <div class="kpi"><div class="kpi-val">10.93</div><div class="kpi-lbl">Moy. classe</div></div>
     <div class="kpi"><div class="kpi-val">13.29</div><div class="kpi-lbl">Max classe</div></div>
     <div class="kpi"><div class="kpi-val">8.57</div><div class="kpi-lbl">Min classe</div></div>
     <div class="kpi"><div class="kpi-val">7</div><div class="kpi-lbl">Coeff. total</div></div>
     <div class="kpi"><div class="kpi-val">93.0</div><div class="kpi-lbl">Total pts</div></div>
-    <div class="kpi" style="background:inherit;"><div class="kpi-val" style="color:#1e40af;">2</div><div class="kpi-lbl">Absences</div><div style="font-size:6pt;color:#94a3b8;">1 ret.</div></div>
+    <div class="kpi" style="background:inherit;"><div class="kpi-val" style="color:#1e40af;">2</div><div class="kpi-lbl">Absences</div><div style="font-size:6pt;color:#94a3b8;">1 ret. · 2 injust.</div></div>
   </div>
 
   <div class="body-grid">
@@ -1764,64 +1888,50 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
       <table>
         <thead><tr>
           <th>Matière / Prof.</th>
-          <th class="center" style="width:32px;">Coef.</th>
-          <th class="center" style="width:110px;">I / D / C / Bonus</th>
-          <th style="width:120px;">Note /20</th>
-          <th class="center" style="width:46px;">Moy.cl.</th>
-          <th style="width:52px;">Niveau</th>
+          <th class="center" style="width:30px;">Coef.</th>
+          <th class="center" style="width:84px;">I · D · C</th>
+          <th style="width:98px;">Note /20</th>
+          <th class="center" style="width:38px;">Moy.cl.</th>
+          <th style="width:66px;">Niveau</th>
           <th>Appréciation</th>
-          <th class="center" style="width:68px;">Signature</th>
+          <th class="center" style="width:50px;">Signature</th>
         </tr></thead>
         <tbody>
           
         <tr>
-          <td class="subj-name">Maths &amp; <b>Physique</b><br><span style="font-size:6.5pt;color:#94a3b8;">M. Kodjo</span></td>
+          <td class="subj-name">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;<br><span style="font-size:6.5pt;color:#94a3b8;font-weight:400;">M. Kodjo</span></td>
           <td class="center"><span class="coef-badge">4</span></td>
-          <td class="center" style="font-size:7.5pt;color:#64748b;">
-            <div style="display:flex;gap:2px;justify-content:center;flex-wrap:wrap;">
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:14.00</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:15.00</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:16.00</span>
-              <span style="background:#d1fae5;border-radius:3px;padding:1px 4px;color:#059669;font-weight:700;">B:—</span>
-            </div>
-          </td>
+          <td class="center idc">14 · 15 · 16</td>
           <td class="center">
-            <div style="display:flex;align-items:center;gap:5px;">
-              <div style="flex:1;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
                 <div style="width:75%;height:100%;background:#059669;border-radius:3px;"></div>
               </div>
-              <span style="color:#059669;font-weight:800;font-size:10.5pt;min-width:34px;">15.00</span>
+              <span style="color:#059669;font-weight:800;font-size:10pt;min-width:32px;text-align:right;">15.00</span>
             </div>
           </td>
           <td class="center" style="font-size:7.5pt;color:#64748b;">12.00</td>
-          <td><span style="color:#059669;font-size:7.5pt;font-style:italic;">Bien</span></td>
+          <td style="overflow-wrap:normal;"><span style="color:#059669;font-size:7.5pt;font-style:italic;font-weight:600;">Bien</span></td>
           <td style="font-size:7pt;color:#475569;font-style:italic;">Bon travail</td>
           <td class="center" style="font-size:7.5pt;">
-            <div style="font-family:'Brush Script MT',cursive;font-size:8.5pt;color:#1e3a5f;">M. Kodjo</div>
+            <div style="font-family:'Brush Script MT',cursive;font-size:8pt;color:#1e3a5f;line-height:1.1;">M. Kodjo</div>
              <div style="font-size:5.5pt;color:#2563eb;">✓ Signé</div>
           </td>
         </tr>
         <tr>
-          <td class="subj-name">Français<br><span style="font-size:6.5pt;color:#94a3b8;"></span></td>
+          <td class="subj-name">Français<br><span style="font-size:6.5pt;color:#94a3b8;font-weight:400;"></span></td>
           <td class="center"><span class="coef-badge">3</span></td>
-          <td class="center" style="font-size:7.5pt;color:#64748b;">
-            <div style="display:flex;gap:2px;justify-content:center;flex-wrap:wrap;">
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:—</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:—</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:—</span>
-              <span style="background:#d1fae5;border-radius:3px;padding:1px 4px;color:#059669;font-weight:700;">B:—</span>
-            </div>
-          </td>
+          <td class="center idc">— · — · —</td>
           <td class="center">
-            <div style="display:flex;align-items:center;gap:5px;">
-              <div style="flex:1;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
                 <div style="width:55.00000000000001%;height:100%;background:#2563eb;border-radius:3px;"></div>
               </div>
-              <span style="color:#2563eb;font-weight:800;font-size:10.5pt;min-width:34px;">11.00</span>
+              <span style="color:#2563eb;font-weight:800;font-size:10pt;min-width:32px;text-align:right;">11.00</span>
             </div>
           </td>
           <td class="center" style="font-size:7.5pt;color:#64748b;">9.50</td>
-          <td><span style="color:#2563eb;font-size:7.5pt;font-style:italic;">Passable</span></td>
+          <td style="overflow-wrap:normal;"><span style="color:#2563eb;font-size:7.5pt;font-style:italic;font-weight:600;">Passable</span></td>
           <td style="font-size:7pt;color:#475569;font-style:italic;"></td>
           <td class="center" style="font-size:7.5pt;">
             <span style="color:#d1d5db;">—</span>
@@ -1830,46 +1940,50 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
           <tr class="total-row">
             <td>MOYENNE GÉNÉRALE</td>
             <td class="center">7</td><td></td>
-            <td><strong style="font-size:11pt;">13.29/20</strong></td>
+            <td><strong style="font-size:10.5pt;">13.29/20</strong></td>
             <td class="center">10.93</td>
-            <td>Encouragements</td><td></td><td></td>
+            <td colspan="3">Encouragements</td>
           </tr>
         </tbody>
       </table>
-      
+      <div class="scale-legend keep">I = interrogation · D = devoir · C = composition · le bonus éventuel s'ajoute à la note (plafonnée à 20)</div>
+      <div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+      <div class="keep" style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
+        <div style="font-size:7pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">Appréciation du conseil de classe</div>
+        <div class="hand-lines"></div>
+      </div>
     </div>
 
     <div class="side-panel">
-      <div class="mention-box" style="background:linear-gradient(135deg,#8b5cf615,#8b5cf608);border:2px solid #8b5cf6;">
+      <div class="mention-box keep" style="background:linear-gradient(135deg,#8b5cf615,#8b5cf608);border:2px solid #8b5cf6;">
         <div style="font-size:7pt;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:3px;">Mention</div>
         <div class="mention-val" style="color:#8b5cf6;">Encouragements</div>
         <div class="decision-tag" style="background:#05966918;color:#059669;border:1.5px solid #059669;">ADMIS(E)</div>
       </div>
-      <div class="evol-box">
-        <div class="panel-title">📈 Évolution des moyennes</div>
+      <div class="evol-box keep">
+        <div class="panel-title">📈 Évolution</div>
         
-      <svg width="270" height="75" viewBox="0 0 270 75">
-        <line x1="28" y1="60" x2="260" y2="60" stroke="#f1f5f9" stroke-width="1"></line>
-          <text x="22" y="64" text-anchor="end" font-size="6.5" fill="#94a3b8">0</text><line x1="28" y1="35" x2="260" y2="35" stroke="#f1f5f9" stroke-width="1"></line>
-          <text x="22" y="39" text-anchor="end" font-size="6.5" fill="#94a3b8">10</text><line x1="28" y1="10" x2="260" y2="10" stroke="#f1f5f9" stroke-width="1"></line>
-          <text x="22" y="14" text-anchor="end" font-size="6.5" fill="#94a3b8">20</text>
-        <polyline points="28,26.775 143,28.574999999999996" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round"></polyline>
+      <svg viewBox="0 0 148 72" width="100%" style="display:block;">
+        <line x1="20" y1="52" x2="144" y2="52" stroke="#e2e8f0" stroke-width="1"></line>
+          <text x="16" y="54.5" text-anchor="end" font-size="6.5" fill="#94a3b8">0</text><line x1="20" y1="33" x2="144" y2="33" stroke="#e2e8f0" stroke-width="1"></line>
+          <text x="16" y="35.5" text-anchor="end" font-size="6.5" fill="#94a3b8">10</text><line x1="20" y1="14" x2="144" y2="14" stroke="#e2e8f0" stroke-width="1"></line>
+          <text x="16" y="16.5" text-anchor="end" font-size="6.5" fill="#94a3b8">20</text>
+        <polyline points="24,26.749000000000002 74,28.116999999999997" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round"></polyline>
         
-          <circle cx="28" cy="26.775" r="4.5" fill="#3b82f6"></circle>
-          <text x="28" y="19.775" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">13.29</text>
-          <text x="28" y="72" text-anchor="middle" font-size="7" fill="#64748b">T1</text>
-          <circle cx="143" cy="28.574999999999996" r="4.5" fill="#3b82f6"></circle>
-          <text x="143" y="21.574999999999996" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">12.57</text>
-          <text x="143" y="72" text-anchor="middle" font-size="7" fill="#64748b">T2</text>
+          <circle cx="24" cy="26.749000000000002" r="3.5" fill="#3b82f6"></circle>
+          <text x="24" y="20.749000000000002" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">13.3</text>
+          <circle cx="74" cy="28.116999999999997" r="3.5" fill="#3b82f6"></circle>
+          <text x="74" y="22.116999999999997" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">12.6</text>
+        <text x="24" y="68" text-anchor="middle" font-size="7.5" fill="#64748b">T1</text><text x="74" y="68" text-anchor="middle" font-size="7.5" fill="#64748b">T2</text><text x="124" y="68" text-anchor="middle" font-size="7.5" fill="#64748b">T3</text>
       </svg>
       </div>
       
-      <div class="panel-box">
+      <div class="panel-box keep">
         <div class="panel-title">💪 Points forts</div>
-        <div class="strength-item"><span style="font-weight:600;">Maths &amp; <b>Physique</b></span><span style="font-weight:800;color:#059669;">15.00</span></div>
+        <div class="strength-item"><span style="font-weight:600;">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;</span><span style="font-weight:800;color:#059669;">15.00</span></div>
       </div>
       
-      <div class="panel-box">
+      <div class="panel-box keep">
         <div class="panel-title">⚠️ À renforcer</div>
         <div class="strength-item"><span style="font-weight:600;">Français</span><span style="font-weight:800;color:#dc2626;">11.00</span></div>
       </div>
@@ -1878,7 +1992,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
 
   <div class="sigs">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1889,7 +2003,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1900,7 +2014,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -1935,7 +2049,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
         <div class="school-info">12 rue des Écoles | +228 90 00 00 00 | contact@test.tg</div>
         <div class="school-devise-m3">"L'excellence avant tout"</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
         <div class="cover-badge">
           <div class="cover-badge-year">2025-2026</div>
           <div class="cover-badge-trim">Trimestre 1</div>
@@ -1946,10 +2060,10 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
     </div>
   </div>
 
-  <div class="student-banner">
+  <div class="student-banner keep">
     <div>
       <div class="student-fullname">Ama DOSSOU</div>
-      <div class="student-class">Classe: <strong>6ème A</strong> &nbsp;·&nbsp; Effectif: <strong>3</strong> &nbsp;·&nbsp; Rang: <strong>2/2</strong></div>
+      <div class="student-class">Classe: <strong>6ème A</strong> &nbsp;·&nbsp; Effectif: <strong>3</strong> &nbsp;·&nbsp; Rang: <strong>2e/2</strong></div>
     </div>
     <div class="avg-display">
       <div class="avg-num">8.57</div>
@@ -1957,13 +2071,13 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
     </div>
   </div>
 
-  <div class="kpis">
+  <div class="kpis keep">
     <div class="kpi"><div class="kpi-val">10.93</div><div class="kpi-lbl">Moy. classe</div></div>
     <div class="kpi"><div class="kpi-val">13.29</div><div class="kpi-lbl">Max classe</div></div>
     <div class="kpi"><div class="kpi-val">8.57</div><div class="kpi-lbl">Min classe</div></div>
     <div class="kpi"><div class="kpi-val">7</div><div class="kpi-lbl">Coeff. total</div></div>
     <div class="kpi"><div class="kpi-val">60.0</div><div class="kpi-lbl">Total pts</div></div>
-    <div class="kpi" style="background:inherit;"><div class="kpi-val" style="color:#1e40af;">1</div><div class="kpi-lbl">Absences</div><div style="font-size:6pt;color:#94a3b8;">0 ret.</div></div>
+    <div class="kpi" style="background:inherit;"><div class="kpi-val" style="color:#1e40af;">1</div><div class="kpi-lbl">Absences</div><div style="font-size:6pt;color:#94a3b8;">0 ret. · 1 injust.</div></div>
   </div>
 
   <div class="body-grid">
@@ -1971,64 +2085,50 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
       <table>
         <thead><tr>
           <th>Matière / Prof.</th>
-          <th class="center" style="width:32px;">Coef.</th>
-          <th class="center" style="width:110px;">I / D / C / Bonus</th>
-          <th style="width:120px;">Note /20</th>
-          <th class="center" style="width:46px;">Moy.cl.</th>
-          <th style="width:52px;">Niveau</th>
+          <th class="center" style="width:30px;">Coef.</th>
+          <th class="center" style="width:84px;">I · D · C</th>
+          <th style="width:98px;">Note /20</th>
+          <th class="center" style="width:38px;">Moy.cl.</th>
+          <th style="width:66px;">Niveau</th>
           <th>Appréciation</th>
-          <th class="center" style="width:68px;">Signature</th>
+          <th class="center" style="width:50px;">Signature</th>
         </tr></thead>
         <tbody>
           
         <tr>
-          <td class="subj-name">Maths &amp; <b>Physique</b><br><span style="font-size:6.5pt;color:#94a3b8;">M. Kodjo</span></td>
+          <td class="subj-name">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;<br><span style="font-size:6.5pt;color:#94a3b8;font-weight:400;">M. Kodjo</span></td>
           <td class="center"><span class="coef-badge">4</span></td>
-          <td class="center" style="font-size:7.5pt;color:#64748b;">
-            <div style="display:flex;gap:2px;justify-content:center;flex-wrap:wrap;">
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:—</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:—</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:—</span>
-              <span style="background:#d1fae5;border-radius:3px;padding:1px 4px;color:#059669;font-weight:700;">B:—</span>
-            </div>
-          </td>
+          <td class="center idc">— · — · —</td>
           <td class="center">
-            <div style="display:flex;align-items:center;gap:5px;">
-              <div style="flex:1;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
                 <div style="width:45%;height:100%;background:#d97706;border-radius:3px;"></div>
               </div>
-              <span style="color:#d97706;font-weight:800;font-size:10.5pt;min-width:34px;">9.00</span>
+              <span style="color:#d97706;font-weight:800;font-size:10pt;min-width:32px;text-align:right;">9.00</span>
             </div>
           </td>
           <td class="center" style="font-size:7.5pt;color:#64748b;">12.00</td>
-          <td><span style="color:#d97706;font-size:7.5pt;font-style:italic;">Insuffisant</span></td>
+          <td style="overflow-wrap:normal;"><span style="color:#d97706;font-size:7.5pt;font-style:italic;font-weight:600;">Insuffisant</span></td>
           <td style="font-size:7pt;color:#475569;font-style:italic;"></td>
           <td class="center" style="font-size:7.5pt;">
-            <div style="font-family:'Brush Script MT',cursive;font-size:8.5pt;color:#1e3a5f;">M. Kodjo</div>
+            <div style="font-family:'Brush Script MT',cursive;font-size:8pt;color:#1e3a5f;line-height:1.1;">M. Kodjo</div>
              <div style="font-size:5.5pt;color:#2563eb;">✓ Signé</div>
           </td>
         </tr>
         <tr>
-          <td class="subj-name">Français<br><span style="font-size:6.5pt;color:#94a3b8;"></span></td>
+          <td class="subj-name">Français<br><span style="font-size:6.5pt;color:#94a3b8;font-weight:400;"></span></td>
           <td class="center"><span class="coef-badge">3</span></td>
-          <td class="center" style="font-size:7.5pt;color:#64748b;">
-            <div style="display:flex;gap:2px;justify-content:center;flex-wrap:wrap;">
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:—</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:—</span>
-              <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:—</span>
-              <span style="background:#d1fae5;border-radius:3px;padding:1px 4px;color:#059669;font-weight:700;">B:—</span>
-            </div>
-          </td>
+          <td class="center idc">— · — · —</td>
           <td class="center">
-            <div style="display:flex;align-items:center;gap:5px;">
-              <div style="flex:1;height:7px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="flex:1;height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
                 <div style="width:40%;height:100%;background:#d97706;border-radius:3px;"></div>
               </div>
-              <span style="color:#d97706;font-weight:800;font-size:10.5pt;min-width:34px;">8.00</span>
+              <span style="color:#d97706;font-weight:800;font-size:10pt;min-width:32px;text-align:right;">8.00</span>
             </div>
           </td>
           <td class="center" style="font-size:7.5pt;color:#64748b;">9.50</td>
-          <td><span style="color:#d97706;font-size:7.5pt;font-style:italic;">Insuffisant</span></td>
+          <td style="overflow-wrap:normal;"><span style="color:#d97706;font-size:7.5pt;font-style:italic;font-weight:600;">Insuffisant</span></td>
           <td style="font-size:7pt;color:#475569;font-style:italic;"></td>
           <td class="center" style="font-size:7.5pt;">
             <span style="color:#d1d5db;">—</span>
@@ -2037,46 +2137,50 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
           <tr class="total-row">
             <td>MOYENNE GÉNÉRALE</td>
             <td class="center">7</td><td></td>
-            <td><strong style="font-size:11pt;">8.57/20</strong></td>
+            <td><strong style="font-size:10.5pt;">8.57/20</strong></td>
             <td class="center">10.93</td>
-            <td>Insuffisant</td><td></td><td></td>
+            <td colspan="3">Insuffisant</td>
           </tr>
         </tbody>
       </table>
-      
+      <div class="scale-legend keep">I = interrogation · D = devoir · C = composition · le bonus éventuel s'ajoute à la note (plafonnée à 20)</div>
+      <div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+      <div class="keep" style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
+        <div style="font-size:7pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">Appréciation du conseil de classe</div>
+        <div class="hand-lines"></div>
+      </div>
     </div>
 
     <div class="side-panel">
-      <div class="mention-box" style="background:linear-gradient(135deg,#ef444415,#ef444408);border:2px solid #ef4444;">
+      <div class="mention-box keep" style="background:linear-gradient(135deg,#ef444415,#ef444408);border:2px solid #ef4444;">
         <div style="font-size:7pt;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:3px;">Mention</div>
         <div class="mention-val" style="color:#ef4444;">Insuffisant</div>
         <div class="decision-tag" style="background:#d9770618;color:#d97706;border:1.5px solid #d97706;">À SUIVRE</div>
       </div>
-      <div class="evol-box">
-        <div class="panel-title">📈 Évolution des moyennes</div>
+      <div class="evol-box keep">
+        <div class="panel-title">📈 Évolution</div>
         
-      <svg width="270" height="75" viewBox="0 0 270 75">
-        <line x1="28" y1="60" x2="260" y2="60" stroke="#f1f5f9" stroke-width="1"></line>
-          <text x="22" y="64" text-anchor="end" font-size="6.5" fill="#94a3b8">0</text><line x1="28" y1="35" x2="260" y2="35" stroke="#f1f5f9" stroke-width="1"></line>
-          <text x="22" y="39" text-anchor="end" font-size="6.5" fill="#94a3b8">10</text><line x1="28" y1="10" x2="260" y2="10" stroke="#f1f5f9" stroke-width="1"></line>
-          <text x="22" y="14" text-anchor="end" font-size="6.5" fill="#94a3b8">20</text>
-        <polyline points="28,38.575 143,35" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round"></polyline>
+      <svg viewBox="0 0 148 72" width="100%" style="display:block;">
+        <line x1="20" y1="52" x2="144" y2="52" stroke="#e2e8f0" stroke-width="1"></line>
+          <text x="16" y="54.5" text-anchor="end" font-size="6.5" fill="#94a3b8">0</text><line x1="20" y1="33" x2="144" y2="33" stroke="#e2e8f0" stroke-width="1"></line>
+          <text x="16" y="35.5" text-anchor="end" font-size="6.5" fill="#94a3b8">10</text><line x1="20" y1="14" x2="144" y2="14" stroke="#e2e8f0" stroke-width="1"></line>
+          <text x="16" y="16.5" text-anchor="end" font-size="6.5" fill="#94a3b8">20</text>
+        <polyline points="24,35.717 74,33" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round"></polyline>
         
-          <circle cx="28" cy="38.575" r="4.5" fill="#3b82f6"></circle>
-          <text x="28" y="31.575000000000003" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">8.57</text>
-          <text x="28" y="72" text-anchor="middle" font-size="7" fill="#64748b">T1</text>
-          <circle cx="143" cy="35" r="4.5" fill="#3b82f6"></circle>
-          <text x="143" y="28" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">10.00</text>
-          <text x="143" y="72" text-anchor="middle" font-size="7" fill="#64748b">T2</text>
+          <circle cx="24" cy="35.717" r="3.5" fill="#3b82f6"></circle>
+          <text x="24" y="29.717" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">8.6</text>
+          <circle cx="74" cy="33" r="3.5" fill="#3b82f6"></circle>
+          <text x="74" y="27" text-anchor="middle" font-size="8" fill="#1e40af" font-weight="bold">10.0</text>
+        <text x="24" y="68" text-anchor="middle" font-size="7.5" fill="#64748b">T1</text><text x="74" y="68" text-anchor="middle" font-size="7.5" fill="#64748b">T2</text><text x="124" y="68" text-anchor="middle" font-size="7.5" fill="#64748b">T3</text>
       </svg>
       </div>
       
-      <div class="panel-box">
+      <div class="panel-box keep">
         <div class="panel-title">💪 Points forts</div>
-        <div class="strength-item"><span style="font-weight:600;">Maths &amp; <b>Physique</b></span><span style="font-weight:800;color:#059669;">9.00</span></div>
+        <div class="strength-item"><span style="font-weight:600;">Maths &amp; &lt;b&gt;Physique&lt;/b&gt;</span><span style="font-weight:800;color:#059669;">9.00</span></div>
       </div>
       
-      <div class="panel-box">
+      <div class="panel-box keep">
         <div class="panel-title">⚠️ À renforcer</div>
         <div class="strength-item"><span style="font-weight:600;">Français</span><span style="font-weight:800;color:#dc2626;">8.00</span></div>
       </div>
@@ -2085,7 +2189,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
 
   <div class="sigs">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -2096,7 +2200,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -2107,7 +2211,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -2142,7 +2246,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
         <div class="school-info">12 rue des Écoles | +228 90 00 00 00 | contact@test.tg</div>
         <div class="school-devise-m3">"L'excellence avant tout"</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
         <div class="cover-badge">
           <div class="cover-badge-year">2025-2026</div>
           <div class="cover-badge-trim">Trimestre 1</div>
@@ -2153,7 +2257,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
     </div>
   </div>
 
-  <div class="student-banner">
+  <div class="student-banner keep">
     <div>
       <div class="student-fullname">Yao AGBO</div>
       <div class="student-class">Classe: <strong>6ème A</strong> &nbsp;·&nbsp; Effectif: <strong>3</strong> &nbsp;·&nbsp; Rang: <strong>-/2</strong></div>
@@ -2164,7 +2268,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
     </div>
   </div>
 
-  <div class="kpis">
+  <div class="kpis keep">
     <div class="kpi"><div class="kpi-val">10.93</div><div class="kpi-lbl">Moy. classe</div></div>
     <div class="kpi"><div class="kpi-val">13.29</div><div class="kpi-lbl">Max classe</div></div>
     <div class="kpi"><div class="kpi-val">8.57</div><div class="kpi-lbl">Min classe</div></div>
@@ -2178,36 +2282,41 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
       <table>
         <thead><tr>
           <th>Matière / Prof.</th>
-          <th class="center" style="width:32px;">Coef.</th>
-          <th class="center" style="width:110px;">I / D / C / Bonus</th>
-          <th style="width:120px;">Note /20</th>
-          <th class="center" style="width:46px;">Moy.cl.</th>
-          <th style="width:52px;">Niveau</th>
+          <th class="center" style="width:30px;">Coef.</th>
+          <th class="center" style="width:84px;">I · D · C</th>
+          <th style="width:98px;">Note /20</th>
+          <th class="center" style="width:38px;">Moy.cl.</th>
+          <th style="width:66px;">Niveau</th>
           <th>Appréciation</th>
-          <th class="center" style="width:68px;">Signature</th>
+          <th class="center" style="width:50px;">Signature</th>
         </tr></thead>
         <tbody>
           
           <tr class="total-row">
             <td>MOYENNE GÉNÉRALE</td>
             <td class="center">0</td><td></td>
-            <td><strong style="font-size:11pt;">0.00/20</strong></td>
+            <td><strong style="font-size:10.5pt;">0.00/20</strong></td>
             <td class="center">10.93</td>
-            <td>Insuffisant</td><td></td><td></td>
+            <td colspan="3">Insuffisant</td>
           </tr>
         </tbody>
       </table>
-      
+      <div class="scale-legend keep">I = interrogation · D = devoir · C = composition · le bonus éventuel s'ajoute à la note (plafonnée à 20)</div>
+      <div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+      <div class="keep" style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
+        <div style="font-size:7pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">Appréciation du conseil de classe</div>
+        <div class="hand-lines"></div>
+      </div>
     </div>
 
     <div class="side-panel">
-      <div class="mention-box" style="background:linear-gradient(135deg,#ef444415,#ef444408);border:2px solid #ef4444;">
+      <div class="mention-box keep" style="background:linear-gradient(135deg,#ef444415,#ef444408);border:2px solid #ef4444;">
         <div style="font-size:7pt;color:#64748b;text-transform:uppercase;font-weight:700;margin-bottom:3px;">Mention</div>
         <div class="mention-val" style="color:#ef4444;">Insuffisant</div>
         <div class="decision-tag" style="background:#dc262618;color:#dc2626;border:1.5px solid #dc2626;">EN DIFFICULTÉ</div>
       </div>
-      <div class="evol-box">
-        <div class="panel-title">📈 Évolution des moyennes</div>
+      <div class="evol-box keep">
+        <div class="panel-title">📈 Évolution</div>
         <p style="color:#94a3b8;font-size:8pt;">Données insuffisantes</p>
       </div>
       
@@ -2217,7 +2326,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
 
   <div class="sigs">
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature du Directeur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -2228,7 +2337,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Visa du Prof. Principal</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">
@@ -2239,7 +2348,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
       </div>
     </div>
     
-    <div style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="keep" style="border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;background:#f8fafc;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;">
       <div style="font-size:7pt;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Signature des Parents / Tuteur</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
         <div style="text-align:center;">

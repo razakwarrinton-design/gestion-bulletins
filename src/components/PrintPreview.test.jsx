@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, cleanup } from '@testing-library/react';
 
 // Ligne renvoyée par la fonction SQL child_class_rank (null = fonction indisponible : repli local)
 const server = vi.hoisted(() => ({ row: null }));
@@ -49,6 +49,7 @@ beforeEach(() => {
   vi.useFakeTimers();
 });
 afterEach(() => {
+  cleanup(); // sans cela, les composants des tests précédents restent montés et répondent aussi à l'événement d'impression
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
@@ -88,13 +89,13 @@ describe('PrintPreview : rang et statistiques de classe', () => {
   it('utilise le rang et les statistiques fournis par la base (cas d\'un parent qui ne lit que son enfant)', async () => {
     server.row = { rank: 2, total: 28, class_average: '11.50', class_max: '17.00', class_min: '4.00' };
     const text = await printAndRead();
-    expect(text).toContain('2 / 28');
+    expect(text).toContain('2e / 28');
     expect(text).toContain('11.50');
   });
 
   it('retombe sur le calcul local quand la base ne répond pas', async () => {
     const text = await printAndRead();
-    expect(text).toContain('1 / 2'); // élève 1 sur 2 élèves de la classe
+    expect(text).toContain('1er / 2'); // élève 1 sur 2 élèves de la classe
   });
 });
 
@@ -143,7 +144,7 @@ describe('PrintPreview : sécurité du HTML généré', () => {
   it("conserve accents et apostrophes des noms (N'Dri, Éléonore)", () => {
     const doc = parse(printWith({ printStudent: { ...students[0], firstName: 'Éléonore', lastName: "N'Dri" } }));
     expect(doc.body.textContent).toContain('Éléonore');
-    expect(doc.body.textContent).toContain("N'Dri");
+    expect(doc.body.textContent).toContain("N'DRI"); // le nom de famille est imprimé en majuscules
   });
 
   it('contient un QR code local (image de données) pour le modèle 1', () => {
@@ -180,9 +181,12 @@ describe('PrintPreview : bonus', () => {
     act(() => {
       window.dispatchEvent(new CustomEvent('print-bulletin', { detail: { template: 'model1' } }));
     });
-    const text = new DOMParser().parseFromString(opened.html, 'text/html').body.textContent;
-    expect(text).toContain('16.00');
-    expect(text).not.toContain('17.00');
-    expect(text).toContain('+1.00'); // le bonus reste affiché dans sa colonne
+    // On lit la ligne de la matière : 17.00 apparaît ailleurs sur le bulletin (maximum de la classe, fourni par la base)
+    const doc = new DOMParser().parseFromString(opened.html, 'text/html');
+    const cells = Array.from(doc.querySelector('tbody tr').querySelectorAll('td')).map((td) => td.textContent.trim());
+    expect(cells[6]).toBe('16.00'); // note finale : bonus compris, une seule fois
+    expect(cells[8]).toBe('64.00'); // 16 × coefficient 4
+    expect(cells).not.toContain('17.00');
+    expect(cells[5]).toBe('+1.00'); // le bonus reste affiché dans sa colonne
   });
 });

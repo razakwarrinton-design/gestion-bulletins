@@ -1,12 +1,16 @@
+import { esc, ordinalRank, PRINT_CSS, DENSE_FROM_ROWS } from './shared';
+
 // MODÈLE 1 — OFFICIEL : renvoie le HTML complet du bulletin d'un élève.
 // `c` est le contexte de buildBulletinContext ; les autres paramètres sont ceux de l'élève imprimé
 // (ils diffèrent de c.student quand on imprime toute la classe).
 export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef, sTotalPts) {
-  const { schoolInfo, subjects, grades, classStudents, classInfo, selectedTrimester, computeFinal, gradeColor, fmtAvg, officialTopBar, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, schoolDevise, classTotal, classAverage, effectif, absencesFor, appreciationFor } = c;
+  const { schoolInfo, subjects, grades, classStudents, classInfo, selectedTrimester, computeFinal, gradeColor, fmtAvg, officialTopBar, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, schoolDevise, classTotal, classAverage, classMax, classMin, effectif, absencesFor, appreciationFor, legend } = c;
   const absData = absencesFor(s.id);
   const generalAppreciation = appreciationFor(s.id);
     const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
     const principalTeacher = schoolInfo?.principalTeacher || '';
+    // Beaucoup de matières : mise en page compacte pour que le bulletin tienne sur une page
+    const dense = sGrades.length > DENSE_FROM_ROWS;
 
     const rows = sGrades.map(g => {
       const subj = subjects.find(sub => sub.id === (g.subjectId || g.subject_id));
@@ -17,7 +21,7 @@ export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
       const devoir = g.devoir != null ? g.devoir.toFixed(2) : '—';
       const compo = g.composition != null ? g.composition.toFixed(2) : '—';
       const bonus = g.bonus != null && g.bonus > 0 ? `+${g.bonus.toFixed(2)}` : '—';
-      const teacherName = g.teacherName || subj?.teacher || '';
+      const teacherName = esc(g.teacherName || subj?.teacher || '');
       const cAvgs = classStudents.map(st => {
         const sg = grades.find(gg => (gg.studentId || gg.student_id) === st.id && (gg.subjectId || gg.subject_id) === (g.subjectId || g.subject_id) && gg.trimester === selectedTrimester);
         return computeFinal(sg) || 0;
@@ -29,7 +33,7 @@ export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
         : `<span style="color:#d1d5db;font-size:7pt;">—</span>`;
       return `
         <tr>
-          <td class="subj-name">${subj?.name || 'N/A'}<br>
+          <td class="subj-name">${esc(subj?.name || 'N/A')}<br>
             <span style="font-size:6.5pt;color:#94a3b8;font-weight:400;">${teacherName}</span></td>
           <td class="center">${coef}</td>
           <td class="center sub-note">${interro}</td>
@@ -39,20 +43,21 @@ export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
           <td class="center" style="color:${color};font-weight:800;font-size:10.5pt;">${finalVal != null ? finalVal.toFixed(2) : '—'}</td>
           <td class="center" style="font-size:8pt;color:#6b7280;">${subjClsAvg}</td>
           <td class="center" style="color:${color};font-size:8.5pt;">${finalVal != null ? (finalVal * coef).toFixed(2) : '—'}</td>
-          <td class="appreciate">${g.appreciation || ''}</td>
+          <td class="appreciate">${esc(g.appreciation || '')}</td>
           <td class="center sig-cell">${sigCell}</td>
         </tr>`;
     }).join('');
 
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<title>Bulletin – ${s.firstName} ${s.lastName}</title>
+<title>Bulletin – ${esc(s.firstName)} ${esc(s.lastName)}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   /* @page margin:0 masque l'URL et le titre du navigateur lors de l'impression */
   @page { size: A4 portrait; margin: 0; }
-  body { font-family: 'Times New Roman', serif; font-size: 9.5pt; color: #111; background: #fff;
-         padding: 9mm 10mm 6mm; width: 210mm; min-height: 297mm; }
-  @media print { body { padding: 9mm 10mm 6mm; } }
+  body { font-family: 'Times New Roman', serif; font-size: 9.5pt; color: #111; background: #fff; }
+  /* Les marges sont portées par la page (et non par le body) : en impression de classe, seul le contenu du
+     body de chaque bulletin est repris, et les marges doivent rester. */
+  .page { width: 210mm; min-height: 297mm; padding: 9mm 10mm 6mm; }
   .header { display: flex; justify-content: space-between; align-items: center;
             border-bottom: 3px double #1e40af; padding-bottom: 7px; margin-bottom: 8px; gap: 8px; }
   .header-left { font-size: 8.5pt; line-height: 1.5; }
@@ -89,7 +94,15 @@ export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
   .council-box { border: 1.5px solid #1e40af; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; background: #f8faff; }
   .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
   .footer { text-align: center; font-size: 7pt; color: #9ca3af; margin-top: 8px; border-top: 1px solid #e5e7eb; padding-top: 4px; }
-</style></head><body>
+  /* Mise en page compacte (plus de ${DENSE_FROM_ROWS} matières) */
+  .dense { font-size: 8.5pt; padding-top: 6mm; }
+  .dense td { padding: 1.5px 4px; }
+  .dense th { padding: 3px 4px; }
+  .dense .student-box { padding: 4px 8px; margin-bottom: 5px; }
+  .dense .result-cell { padding: 3px 4px; }
+  .dense .signatures > div { min-height: 60px !important; }
+  ${PRINT_CSS}
+</style></head><body><div class="page${dense ? ' dense' : ''}">
 
   ${officialTopBar()}
 
@@ -110,13 +123,13 @@ export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
 
   <div class="bulletin-title">Bulletin Scolaire &mdash; ${trimLabel}</div>
 
-  <div class="student-box">
+  <div class="student-box keep">
     <div class="student-fields">
-      <div class="info-row"><div class="info-label">Nom</div><div class="info-value">${s.lastName?.toUpperCase()}</div></div>
-      <div class="info-row"><div class="info-label">Prénom</div><div class="info-value">${s.firstName}</div></div>
-      <div class="info-row"><div class="info-label">Classe</div><div class="info-value">${classInfo?.name || 'N/A'}</div></div>
+      <div class="info-row"><div class="info-label">Nom</div><div class="info-value">${esc(s.lastName?.toUpperCase())}</div></div>
+      <div class="info-row"><div class="info-label">Prénom</div><div class="info-value">${esc(s.firstName)}</div></div>
+      <div class="info-row"><div class="info-label">Classe</div><div class="info-value">${esc(classInfo?.name || 'N/A')}</div></div>
       <div class="info-row"><div class="info-label">Effectif</div><div class="info-value">${effectif} élèves</div></div>
-      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">${sRank} / ${classTotal}</div></div>
+      <div class="info-row"><div class="info-label">Rang</div><div class="info-value">${ordinalRank(sRank)} / ${classTotal}</div></div>
       <div class="info-row"><div class="info-label">Trimestre</div><div class="info-value">${trimLabel}</div></div>
       ${s.birthDate || s.birth_date ? `<div class="info-row"><div class="info-label">Date de naissance</div><div class="info-value">${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</div></div>` : ''}
       <div class="info-row"><div class="info-label">Absences</div><div class="info-value" style="color:${absData.absents > 3 ? '#dc2626' : '#374151'};">${absData.absents} abs. · ${absData.retards} ret. · ${absData.injustifies} injust.</div></div>
@@ -145,28 +158,31 @@ export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
       <tr style="background:#1e3a5f !important;">
         <td colspan="6" style="font-weight:bold;color:white;font-size:9pt;">TOTAL GÉNÉRAL</td>
         <td class="center" style="font-weight:bold;color:white;font-size:11pt;">${fmtAvg(sAvg)}/20</td>
+        <td class="center" style="color:white;font-size:8pt;">${fmtAvg(classAverage)}</td>
         <td class="center" style="color:white;font-size:8.5pt;">${sTotalPts.toFixed(2)}</td>
-        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff.: ${sTotalCoef}</td>
+        <td style="color:rgba(255,255,255,.7);font-size:7.5pt;">Coeff. total : ${sTotalCoef}</td>
         <td></td>
       </tr>
     </tbody>
   </table>
 
-  <div class="results-band">
+  <div class="results-band keep">
     <div class="result-cell"><div class="result-label">Moy. générale</div><div class="result-value">${fmtAvg(sAvg)}<span style="font-size:8pt;">/20</span></div></div>
-    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">${fmtAvg(classAverage)}</div></div>
-    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">${sRank}<span style="font-size:8pt;">/${classTotal}</span></div></div>
+    <div class="result-cell"><div class="result-label">Moy. classe</div><div class="result-value" style="font-size:11pt;">${fmtAvg(classAverage)}</div><div style="font-size:6pt;color:#94a3b8;">max ${fmtAvg(classMax)} · min ${fmtAvg(classMin)}</div></div>
+    <div class="result-cell"><div class="result-label">Rang</div><div class="result-value">${ordinalRank(sRank)}<span style="font-size:8pt;">/${classTotal}</span></div></div>
     <div class="result-cell"><div class="result-label">Mention</div><div class="result-value" style="font-size:9.5pt;color:${sMention.color || '#1e40af'};">${sMention.text}</div></div>
     <div class="result-cell"><div class="result-label">Décision</div><div class="result-value" style="font-size:9.5pt;color:${sStatus.color};">${sStatus.text}</div></div>
     <div class="result-cell" style="background:${absData.absents > 3 ? '#fef2f2' : '#f8fafc'}"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:${absData.absents > 3 ? '#dc2626' : '#374151'};">${absData.absents}<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">${absData.retards} retard${absData.retards > 1 ? 's' : ''}</div></div>
   </div>
 
-  <div class="council-box">
+  ${legend()}
+
+  <div class="council-box keep">
     <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
     <div style="font-family:'Brush Script MT',cursive;font-size:12pt;color:#1e3a5f;min-height:22px;border-bottom:1px solid #cbd5e1;padding-bottom:3px;">
-      ${generalAppreciation || principalTeacher || ''}
+      ${esc(generalAppreciation || principalTeacher || '')}
     </div>
-    ${principalTeacher ? `<div style="font-size:6.5pt;color:#2563eb;margin-top:3px;">✓ ${principalTeacher} — ${new Date().toLocaleDateString('fr-FR')}</div>` : ''}
+    ${principalTeacher ? `<div style="font-size:6.5pt;color:#2563eb;margin-top:3px;">✓ ${esc(principalTeacher)} — ${new Date().toLocaleDateString('fr-FR')}</div>` : ''}
   </div>
 
   <div class="signatures">
@@ -177,5 +193,5 @@ export function renderModel1(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
 
   <div class="footer">${schoolName} &mdash; Bulletin officiel &mdash; ${yearLabel} &mdash; ${trimLabel}</div>
 
-</body></html>`;
+</div></body></html>`;
 }

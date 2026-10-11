@@ -1,15 +1,18 @@
 import { strengthsAndWeaknesses } from './context';
+import { esc, ordinalRank, PRINT_CSS, DENSE_FROM_ROWS } from './shared';
 
 // MODÈLE 2 — MODERNE : renvoie le HTML complet du bulletin d'un élève.
 // `c` est le contexte de buildBulletinContext ; les autres paramètres sont ceux de l'élève imprimé
 // (ils diffèrent de c.student quand on imprime toute la classe).
 export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTotalCoef) {
-  const { effectif, schoolInfo, subjects, classInfo, computeFinal, gradeColor, gradeLabel, fmtAvg, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, classTotal, classAverage, classMax, classMin, absencesFor, appreciationFor } = c;
+  const { effectif, schoolInfo, subjects, classInfo, computeFinal, gradeColor, gradeLabel, fmtAvg, qrCodeImg, digitalSigBox, schoolLogo, schoolName, schoolAddr, schoolPhone, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, classTotal, classAverage, classMax, classMin, absencesFor, appreciationFor, legend } = c;
   const absData = absencesFor(s.id);
   const generalAppreciation = appreciationFor(s.id);
   const { strengths, weaknesses } = strengthsAndWeaknesses(sGrades, subjects);
     const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
     const principalTeacher = schoolInfo?.principalTeacher || '';
+    // Beaucoup de matières : mise en page compacte pour que le bulletin tienne sur une page
+    const dense = sGrades.length > DENSE_FROM_ROWS;
 
     const rows = sGrades.map(g => {
       const subj = subjects.find(sub => sub.id === (g.subjectId || g.subject_id));
@@ -18,21 +21,21 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
       const pct = finalVal != null ? (finalVal / 20) * 100 : 0;
       const color = finalVal != null ? gradeColor(finalVal) : '#9ca3af';
       const lbl = finalVal != null ? gradeLabel(finalVal) : '';
-      const teacherName = g.teacherName || subj?.teacher || '';
+      const teacherName = esc(g.teacherName || subj?.teacher || '');
       const interro = g.interro != null ? g.interro.toFixed(2) : '—';
       const devoir = g.devoir != null ? g.devoir.toFixed(2) : '—';
       const compo = g.composition != null ? g.composition.toFixed(2) : '—';
       const bonus = g.bonus != null && g.bonus > 0 ? `<span style="color:#059669;font-weight:700;">+${g.bonus.toFixed(2)}</span>` : '';
       return `
-        <div class="grade-row">
+        <div class="grade-row keep">
           <div class="grade-left">
             <div>
-              <span class="grade-subject">${subj?.name || 'N/A'}</span>
+              <span class="grade-subject">${esc(subj?.name || 'N/A')}</span>
               <span class="grade-coef">×${coef}</span>
               ${teacherName ? `<div style="font-size:6.5pt;color:#94a3b8;margin-top:1px;">${teacherName}</div>` : ''}
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;font-size:7pt;color:#64748b;width:120px;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:3px;font-size:7pt;color:#64748b;width:158px;flex-shrink:0;white-space:nowrap;">
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">I:${interro}</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">D:${devoir}</span>
             <span style="background:#f1f5f9;border-radius:3px;padding:1px 4px;">C:${compo}</span>
@@ -51,12 +54,12 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
              <div style="font-size:5.5pt;color:#2563eb;">✓ Signé</div>`
           : `<span style="font-size:6.5pt;color:#d1d5db;">—</span>`}
           </div>
-          <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;">${g.appreciation || ''}</div>
+          <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;">${esc(g.appreciation || '')}</div>
         </div>`;
     }).join('');
 
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<title>Bulletin – ${s.firstName} ${s.lastName}</title>
+<title>Bulletin – ${esc(s.firstName)} ${esc(s.lastName)}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4 portrait; margin: 0; }
@@ -64,7 +67,7 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
   .page { width: 210mm; min-height: 297mm; background: white; padding: 0 0 8mm; }
   @media print { .page { padding-bottom: 0; } }
   .official-top { font-size: 6.5pt; padding: 4px 20px; border-bottom: 1px solid #bfdbfe; display: flex; justify-content: space-between; color: #374151; }
-  .top-banner { background: linear-gradient(135deg,#1e40af 0%,#3b82f6 50%,#06b6d4 100%); color:white; padding: 14px 20px 12px; }
+  .top-banner { background: linear-gradient(135deg,#1e40af 0%,#3b82f6 50%,#06b6d4 100%); color:white; padding: 14px 20px 26px; }
   .top-row { display: flex; justify-content: space-between; align-items: center; }
   .school-name { font-size: 15pt; font-weight: 700; letter-spacing: .5px; }
   .school-sub  { font-size: 8pt; opacity: .85; margin-top: 1px; }
@@ -85,7 +88,7 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
   .section { margin: 0 16px 10px; }
   .section-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; margin-bottom: 7px; }
   .grade-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
-  .grade-left { width: 150px; display: flex; align-items: flex-start; gap: 5px; flex-shrink: 0; }
+  .grade-left { width: 130px; display: flex; align-items: flex-start; gap: 5px; flex-shrink: 0; }
   .grade-subject { font-weight: 600; font-size: 9pt; }
   .grade-coef { font-size: 7.5pt; color: #94a3b8; }
   .grade-bar-wrap { flex: 1; height: 9px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
@@ -100,7 +103,20 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
   .cstat-lbl { font-size: 6.5pt; color: #94a3b8; text-transform: uppercase; }
   .sigs { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0 16px 12px; }
   .footer { background: #f1f5f9; padding: 6px 16px; font-size: 7pt; color: #94a3b8; display: flex; justify-content: space-between; }
-</style></head><body><div class="page">
+  .legend-wrap { margin: 0 16px 8px; }
+  /* Mise en page compacte (plus de ${DENSE_FROM_ROWS} matières) */
+  .dense .grade-row { padding: 1px 0; gap: 6px; }
+  .dense .section-title { margin-bottom: 3px; }
+  .dense .top-banner { padding: 8px 20px 22px; }
+  .dense .student-card { padding: 5px 14px; }
+  .dense .mention-bar { margin: 6px 16px 5px; padding: 4px 14px; }
+  .dense .class-stats { margin-bottom: 5px; }
+  .dense .cstat { padding: 3px; }
+  .dense .section, .dense .graph-section { margin-bottom: 5px; }
+  .dense .sigs > div { min-height: 50px !important; }
+  .dense .hand-lines { min-height: 9mm; }
+  ${PRINT_CSS}
+</style></head><body><div class="page${dense ? ' dense' : ''}">
 
   <div class="official-top">
     <div>
@@ -126,12 +142,12 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
   <div class="student-card">
     <div class="student-avatar">${(s.firstName || '?')[0]}${(s.lastName || '?')[0]}</div>
     <div>
-      <div class="student-name">${s.firstName} ${s.lastName?.toUpperCase()}</div>
-      <div class="student-meta">Classe: <strong>${classInfo?.name || 'N/A'}</strong> &nbsp;|&nbsp; Effectif: <strong>${effectif}</strong> &nbsp;|&nbsp; ${yearLabel}${s.birthDate || s.birth_date ? ` &nbsp;|&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
+      <div class="student-name">${esc(s.firstName)} ${esc(s.lastName?.toUpperCase())}</div>
+      <div class="student-meta">Classe: <strong>${esc(classInfo?.name || 'N/A')}</strong> &nbsp;|&nbsp; Effectif: <strong>${effectif}</strong> &nbsp;|&nbsp; ${yearLabel}${s.birthDate || s.birth_date ? ` &nbsp;|&nbsp; Né(e) le: <strong>${new Date(s.birthDate || s.birth_date).toLocaleDateString('fr-FR')}</strong>` : ''}</div>
     </div>
     <div class="student-stats">
       <div class="stat-pill"><div class="stat-val">${fmtAvg(sAvg)}</div><div class="stat-lbl">Moyenne</div></div>
-      <div class="stat-pill"><div class="stat-val">${sRank}</div><div class="stat-lbl">Rang</div></div>
+      <div class="stat-pill"><div class="stat-val">${ordinalRank(sRank)}</div><div class="stat-lbl">Rang / ${classTotal}</div></div>
       ${qrCodeImg(s, sAvg, sRank, classTotal)}
     </div>
   </div>
@@ -149,13 +165,14 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
     <div class="cstat"><div class="cstat-val">${fmtAvg(classMax)}</div><div class="cstat-lbl">Meilleure</div></div>
     <div class="cstat"><div class="cstat-val">${fmtAvg(classMin)}</div><div class="cstat-lbl">Plus basse</div></div>
     <div class="cstat"><div class="cstat-val">${sTotalCoef}</div><div class="cstat-lbl">Total coeff.</div></div>
-    <div class="cstat" style="background:${absData.absents > 3 ? '#fef2f2' : '#f8fafc'};"><div class="cstat-val" style="color:${absData.absents > 3 ? '#dc2626' : '#1e40af'};">${absData.absents}</div><div class="cstat-lbl">Absences</div></div>
+    <div class="cstat" style="background:${absData.absents > 3 ? '#fef2f2' : '#f8fafc'};"><div class="cstat-val" style="color:${absData.absents > 3 ? '#dc2626' : '#1e40af'};">${absData.absents}</div><div class="cstat-lbl">Absences${absData.injustifies ? ` (dont ${absData.injustifies} injust.)` : ''}</div></div>
     <div class="cstat"><div class="cstat-val" style="color:#d97706;">${absData.retards}</div><div class="cstat-lbl">Retards</div></div>
   </div>
 
   <div class="section">
     <div class="section-title">Résultats par matière</div>
     ${rows}
+    <div class="legend-wrap">${legend({ withSubjectLevels: true })}</div>
   </div>
 
   ${strengths.length > 0 || weaknesses.length > 0 ? `
@@ -163,20 +180,21 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
     ${strengths.length > 0 ? `
     <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:8px 12px;">
       <div style="font-size:7.5pt;font-weight:800;color:#166534;text-transform:uppercase;margin-bottom:5px;">💪 Points forts</div>
-      ${strengths.map(st => `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #bbf7d0;"><span style="font-weight:600;color:#166534;">${st.name}</span><span style="font-weight:800;color:#059669;">${st.value.toFixed(2)}</span></div>`).join('')}
+      ${strengths.map(st => `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #bbf7d0;"><span style="font-weight:600;color:#166534;">${esc(st.name)}</span><span style="font-weight:800;color:#059669;">${st.value.toFixed(2)}</span></div>`).join('')}
     </div>` : ''}
     ${weaknesses.length > 0 ? `
     <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;">
       <div style="font-size:7.5pt;font-weight:800;color:#991b1b;text-transform:uppercase;margin-bottom:5px;">⚠️ À renforcer</div>
-      ${weaknesses.map(st => `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #fecaca;"><span style="font-weight:600;color:#991b1b;">${st.name}</span><span style="font-weight:800;color:#dc2626;">${st.value.toFixed(2)}</span></div>`).join('')}
+      ${weaknesses.map(st => `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:8pt;border-bottom:1px dashed #fecaca;"><span style="font-weight:600;color:#991b1b;">${esc(st.name)}</span><span style="font-weight:800;color:#dc2626;">${st.value.toFixed(2)}</span></div>`).join('')}
     </div>` : ''}
   </div>` : ''}
 
-  ${generalAppreciation ? `
-  <div style="margin:0 16px 10px;border:1.5px solid #3b82f6;border-radius:8px;padding:8px 14px;background:#eff6ff;">
+  <div class="keep" style="margin:0 16px 10px;border:1.5px solid #3b82f6;border-radius:8px;padding:8px 14px;background:#eff6ff;">
     <div style="font-size:7.5pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe</div>
-    <div style="font-size:10pt;color:#1e3a5f;">${generalAppreciation}</div>
-  </div>` : ''}
+    ${generalAppreciation
+      ? `<div style="font-size:10pt;color:#1e3a5f;">${esc(generalAppreciation)}</div>`
+      : `<div class="hand-lines"></div>`}
+  </div>
 
   <div class="sigs">
     ${digitalSigBox('Signature du Directeur', directorName, 'Directeur')}
