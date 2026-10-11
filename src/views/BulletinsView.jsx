@@ -1,13 +1,24 @@
 import { Printer, MessageCircle } from 'lucide-react';
 import { buildBulletinMessage, buildWhatsappLink } from '../utils/whatsapp';
+import { buildClassSummaryHtml } from '../utils/bulletin/classSummary';
+import { openPrintWindow } from '../utils/printWindow';
 
 const BulletinsView = ({
     classes, students, selectedClass, setSelectedClass,
     selectedTrimester, setSelectedTrimester,
     calculateAverage, getMention, getRank, schoolName, onPrint,
+    grades = [], subjects = [], schoolInfo = {},
 }) => {
     const className = classes.find(c => c.id === selectedClass)?.name;
     const classStudents = selectedClass ? students.filter(s => s.classId === selectedClass) : [];
+
+    const printSummary = () => {
+        const html = buildClassSummaryHtml({
+            className, trimester: selectedTrimester, yearLabel: schoolInfo.year, schoolInfo,
+            students: classStudents, subjects, grades, calculateAverage,
+        });
+        if (!openPrintWindow(html)) alert('Autorisez les pop-ups pour imprimer.');
+    };
 
     return (
         <div className="space-y-4">
@@ -39,6 +50,15 @@ const BulletinsView = ({
                     </select>
                 </div>
             </div>
+            {selectedClass && classStudents.length > 0 && (
+                <button
+                    type="button" onClick={printSummary}
+                    className="border border-blue-600 text-blue-700 px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-50 transition-colors text-sm font-medium"
+                >
+                    <Printer className="w-4 h-4" />
+                    <span>Imprimer le tableau récapitulatif de la classe</span>
+                </button>
+            )}
             {selectedClass && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {classStudents.map(student => {

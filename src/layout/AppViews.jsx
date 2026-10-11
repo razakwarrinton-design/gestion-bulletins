@@ -101,6 +101,8 @@ export default function AppViews({ currentView, ctx }) {
                                 selectedTrimester={selectedTrimester} setSelectedTrimester={setSelectedTrimester}
                                 calculateAverage={calculateAverage} getMention={getMention}
                                 getRank={getRank} schoolName={schoolInfo.name}
+                                grades={grades} subjects={subjects}
+                                schoolInfo={{ ...schoolInfo, year: currentYear }}
                                 onPrint={openPrintPreview}
                             />
                         ))}
