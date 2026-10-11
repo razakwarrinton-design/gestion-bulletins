@@ -30,11 +30,12 @@ export function hasGrade(studentId, trimester, grades) {
 
 /**
  * Distinction du conseil de classe affichée sur le bulletin (moyenne générale).
- * Mêmes seuils que l'échelle de mentions de utils/mentions.js (16 / 14 / 12 / 10).
+ * Mêmes seuils que l'échelle de mentions de utils/mentions.js (18 / 16 / 14 / 12 / 10).
  */
 export function getMention(average) {
   const avg = parseFloat(average);
   if (isNaN(avg)) return { text: 'N/A', color: '#6b7280' };
+  if (avg >= 18) return { text: 'Excellent', color: '#ca8a04' };
   if (avg >= 16) return { text: 'Félicitations', color: '#10b981' };
   if (avg >= 14) return { text: "Tableau d'honneur", color: '#3b82f6' };
   if (avg >= 12) return { text: 'Encouragements', color: '#8b5cf6' };

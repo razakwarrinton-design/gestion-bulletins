@@ -175,7 +175,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression d'un élève 1`
     <div class="result-cell" style="background:#f8fafc"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:#374151;">2<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">1 retard</div></div>
   </div>
 
-  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
 
   <div class="council-box keep">
     <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
@@ -400,7 +400,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
     <div class="result-cell" style="background:#f8fafc"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:#374151;">2<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">1 retard</div></div>
   </div>
 
-  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
 
   <div class="council-box keep">
     <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
@@ -558,7 +558,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
     <div class="result-cell" style="background:#f8fafc"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:#374151;">1<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">0 retard</div></div>
   </div>
 
-  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
 
   <div class="council-box keep">
     <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
@@ -687,7 +687,7 @@ exports[`rendu des bulletins (instantané) > model1 : impression de toute la cla
     <div class="result-cell" style="background:#f8fafc"><div class="result-label">Absences</div><div class="result-value" style="font-size:9.5pt;color:#374151;">0<span style="font-size:7pt;"> abs.</span></div><div style="font-size:6.5pt;color:#94a3b8;">0 retard</div></div>
   </div>
 
-  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+  <div class="scale-legend keep"><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
 
   <div class="council-box keep">
     <div style="font-size:7.5pt;font-weight:700;color:#1e40af;text-transform:uppercase;margin-bottom:5px;">Appréciation du conseil de classe / Prof. principal</div>
@@ -912,7 +912,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression d'un élève 1`
           </div>
           <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;"></div>
         </div>
-    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
+    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Excellent ≥ 18 · Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
   </div>
 
   
@@ -1153,7 +1153,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
           </div>
           <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;"></div>
         </div>
-    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
+    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Excellent ≥ 18 · Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
   </div>
 
   
@@ -1323,7 +1323,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
           </div>
           <div style="width:80px;font-size:7pt;color:#475569;font-style:italic;flex-shrink:0;"></div>
         </div>
-    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
+    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Excellent ≥ 18 · Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
   </div>
 
   
@@ -1440,7 +1440,7 @@ exports[`rendu des bulletins (instantané) > model2 : impression de toute la cla
   <div class="section">
     <div class="section-title">Résultats par matière</div>
     
-    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
+    <div class="legend-wrap"><div class="scale-legend keep"><b>Niveau par matière :</b> Excellent ≥ 18 · Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div></div>
   </div>
 
   
@@ -1676,7 +1676,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression d'un élève 1`
         </tbody>
       </table>
       <div class="scale-legend keep">I = interrogation · D = devoir · C = composition · le bonus éventuel s'ajoute à la note (plafonnée à 20)</div>
-      <div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+      <div class="scale-legend keep"><b>Niveau par matière :</b> Excellent ≥ 18 · Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
       <div class="keep" style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
         <div style="font-size:7pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">Appréciation du conseil de classe</div>
         <div style="font-size:9.5pt;color:#1e3a5f;">Trimestre sérieux.</div>
@@ -1947,7 +1947,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
         </tbody>
       </table>
       <div class="scale-legend keep">I = interrogation · D = devoir · C = composition · le bonus éventuel s'ajoute à la note (plafonnée à 20)</div>
-      <div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+      <div class="scale-legend keep"><b>Niveau par matière :</b> Excellent ≥ 18 · Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
       <div class="keep" style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
         <div style="font-size:7pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">Appréciation du conseil de classe</div>
         <div class="hand-lines"></div>
@@ -2144,7 +2144,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
         </tbody>
       </table>
       <div class="scale-legend keep">I = interrogation · D = devoir · C = composition · le bonus éventuel s'ajoute à la note (plafonnée à 20)</div>
-      <div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+      <div class="scale-legend keep"><b>Niveau par matière :</b> Excellent ≥ 18 · Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
       <div class="keep" style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
         <div style="font-size:7pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">Appréciation du conseil de classe</div>
         <div class="hand-lines"></div>
@@ -2302,7 +2302,7 @@ exports[`rendu des bulletins (instantané) > model3 : impression de toute la cla
         </tbody>
       </table>
       <div class="scale-legend keep">I = interrogation · D = devoir · C = composition · le bonus éventuel s'ajoute à la note (plafonnée à 20)</div>
-      <div class="scale-legend keep"><b>Niveau par matière :</b> Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
+      <div class="scale-legend keep"><b>Niveau par matière :</b> Excellent ≥ 18 · Très Bien ≥ 16 · Bien ≥ 14 · Assez Bien ≥ 12 · Passable ≥ 10 · Insuffisant ≥ 8 · Très Insuffisant &lt; 8<br><b>Mention (moyenne générale) :</b> Excellent ≥ 18 · Félicitations ≥ 16 · Tableau d'honneur ≥ 14 · Encouragements ≥ 12 · Passable ≥ 10 · Insuffisant &lt; 10<br><b>Décision :</b> ADMIS(E) ≥ 12 · À SUIVRE ≥ 8 · EN DIFFICULTÉ &lt; 8</div>
       <div class="keep" style="margin-top:8px;border:1.5px solid #3b82f6;border-radius:8px;padding:7px 12px;background:#eff6ff;">
         <div style="font-size:7pt;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">Appréciation du conseil de classe</div>
         <div class="hand-lines"></div>

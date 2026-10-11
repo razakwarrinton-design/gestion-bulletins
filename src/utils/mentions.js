@@ -10,6 +10,9 @@
  * bulletin restent dans utils/grades.js (`getMention`) : mêmes seuils (16 / 14 / 12), autre vocabulaire.
  */
 export const MENTION_LEVELS = [
+  // « Excellent » dès 18 et « Très Bien » de 16 à 17,99 : échelle annoncée pour les examens nationaux du Togo
+  // (mai 2026). Les autres seuils (14 / 12 / 10 / 8) sont l'usage courant, non confirmé par un texte officiel.
+  { min: 18, label: 'Excellent', short: 'Excellent', icon: '🏆', color: '#ca8a04', bg: '#fef9c3' },
   { min: 16, label: 'Très Bien', short: 'Très Bien', icon: '⭐', color: '#059669', bg: '#dcfce7' },
   { min: 14, label: 'Bien', short: 'Bien', icon: '👍', color: '#2563eb', bg: '#dbeafe' },
   { min: 12, label: 'Assez Bien', short: 'Assez Bien', icon: '👌', color: '#7c3aed', bg: '#ede9fe' },

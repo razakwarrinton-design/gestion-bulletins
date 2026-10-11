@@ -38,7 +38,7 @@ export const PRINT_CSS = `
   .scale-legend b { color: #334155; font-weight: 700; }
   .hand-lines { min-height: 15mm; background-image: repeating-linear-gradient(transparent 0, transparent 6.3mm, #cbd5e1 6.3mm, #cbd5e1 6.6mm); }`;
 
-const DISTINCTION_THRESHOLDS = [16, 14, 12, 10];
+const DISTINCTION_THRESHOLDS = [18, 16, 14, 12, 10];
 const DECISION_THRESHOLDS = [12, 8];
 
 /**

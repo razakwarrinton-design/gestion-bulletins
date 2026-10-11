@@ -77,6 +77,7 @@ describe.each(MODELS)('%s', (template) => {
 
   it('contient la légende des mentions, lue dans les barèmes', () => {
     const text = parse(html(template)).body.textContent.replace(/\s+/g, ' ');
+    expect(text).toContain('Excellent ≥ 18');
     expect(text).toContain('Félicitations ≥ 16');
     expect(text).toContain("Tableau d'honneur ≥ 14");
     expect(text).toContain('ADMIS(E) ≥ 12');

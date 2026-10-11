@@ -65,7 +65,9 @@ describe('calculateAverage', () => {
 
 describe('getMention', () => {
   it.each([
-    [20, 'Félicitations'],
+    [20, 'Excellent'],
+    [18, 'Excellent'],
+    [17.99, 'Félicitations'],
     [16, 'Félicitations'],
     [15.99, "Tableau d'honneur"],
     [14, "Tableau d'honneur"],

@@ -4,7 +4,9 @@ import { getMention } from './grades';
 
 describe('getMentionLevel', () => {
   it.each([
-    [20, 'Très Bien'],
+    [20, 'Excellent'],
+    [18, 'Excellent'],
+    [17.99, 'Très Bien'],
     [16, 'Très Bien'],
     [15.99, 'Bien'],
     [14, 'Bien'],
@@ -31,17 +33,17 @@ describe('countByMention', () => {
     const values = [18, 16, 15, 14, 12.5, 10, 9, 8, 3, 0];
     const result = countByMention(values);
     expect(result.map((l) => [l.label, l.count])).toEqual([
-      ['Très Bien', 2], ['Bien', 2], ['Assez Bien', 1], ['Passable', 1], ['Insuffisant', 2], ['Très Insuffisant', 2],
+      ['Excellent', 1], ['Très Bien', 1], ['Bien', 2], ['Assez Bien', 1], ['Passable', 1], ['Insuffisant', 2], ['Très Insuffisant', 2],
     ]);
     expect(result.reduce((sum, l) => sum + l.count, 0)).toBe(values.length);
   });
 });
 
 describe('cohérence avec les distinctions du bulletin', () => {
-  it('Félicitations / Tableau d\'honneur / Encouragements tombent aux mêmes seuils (16 / 14 / 12)', () => {
+  it('Excellent / Félicitations / Tableau d\'honneur / Encouragements tombent aux mêmes seuils (18 / 16 / 14 / 12)', () => {
     const thresholds = MENTION_LEVELS.map((l) => l.min);
-    expect(thresholds.slice(0, 3)).toEqual([16, 14, 12]);
-    for (const average of [16, 14, 12]) {
+    expect(thresholds.slice(0, 4)).toEqual([18, 16, 14, 12]);
+    for (const average of [18, 16, 14, 12]) {
       expect(getMention(average).text).not.toBe(getMention(average - 0.01).text);
     }
     expect(getMention(10).text).toBe('Passable');
