@@ -282,6 +282,11 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
                             {isRegister ? 'Se connecter' : 'Créer un compte'}
                         </span>
                     </p>
+                    <p style={{ textAlign: 'center', fontSize: 12, color: '#94A3B8', margin: '0 0 6px' }}>
+                        <a href="#/confidentialite" style={{ color: '#64748B' }}>Confidentialité</a>
+                        {' · '}
+                        <a href="#/conditions" style={{ color: '#64748B' }}>Conditions d'utilisation</a>
+                    </p>
                 </div>
             </div>
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
-import { parseHash, resolveView, viewToHash } from '../utils/route';
+import { parseHash, resolveView, viewToHash, isPublicView } from '../utils/route';
 
 const subscribe = (callback) => {
     window.addEventListener('hashchange', callback);
@@ -27,7 +27,8 @@ export function useHashRoute({ allowedViews, defaultView }) {
     // confirmation et de réinitialisation Supabase, #error=… — n'est jamais touché : le client
     // d'authentification doit pouvoir le lire.
     useEffect(() => {
-        if (requested !== null && requested !== view) {
+        // Les pages publiques (confidentialité, conditions) ne sont jamais réécrites
+        if (requested !== null && requested !== view && !isPublicView(requested)) {
             window.history.replaceState(null, '', viewToHash(view));
         }
     }, [hash, requested, view]);

@@ -10,6 +10,11 @@ export function parseHash(hash) {
     return match ? match[1] : null;
 }
 
+/** Pages ouvertes à tous, connecté ou non (aucune donnée de l'école n'y apparaît). */
+export const PUBLIC_VIEWS = ['confidentialite', 'conditions'];
+
+export const isPublicView = (view) => PUBLIC_VIEWS.includes(view);
+
 export function viewToHash(view) {
     return `#/${view}`;
 }

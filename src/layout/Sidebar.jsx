@@ -76,6 +76,11 @@ const Sidebar = ({ visibleNavItems, currentView, mobileMenuOpen, setMobileMenuOp
                         </div>
                     </div>
                 )}
+                <div className="px-2 pt-2 text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                    <a href="#/confidentialite" className="hover:underline">Confidentialité</a>
+                    {' · '}
+                    <a href="#/conditions" className="hover:underline">Conditions</a>
+                </div>
             </div>
         </aside>
 

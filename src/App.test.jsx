@@ -222,6 +222,28 @@ describe('application : navigation par adresse (#/écran)', () => {
     await waitFor(() => expect(window.location.hash).toBe('#/parents'));
   });
 
+  it('les pages légales s’ouvrent sans compte et leur adresse n’est pas réécrite', async () => {
+    window.history.replaceState(null, '', '/#/confidentialite');
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Politique de confidentialité' })).toBeTruthy();
+    expect(screen.queryByText(/Bon retour/)).toBeNull();
+    expect(window.location.hash).toBe('#/confidentialite');
+  });
+
+  it('les pages légales s’ouvrent aussi une fois connecté', async () => {
+    window.history.replaceState(null, '', '/#/conditions');
+    signedIn('admin');
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: "Conditions d'utilisation" })).toBeTruthy();
+    expect(window.location.hash).toBe('#/conditions');
+  });
+
+  it('la page de connexion renvoie vers les pages légales', async () => {
+    render(<App />);
+    expect((await screen.findByRole('link', { name: 'Confidentialité' })).getAttribute('href')).toBe('#/confidentialite');
+    expect(screen.getByRole('link', { name: "Conditions d'utilisation" }).getAttribute('href')).toBe('#/conditions');
+  });
+
   it('cliquer sur le menu change l’adresse', async () => {
     signedIn('admin');
     render(<App />);

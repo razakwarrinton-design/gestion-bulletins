@@ -37,6 +37,8 @@ import AppViews from './layout/AppViews';
 import ErrorBoundary from './components/ErrorBoundary';
 import { resolveId } from './utils/ids';
 import PendingApproval from './components/PendingApproval';
+import LegalPage from './components/LegalPage';
+import { parseHash, isPublicView } from './utils/route';
 
 // Écrans chargés à la demande : le premier affichage reste léger (réseaux mobiles lents).
 const PrintPreview = lazy(() => import('./components/PrintPreview'));
@@ -193,6 +195,10 @@ const BulletinApp = () => {
         getGrade, calculateAverage, getMention,
         addClass, addStudent, updateGrade, showNotification,
     });
+
+    // ── Pages légales : visibles sans compte, avant même la lecture de la session ───────────
+    const requestedPage = parseHash(window.location.hash);
+    if (isPublicView(requestedPage)) return <LegalPage kind={requestedPage} />;
 
     // ── Écran de chargement ───────────────────────────────────────────────────
     // Seulement tant que la session enregistrée n'est pas relue : pendant une tentative de connexion, la
