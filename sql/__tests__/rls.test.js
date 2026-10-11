@@ -17,6 +17,7 @@ const SCRIPTS = [
   ...(BASELINE ? [] : ['security-hardening.sql']),
   'appreciations-activities.sql',
   'audit-log.sql',
+  'client-errors.sql',
 ];
 
 // Comptes de test (UUID fixes)

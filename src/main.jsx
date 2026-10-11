@@ -4,6 +4,9 @@ import './index.css'
 import App from './App.jsx'
 import './styles/darkmode.css';
 import { DarkModeProvider } from './contexts/DarkModeContext'
+import { installErrorReporting } from './utils/errorReporter'
+
+installErrorReporting()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Image, Users, Plus, Trash2, Activity, Download } from 'lucide-react';
 import MFAManager from './MFAManager';
 import GradingScaleEditor from './GradingScaleEditor';
+import ErrorLogPanel from './ErrorLogPanel';
 
 export default function Settings({
     schoolLogo,
@@ -318,6 +319,9 @@ export default function Settings({
             {currentUser?.role === 'admin' && (
                 <GradingScaleEditor schoolInfo={schoolInfo} updateSchoolInfo={updateSchoolInfo} />
             )}
+
+            {/* Incidents (Admin uniquement) */}
+            {currentUser?.role === 'admin' && <ErrorLogPanel showNotification={showNotification} />}
 
             {/* Historique des activités (Admin uniquement) */}
             {currentUser?.role === 'admin' && (

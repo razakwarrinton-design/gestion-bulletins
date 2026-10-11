@@ -57,6 +57,7 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 8. **`sql/security-hardening.sql`** : règles d'accès (un parent ne voit que ses enfants, comptes inscrits « en attente » jusqu'à validation). **Obligatoire avant toute mise en service**, voir [docs/SECURITE.md](docs/SECURITE.md)
 9. `sql/appreciations-activities.sql` : appréciations et journal d'activité dans des tables (une ligne par élément) au lieu d'un bloc partagé que deux utilisateurs pouvaient s'écraser ; reprend les données existantes. **À exécuter avant de déployer cette version.** À lancer après `security-hardening.sql`
 10. `sql/audit-log.sql` : journal d'audit tenu par la base (qui a créé, modifié ou supprimé quoi), lisible par les administrateurs dans le menu *Journal d'audit*. À exécuter après `security-hardening.sql`
+11. `sql/client-errors.sql` : journal des incidents (erreurs rencontrées dans le navigateur, sans notes ni noms d'élèves), lisible par les administrateurs dans *Paramètres → Incidents de l'application*. Facultatif : sans lui, l'application fonctionne et ne garde simplement aucun rapport. À exécuter après `security-hardening.sql`
 
 ### Créer le premier administrateur
 
@@ -90,7 +91,7 @@ Les scripts d'installation sont ré-exécutables. Pour passer une base déjà en
 1. **Sauvegarder, ou tester sur une branche Supabase** : ces scripts modifient des tables en place.
 2. Vérifier les contraintes actuelles de `grades` (une base modifiée à la main peut différer des scripts du dépôt) :
    `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = 'public.grades'::regclass;`
-3. Exécuter, **dans cet ordre** : `grades-alignment.sql` → `security-hardening.sql` → `appreciations-activities.sql` → `audit-log.sql`.
+3. Exécuter, **dans cet ordre** : `grades-alignment.sql` → `security-hardening.sql` → `appreciations-activities.sql` → `audit-log.sql` → `client-errors.sql`.
 4. Déployer l'application, puis les fonctions Edge (voir ci-dessous).
 
 `security-hardening.sql` doit être relancé : `child_class_rank` (rang de l'enfant dans sa classe) prend maintenant
@@ -106,7 +107,7 @@ journal d'audit commence à l'exécution de `audit-log.sql` (il ne reconstitue p
 
 ### Migrations (Supabase CLI)
 
-`supabase/migrations/20261009000000_baseline.sql` est l'état de la base obtenu en exécutant les scripts 1 à 10 :
+`supabase/migrations/20261009000000_baseline.sql` est l'état de la base obtenu en exécutant les scripts 1 à 11 :
 il est **généré** (`npm run sql:baseline`) et un test échoue s'il n'est plus à jour. Pour suivre les évolutions du
 schéma avec la CLI, au lieu de coller des scripts dans l'éditeur SQL :
 
