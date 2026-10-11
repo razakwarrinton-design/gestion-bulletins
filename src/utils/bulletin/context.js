@@ -2,7 +2,7 @@ import { qrDataUrl } from '../qrCode';
 import { currentAcademicYear } from '../studentUtils';
 import { getMentionLevel } from '../mentions';
 import { finalGrade } from '../finalGrade';
-import { getClassRank, hasGrade } from '../grades';
+import { getClassRank, hasGrade, decisionFor } from '../grades';
 import { esc, scaleLegend } from './shared';
 
 const NO_ABSENCES = { absents: 0, retards: 0, injustifies: 0 };
@@ -64,10 +64,7 @@ export function buildBulletinContext({
     return sum + ((g.value || 0) * coef);
   }, 0);
 
-  // Décision selon la moyenne générale (la légende imprimée lit ces seuils par cette fonction)
-  const decisionFor = (avg) => (avg >= 12 ? { text: 'ADMIS(E)', color: '#059669' }
-    : avg >= 8 ? { text: 'À SUIVRE', color: '#d97706' }
-      : { text: 'EN DIFFICULTÉ', color: '#dc2626' });
+  // Décision selon la moyenne générale (seuils du barème de l'école)
   const studentStatus = decisionFor(average);
 
   // Textes saisis par l'école : insérés dans le HTML après échappement
@@ -138,7 +135,7 @@ export function buildBulletinContext({
   const appreciationFor = (studentId) => (studentId === student.id ? generalAppreciation : '');
 
   return {
-    legend: (options = {}) => scaleLegend({ ...options, decisionFor }),
+    legend: (options = {}) => scaleLegend(options),
     student, studentGrades, average, mention, ranking, studentRank, studentStatus, totalCoef, totalPoints, classInfo, classStudents, classTotal, classAverage, classMax, classMin, strengths, weaknesses, schoolName, schoolAddr, schoolPhone, schoolEmail, trimLabel, yearLabel, republic, countryMotto, ministry, schoolDevise, fmtAvg, gradeColor, gradeLabel, computeFinal, officialTopBar, qrCodeImg, digitalSigBox, subjects, grades, selectedTrimester, calculateAverage, schoolInfo, schoolLogo, absencesFor, appreciationFor, rankOf, effectif,
   };
 }

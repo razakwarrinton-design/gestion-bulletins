@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getMentionLevel, countByMention, MENTION_LEVELS } from './mentions';
+import { getMentionLevel, countByMention, mentionLevels } from './mentions';
 import { getMention } from './grades';
 
 describe('getMentionLevel', () => {
@@ -41,7 +41,7 @@ describe('countByMention', () => {
 
 describe('cohérence avec les distinctions du bulletin', () => {
   it('Excellent / Félicitations / Tableau d\'honneur / Encouragements tombent aux mêmes seuils (18 / 16 / 14 / 12)', () => {
-    const thresholds = MENTION_LEVELS.map((l) => l.min);
+    const thresholds = mentionLevels().map((l) => l.min);
     expect(thresholds.slice(0, 4)).toEqual([18, 16, 14, 12]);
     for (const average of [18, 16, 14, 12]) {
       expect(getMention(average).text).not.toBe(getMention(average - 0.01).text);

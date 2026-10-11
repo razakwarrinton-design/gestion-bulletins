@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { currentAcademicYear } from '../utils/studentUtils';
-import { MENTION_LEVELS, getMentionLevel, countByMention } from '../utils/mentions';
+import { mentionLevels, getMentionLevel, countByMention } from '../utils/mentions';
+import { getScale } from '../utils/gradingScale';
 import {
     LineChart, Line, BarChart, Bar, RadarChart, Radar,
     PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -18,7 +19,7 @@ const fmtPct = (n) => `${parseFloat(n || 0).toFixed(1)}%`;
 
 const getMention = (v) => {
     // Une valeur non numérique garde l'affichage « Très Insuf. » d'avant
-    const level = getMentionLevel(v) ?? MENTION_LEVELS[MENTION_LEVELS.length - 1];
+    const level = getMentionLevel(v) ?? mentionLevels().at(-1);
     return { text: level.short, color: level.color, bg: level.bg };
 };
 
@@ -113,9 +114,12 @@ export default function DashboardKPIs({
         const globalAvg = allAverages.length ? allAverages.reduce((a, b) => a + b, 0) / allAverages.length : 0;
         const bestAvg = allAverages.length ? Math.max(...allAverages) : 0;
         const worstAvg = allAverages.length ? Math.min(...allAverages) : 0;
-        const passRate = allAverages.length ? (allAverages.filter(a => a >= 10).length / allAverages.length) * 100 : 0;
-        const excellRate = allAverages.length ? (allAverages.filter(a => a >= 14).length / allAverages.length) * 100 : 0;
-        const failRate = allAverages.length ? (allAverages.filter(a => a < 8).length / allAverages.length) * 100 : 0;
+        const { cutoffs, difficulty } = getScale();
+        const passMark = cutoffs[cutoffs.length - 1]; // seuil « Passable »
+        const excellMark = cutoffs[2]; // seuil « Bien »
+        const passRate = allAverages.length ? (allAverages.filter(a => a >= passMark).length / allAverages.length) * 100 : 0;
+        const excellRate = allAverages.length ? (allAverages.filter(a => a >= excellMark).length / allAverages.length) * 100 : 0;
+        const failRate = allAverages.length ? (allAverages.filter(a => a < difficulty).length / allAverages.length) * 100 : 0;
 
         const mentionDist = countByMention(allAverages)
             .map(level => ({ name: level.short, value: level.count, color: level.color }))
@@ -129,7 +133,7 @@ export default function DashboardKPIs({
 
         const atRisk = students
             .map(s => ({ student: s, avg: parseFloat(calculateAverage(s.id, selectedTrimester)) || 0 }))
-            .filter(x => x.avg > 0 && x.avg < 10)
+            .filter(x => x.avg > 0 && x.avg < passMark)
             .sort((a, b) => a.avg - b.avg)
             .slice(0, 5);
 
@@ -163,7 +167,7 @@ export default function DashboardKPIs({
             totalStudents: students.length, totalClasses: classes.length,
             totalSubjects: subjects.length, totalGrades: validGrades.length,
             globalAvg, bestAvg, worstAvg,
-            passRate, excellRate, failRate,
+            passRate, excellRate, failRate, passMark, excellMark, difficulty,
             mentionDist, topStudents, atRisk, classStats, evolution, subjectStats
         };
     }, [students, classes, subjects, grades, calculateAverage, selectedTrimester]);
@@ -227,9 +231,9 @@ export default function DashboardKPIs({
                 <SectionCard title="Taux de réussite" icon={CheckCircle} iconColor="#059669">
                     <div className="space-y-4">
                         {[
-                            { label: 'Admis (≥ 10)', val: stats.passRate, color: '#059669' },
-                            { label: 'Excellence (≥ 14)', val: stats.excellRate, color: '#2563eb' },
-                            { label: 'En difficulté (< 8)', val: stats.failRate, color: '#dc2626' },
+                            { label: `Admis (≥ ${stats.passMark})`, val: stats.passRate, color: '#059669' },
+                            { label: `Excellence (≥ ${stats.excellMark})`, val: stats.excellRate, color: '#2563eb' },
+                            { label: `En difficulté (< ${stats.difficulty})`, val: stats.failRate, color: '#dc2626' },
                         ].map((item, i) => (
                             <div key={i}>
                                 <div className="flex justify-between text-xs mb-1.5">
@@ -324,8 +328,8 @@ export default function DashboardKPIs({
                                 <Bar dataKey="moyenne" radius={[8, 8, 0, 0]}>
                                     {stats.classStats.map((entry, i) => (
                                         <Cell key={i} fill={
-                                            entry.moyenne >= 14 ? '#059669' :
-                                                entry.moyenne >= 10 ? '#2563eb' : '#dc2626'
+                                            entry.moyenne >= stats.excellMark ? '#059669' :
+                                                entry.moyenne >= stats.passMark ? '#2563eb' : '#dc2626'
                                         } />
                                     ))}
                                 </Bar>

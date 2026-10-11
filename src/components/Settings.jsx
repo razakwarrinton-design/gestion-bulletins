@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Image, Users, Plus, Trash2, Activity, Download } from 'lucide-react';
 import MFAManager from './MFAManager';
+import GradingScaleEditor from './GradingScaleEditor';
 
 export default function Settings({
     schoolLogo,
@@ -312,6 +313,11 @@ export default function Settings({
                     <p className="text-sm text-yellow-700">Les modifications sont sauvegardées automatiquement et seront appliquées aux prochains bulletins générés.</p>
                 </div>
             </div>
+
+            {/* Barème (Admin uniquement) */}
+            {currentUser?.role === 'admin' && (
+                <GradingScaleEditor schoolInfo={schoolInfo} updateSchoolInfo={updateSchoolInfo} />
+            )}
 
             {/* Historique des activités (Admin uniquement) */}
             {currentUser?.role === 'admin' && (

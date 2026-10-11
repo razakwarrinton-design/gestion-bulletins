@@ -1,7 +1,8 @@
 // Éléments communs aux trois modèles de bulletin : mise en page d'impression, échappement du texte,
 // rang en ordinal et légende de lecture.
-import { MENTION_LEVELS } from '../mentions';
-import { getMention } from '../grades';
+import { mentionLevels } from '../mentions';
+import { getMention, decisionFor as defaultDecisionFor } from '../grades';
+import { getScale } from '../gradingScale';
 
 /** Au-delà de ce nombre de matières, le bulletin passe en mise en page compacte pour tenir sur une page A4. */
 export const DENSE_FROM_ROWS = 11;
@@ -38,33 +39,34 @@ export const PRINT_CSS = `
   .scale-legend b { color: #334155; font-weight: 700; }
   .hand-lines { min-height: 15mm; background-image: repeating-linear-gradient(transparent 0, transparent 6.3mm, #cbd5e1 6.3mm, #cbd5e1 6.6mm); }`;
 
-const DISTINCTION_THRESHOLDS = [18, 16, 14, 12, 10];
-const DECISION_THRESHOLDS = [12, 8];
+/** Seuil affiché comme dans un bulletin français : virgule décimale, pas de zéros inutiles. */
+const fmtThreshold = (v) => String(v).replace('.', ',');
 
 /**
- * Légende « comment lire ce bulletin » : les seuils sont lus dans les fonctions qui produisent les mentions
- * (jamais recopiés), donc la légende reste exacte si un barème change.
+ * Légende « comment lire ce bulletin » : les seuils sont ceux du barème de l'école (utils/gradingScale.js),
+ * lus au moment de l'impression, et les libellés viennent des fonctions qui produisent les mentions.
  * `withSubjectLevels` ajoute le barème des niveaux par matière (modèles qui affichent un niveau par ligne).
  */
-export function scaleLegend({ withSubjectLevels = false, decisionFor }) {
+export function scaleLegend({ withSubjectLevels = false, decisionFor = defaultDecisionFor } = {}) {
+  const { cutoffs, difficulty, admission } = getScale();
   const lines = [];
   if (withSubjectLevels) {
-    const levels = MENTION_LEVELS.map((level, i) => (i < MENTION_LEVELS.length - 1
-      ? `${level.label} ≥ ${level.min}`
-      : `${level.label} &lt; ${MENTION_LEVELS[i - 1].min}`));
-    lines.push(`<b>Niveau par matière :</b> ${levels.join(' · ')}`);
+    const levels = mentionLevels();
+    const parts = levels.map((level, i) => (i < levels.length - 1
+      ? `${level.label} ≥ ${fmtThreshold(level.min)}`
+      : `${level.label} &lt; ${fmtThreshold(levels[i - 1].min)}`));
+    lines.push(`<b>Niveau par matière :</b> ${parts.join(' · ')}`);
   }
   const distinctions = [
-    ...DISTINCTION_THRESHOLDS.map((v) => `${getMention(v).text} ≥ ${v}`),
-    `${getMention(0).text} &lt; ${DISTINCTION_THRESHOLDS[DISTINCTION_THRESHOLDS.length - 1]}`,
+    ...cutoffs.map((v) => `${getMention(v).text} ≥ ${fmtThreshold(v)}`),
+    `${getMention(0).text} &lt; ${fmtThreshold(cutoffs[cutoffs.length - 1])}`,
   ];
   lines.push(`<b>Mention (moyenne générale) :</b> ${distinctions.join(' · ')}`);
-  if (decisionFor) {
-    const decisions = [
-      ...DECISION_THRESHOLDS.map((v) => `${decisionFor(v).text} ≥ ${v}`),
-      `${decisionFor(0).text} &lt; ${DECISION_THRESHOLDS[DECISION_THRESHOLDS.length - 1]}`,
-    ];
-    lines.push(`<b>Décision :</b> ${decisions.join(' · ')}`);
-  }
+  const decisions = [
+    `${decisionFor(admission).text} ≥ ${fmtThreshold(admission)}`,
+    `${decisionFor(difficulty).text} ≥ ${fmtThreshold(difficulty)}`,
+    `${decisionFor(-1).text} &lt; ${fmtThreshold(difficulty)}`,
+  ];
+  lines.push(`<b>Décision :</b> ${decisions.join(' · ')}`);
   return `<div class="scale-legend keep">${lines.join('<br>')}</div>`;
 }

@@ -1,3 +1,5 @@
+import { getScale } from './gradingScale';
+
 export function calculateAverage(studentId, trimester, grades, subjects) {
   const studentGrades = grades.filter(g => g.studentId === studentId && g.trimester === trimester);
   if (studentGrades.length === 0) return 0;
@@ -28,19 +30,33 @@ export function hasGrade(studentId, trimester, grades) {
   );
 }
 
+/** Distinctions du conseil de classe, de la plus haute (Excellent) à Passable ; sous le dernier seuil : « Insuffisant ». */
+const DISTINCTIONS = [
+  { text: 'Excellent', color: '#ca8a04' },
+  { text: 'Félicitations', color: '#10b981' },
+  { text: "Tableau d'honneur", color: '#3b82f6' },
+  { text: 'Encouragements', color: '#8b5cf6' },
+  { text: 'Passable', color: '#f59e0b' },
+];
+
 /**
  * Distinction du conseil de classe affichée sur le bulletin (moyenne générale).
- * Mêmes seuils que l'échelle de mentions de utils/mentions.js (18 / 16 / 14 / 12 / 10).
+ * Mêmes seuils que l'échelle de mentions de utils/mentions.js, lus dans le barème de l'école.
  */
 export function getMention(average) {
   const avg = parseFloat(average);
   if (isNaN(avg)) return { text: 'N/A', color: '#6b7280' };
-  if (avg >= 18) return { text: 'Excellent', color: '#ca8a04' };
-  if (avg >= 16) return { text: 'Félicitations', color: '#10b981' };
-  if (avg >= 14) return { text: "Tableau d'honneur", color: '#3b82f6' };
-  if (avg >= 12) return { text: 'Encouragements', color: '#8b5cf6' };
-  if (avg >= 10) return { text: 'Passable', color: '#f59e0b' };
-  return { text: 'Insuffisant', color: '#ef4444' };
+  const { cutoffs } = getScale();
+  const i = cutoffs.findIndex((min) => avg >= min);
+  return i >= 0 ? { ...DISTINCTIONS[i] } : { text: 'Insuffisant', color: '#ef4444' };
+}
+
+/** Décision selon la moyenne générale : admis dès le seuil d'admission, en difficulté sous le seuil de difficulté. */
+export function decisionFor(average) {
+  const { admission, difficulty } = getScale();
+  if (average >= admission) return { text: 'ADMIS(E)', color: '#059669', bg: '#ecfdf5' };
+  if (average >= difficulty) return { text: 'À SUIVRE', color: '#d97706', bg: '#fffbeb' };
+  return { text: 'EN DIFFICULTÉ', color: '#dc2626', bg: '#fef2f2' };
 }
 
 /**

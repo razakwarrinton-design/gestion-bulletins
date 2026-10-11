@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import ParentDashboard from './ParentDashboard';
 import { getMentionLevel } from '../utils/mentions';
+import { decisionFor } from '../utils/grades';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const gradeColor = (v) => v >= 15 ? '#059669' : v >= 10 ? '#2563eb' : v >= 8 ? '#d97706' : '#dc2626';
 const gradeLabel = (v) => getMentionLevel(v)?.label ?? '';
@@ -25,9 +26,7 @@ const getMention = (avg) => {
 const getStatus = (avg) => {
     const v = parseFloat(avg);
     if (isNaN(v)) return null;
-    if (v >= 12) return { text: 'ADMIS(E)', color: '#059669', bg: '#ecfdf5' };
-    if (v >= 8) return { text: 'À SUIVRE', color: '#d97706', bg: '#fffbeb' };
-    return { text: 'EN DIFFICULTÉ', color: '#dc2626', bg: '#fef2f2' };
+    return decisionFor(v);
 };
 
 // Suffixe ordinal français : 1er, 2ème, 3ème...

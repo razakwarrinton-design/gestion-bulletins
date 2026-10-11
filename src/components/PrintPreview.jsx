@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Printer, X, Users, ChevronDown } from 'lucide-react';
 import { supabase } from '../config/supabase';
+import { decisionFor } from '../utils/grades';
 import { prepareBulletinHtml } from '../utils/printSecurity';
 import { buildBulletinContext, renderBulletin, fileTitle, withDocumentTitle } from '../utils/bulletin';
 
@@ -96,7 +97,7 @@ function PrintPreviewInner({
       const sGrades = grades.filter(g => (g.studentId || g.student_id) === s.id && g.trimester === selectedTrimester);
       const sRank = c.rankOf(s.id);
       const sMention = getMention(sAvg);
-      const sStatus = sAvg >= 12 ? { text: 'ADMIS(E)', color: '#059669' } : sAvg >= 8 ? { text: 'À SUIVRE', color: '#d97706' } : { text: 'EN DIFFICULTÉ', color: '#dc2626' };
+      const sStatus = decisionFor(sAvg);
       const sTotalCoef = sGrades.reduce((sum, g) => sum + (subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.coefficient || 0), 0);
       const sTotalPts = sGrades.reduce((sum, g) => {
         const coef = subjects.find(sub => sub.id === (g.subjectId || g.subject_id))?.coefficient || 0;

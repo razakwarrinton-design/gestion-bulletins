@@ -1,5 +1,6 @@
 import { useSupabaseState } from './useSupabaseState';
 import { currentAcademicYear } from '../utils/studentUtils';
+import { applyGradingScale } from '../utils/gradingScale';
 
 // Valeur de départ d'une installation neuve : l'année scolaire en cours (rentrée en septembre)
 const DEFAULT_YEAR = currentAcademicYear();
@@ -36,6 +37,8 @@ export function useSchoolSettings({ notify }) {
         directorName: '',   // nom complet du directeur
         principalTeacher: '',   // nom du professeur principal (pour les bulletins)
     });
+    // Le barème de l'école s'applique à tous les écrans (bulletins, tableaux de bord, portail parents)
+    applyGradingScale(schoolInfo?.gradingScale);
     const [appColors, setAppColors] = useSupabaseState('appColors', {
         primary: '#2563eb', secondary: '#10b981', accent: '#f59e0b'
     });

@@ -49,7 +49,8 @@ export default function AdvancedAnalytics({
   const distribution = countByMention(studentScores.map(s => s.average));
   const gradedCount = studentScores.length;
   const percent = (count) => (gradedCount ? Math.round((count / gradedCount) * 100) : 0);
-  const goodOrBetter = distribution.filter(level => level.min >= 14).reduce((sum, level) => sum + level.count, 0);
+  // « Bien » et au-dessus : les trois premiers niveaux du barème
+  const goodOrBetter = distribution.slice(0, 3).reduce((sum, level) => sum + level.count, 0);
 
   return (
     <div className="space-y-6">

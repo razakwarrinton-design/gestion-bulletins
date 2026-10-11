@@ -8,6 +8,7 @@
  * Voir docs/CALCUL-MOYENNES.md.
  */
 import { calculateAverage, getClassRank, hasGrade } from './grades';
+import { getScale } from './gradingScale';
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
@@ -104,7 +105,8 @@ export const formatGrade = (value, decimals = 2) => {
   return parseFloat(value).toFixed(decimals);
 };
 
-/** Élève en risque de redoublement (moyenne < 10). */
+/** Élève en risque de redoublement (moyenne sous le seuil « Passable » du barème, 10 par défaut). */
 export const isAtRisk = (yearlyAverage) => {
-  return yearlyAverage < 10;
+  const { cutoffs } = getScale();
+  return yearlyAverage < cutoffs[cutoffs.length - 1];
 };
