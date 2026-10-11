@@ -128,6 +128,22 @@ Le plan gratuit de Supabase ne propose pas de sauvegarde téléchargeable. Avant
 - **Tableau de bord → Table Editor → table → Export → CSV** (au minimum `students`, `classes`, `subjects`, `grades`, `absences`, `payments`, `user_profiles`) ;
 - ou, avec la CLI : `supabase db dump --linked -f sauvegarde.sql` (structure) et `supabase db dump --linked --data-only -f donnees.sql`.
 
+**Sauvegarde des données par script** : `npm run backup` écrit, dans `backups/<date>/`, un fichier JSON par table et un
+`manifest.json` (nombre de lignes par table). Il lit tout, page par page, et refuse de livrer une table tronquée.
+```
+SUPABASE_URL=https://xxxx.supabase.co SUPABASE_SERVICE_ROLE_KEY=... npm run backup
+npm run backup -- --verify backups/<date>      # contrôle que les fichiers correspondent au manifeste
+```
+La clé `service_role` (Supabase → Project Settings → API) donne accès à toutes les données : passez-la seulement en
+variable d'environnement de la commande, **jamais** dans une variable `VITE_` (elle serait publiée dans l'application)
+ni dans un fichier suivi par git. `backups/` contient des données d'élèves : il est ignoré par git, à conserver
+chiffré et hors de l'ordinateur de travail.
+
+**Ce qui est prouvé, et ce qui ne l'est pas.** `sql/__tests__/backup-restore.test.js` sauvegarde une base installée avec
+nos scripts, la restaure dans une base neuve et compare : mêmes lignes, mêmes règles d'accès, RLS fonctionnel. Il prouve
+la procédure et que nos scripts survivent à ce cycle. Il ne prouve pas que *votre* projet Supabase se restaure : faites
+un exercice une fois (créer un second projet gratuit, y exécuter les scripts, y réinjecter une sauvegarde) et notez la date.
+
 Ces exports permettent de retrouver les données ; la restauration est une opération à part (réimport des CSV ou
 `psql -f`). L'écran *Import / Export* de l'application exporte les notes d'une classe en Excel, ce qui ne remplace
 pas une sauvegarde complète de la base.

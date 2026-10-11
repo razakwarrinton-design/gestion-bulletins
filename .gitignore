@@ -25,3 +25,6 @@ dist-ssr
 
 .vercel
 .env*.local
+
+# Sauvegardes des données (données personnelles d'élèves : jamais dans git)
+backups/
