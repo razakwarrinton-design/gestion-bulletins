@@ -24,7 +24,7 @@ npm run dev
 ## Fonctionnalités
 
 - Classes, élèves, matières et coefficients
-- Saisie des notes, moyennes pondérées, mentions, classement
+- Saisie des notes en cartes (détail interrogation / devoir / composition / bonus) ou en tableau élèves × matières (classes nombreuses : Entrée passe à l'élève suivant), moyennes pondérées, mentions, classement
 - Barème réglable par établissement (seuils de mention, d'admission, de difficulté) : *Paramètres → Barème de l'établissement*. Par défaut : « Excellent » dès 18 et « Très Bien » de 16 à 17,99 (échelle des examens nationaux togolais 2026) ; les autres seuils sont l'usage courant, **non confirmé par un texte officiel**
 - Bulletins imprimables (3 modèles, une page A4 jusqu'à 14 matières), tableau récapitulatif de classe (procès-verbal), appréciations (enseignant, conseil de classe, assistant IA)
 - Envoi des résultats d'un élève au parent par WhatsApp (lien pré-rempli, sans clé API)

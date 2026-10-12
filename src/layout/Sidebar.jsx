@@ -1,7 +1,31 @@
-import { BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import { BarChart3, ChevronDown } from 'lucide-react';
 import { NAV_SECTIONS } from '../config/navigation';
 
-const Sidebar = ({ visibleNavItems, currentView, mobileMenuOpen, setMobileMenuOpen, onNavigate, currentUser }) => (
+const STORAGE_KEY = 'edupulse.navSections';
+// Au-delà de ce nombre d'entrées visibles (l'administrateur en a une vingtaine), les rubriques secondaires démarrent repliées
+const COLLAPSE_ABOVE = 12;
+const ALWAYS_OPEN = ['principal', 'notes'];
+
+const readChoices = () => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+};
+
+const Sidebar = ({ visibleNavItems, currentView, mobileMenuOpen, setMobileMenuOpen, onNavigate, currentUser }) => {
+    // Rubriques ouvertes ou repliées : le choix de l'utilisateur est mémorisé ; la rubrique de l'écran affiché reste toujours ouverte
+    const [choices, setChoices] = useState(readChoices);
+    const isOpen = (section, items) => {
+        if (items.some(i => i.view === currentView)) return true;
+        if (section.key in choices) return choices[section.key];
+        return ALWAYS_OPEN.includes(section.key) || visibleNavItems.length <= COLLAPSE_ABOVE;
+    };
+    const toggle = (section, items) => {
+        const next = { ...choices, [section.key]: !isOpen(section, items) };
+        setChoices(next);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* stockage indisponible */ }
+    };
+
+    return (
     <>
         <aside
             className={`w-[210px] flex-shrink-0 flex flex-col h-full z-50 transition-transform duration-300
@@ -27,12 +51,20 @@ const Sidebar = ({ visibleNavItems, currentView, mobileMenuOpen, setMobileMenuOp
                 {NAV_SECTIONS.map(section => {
                     const sectionItems = visibleNavItems.filter(i => i.section === section.key);
                     if (sectionItems.length === 0) return null;
+                    const open = isOpen(section, sectionItems);
                     return (
                         <div key={section.key}>
-                            <div className="text-[9.5px] font-bold uppercase tracking-widest px-2 py-2 mt-2"
-                                style={{ color: 'rgba(255,255,255,0.3)' }}>
+                            <button
+                                type="button"
+                                onClick={() => toggle(section, sectionItems)}
+                                aria-expanded={open}
+                                aria-controls={`nav-${section.key}`}
+                                className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-widest px-2 py-2 mt-2 hover:text-white"
+                                style={{ color: 'rgba(255,255,255,0.5)' }}>
                                 {section.label}
-                            </div>
+                                <ChevronDown className="w-3 h-3 transition-transform" style={{ transform: open ? 'none' : 'rotate(-90deg)' }} aria-hidden="true" />
+                            </button>
+                            <div id={`nav-${section.key}`} hidden={!open}>
                             {sectionItems.map(({ view, label, Icon }) => (
                                 <button
                                     key={view}
@@ -52,6 +84,7 @@ const Sidebar = ({ visibleNavItems, currentView, mobileMenuOpen, setMobileMenuOp
                                     <span className="flex-1 truncate">{label}</span>
                                 </button>
                             ))}
+                            </div>
                         </div>
                     );
                 })}
@@ -68,7 +101,7 @@ const Sidebar = ({ visibleNavItems, currentView, mobileMenuOpen, setMobileMenuOp
                             <div className="text-white text-[12px] font-medium truncate">
                                 {currentUser.firstName} {currentUser.lastName}
                             </div>
-                            <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                            <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.6)' }}>
                                 {currentUser.role === 'admin' ? 'Administrateur' :
                                     currentUser.role === 'professeur' ? 'Professeur' :
                                         currentUser.role === 'parent' ? 'Parent' : 'Secrétaire'}
@@ -92,6 +125,7 @@ const Sidebar = ({ visibleNavItems, currentView, mobileMenuOpen, setMobileMenuOp
             />
         )}
     </>
-);
+    );
+};
 
 export default Sidebar;

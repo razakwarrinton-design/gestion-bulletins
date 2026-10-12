@@ -4,6 +4,7 @@ import { supabase } from '../config/supabase';
 import { getMentionLevel } from '../utils/mentions';
 import { weightedBase, applyBonus, gradeInputProblem, MAX_BONUS, MAX_GRADE } from '../utils/finalGrade';
 import { readFunctionError } from '../utils/functionError';
+import GradesTable from './GradesTable';
 
 // ─── Hook debounce ────────────────────────────────────────────────────────────
 function useDebounce(value, delay) {
@@ -165,16 +166,16 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
       padding: '12px 14px', transition: 'border-color .2s',
     }}>
       {/* ── Header matière ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
           <div style={{
             width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
             background: fv != null ? noteTxtCol(fv) : '#CBD5E1',
           }} />
           <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{subject.name}</span>
-          <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>Coef. {subject.coefficient}</span>
+          <span style={{ fontSize: 11, color: '#64748B', fontWeight: 500 }}>Coef. {subject.coefficient}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           {fv != null && (
             <span style={{
               fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
@@ -216,7 +217,7 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
           <NoteField label="Bonus" value={bonus} onChange={setBonus} isBonus />
           {/* Note finale calculée (lecture seule) */}
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+            <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
               Finale (auto)
             </div>
             <div style={{
@@ -228,7 +229,7 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
             }}>
               {fv != null ? fv.toFixed(2) : '—'}
             </div>
-            <div style={{ fontSize: 9, color: '#CBD5E1', textAlign: 'center', marginTop: 2 }}>I×1 D×2 C×3 +B</div>
+            <div style={{ fontSize: 9, color: '#94A3B8', textAlign: 'center', marginTop: 2 }}>I×1 D×2 C×3 +B</div>
           </div>
         </div>
       ) : (
@@ -256,7 +257,7 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
       {/* ── Appréciation + Nom prof ── */}
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ flex: 2 }}>
-          <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+          <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
             Appréciation
           </div>
           <input
@@ -270,11 +271,11 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
           />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+          <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
             Nom du professeur
           </div>
           <div style={{ position: 'relative' }}>
-            <User size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+            <User size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#64748B' }} />
             <input
               type="text" value={teacherName} onChange={e => setTeacher(e.target.value)}
               style={{
@@ -325,6 +326,9 @@ function GradeRow({ studentId, subject, trimester, initialGrade, onSave }) {
 }
 
 // ─── Composant principal ──────────────────────────────────────────────────────
+const VIEW_KEY = 'edupulse.gradesView';
+const TABLE_FROM_STUDENTS = 10;
+
 export default function GradesForm({
   classes, students, subjects,
   selectedClass, setSelectedClass,
@@ -335,6 +339,17 @@ export default function GradesForm({
   const classStudents = selectedClass
     ? students.filter(s => (s.classId || s.class_id) === selectedClass)
     : [];
+
+  // Vue « cartes » (une carte par élève) ou « tableau » (élèves × matières). Le choix est mémorisé ; sans choix, le
+  // tableau est proposé dès qu'une classe dépasse 10 élèves (les cartes obligeraient à défiler très longtemps).
+  const [storedView, setStoredView] = useState(() => {
+    try { return localStorage.getItem(VIEW_KEY); } catch { return null; }
+  });
+  const view = storedView === 'cards' || storedView === 'table' ? storedView : (classStudents.length > TABLE_FROM_STUDENTS ? 'table' : 'cards');
+  const chooseView = (next) => {
+    setStoredView(next);
+    try { localStorage.setItem(VIEW_KEY, next); } catch { /* stockage indisponible : le choix vaut pour cette visite */ }
+  };
 
   // ── Notification parents ──────────────────────────────────────────────────
   const [notifState, setNotifState] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
@@ -373,20 +388,21 @@ export default function GradesForm({
     <div className="space-y-5">
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+          <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 whitespace-nowrap">
             <Pen className="w-5 h-5 text-blue-600" /> Saisie des notes
           </h2>
-          <p className="text-xs text-gray-400 mt-0.5">Sauvegarde automatique · Interro / Devoir / Composition / Bonus</p>
+          <p className="text-xs text-gray-500 mt-0.5">Sauvegarde automatique · Interro / Devoir / Composition / Bonus</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Bouton notifier les parents */}
           {selectedClass && classStudents.length > 0 && (
             <div className="flex flex-col items-end gap-1">
               <button
                 onClick={notifyParents}
                 disabled={notifState === 'loading'}
+                title="Envoie un e-mail à chaque parent de la classe pour lui dire que les notes du trimestre sont disponibles"
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${notifState === 'success' ? 'bg-green-100 text-green-700 border border-green-200' :
                     notifState === 'error' ? 'bg-red-100 text-red-700 border border-red-200' :
                       'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
@@ -399,7 +415,7 @@ export default function GradesForm({
                 ) : notifState === 'error' ? (
                   <><Bell className="w-4 h-4" /> Erreur d'envoi</>
                 ) : (
-                  <><Send className="w-4 h-4" /> Notifier les parents</>
+                  <><Send className="w-4 h-4" /> Prévenir les parents par e-mail</>
                 )}
               </button>
               {notifState === 'success' && notifResult?.failed > 0 && (
@@ -461,12 +477,35 @@ export default function GradesForm({
         </div>
       )}
 
+      {selectedClass && classStudents.length > 0 && (
+        <div role="group" aria-label="Affichage de la saisie" className="flex items-center gap-2">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Affichage</span>
+          {[['cards', 'Cartes'], ['table', 'Tableau']].map(([id, label]) => (
+            <button
+              key={id} type="button" onClick={() => chooseView(id)} aria-pressed={view === id}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold border ${view === id ? 'bg-blue-600 text-white border-blue-600' : 'bg-blue-50 text-blue-700 border-blue-200'}`}
+            >
+              {label}
+            </button>
+          ))}
+          {view === 'table' && <span className="hidden sm:inline text-xs text-gray-500">Entrée ou ↓ : élève suivant · Tab : matière suivante</span>}
+        </div>
+      )}
+
       {selectedClass && classStudents.length === 0 && (
-        <div className="text-center py-16 text-gray-300 text-sm">Aucun élève dans cette classe</div>
+        <div className="text-center py-16 text-gray-500 text-sm">Aucun élève dans cette classe</div>
+      )}
+
+      {/* ── Tableau élèves × matières ── */}
+      {selectedClass && classStudents.length > 0 && view === 'table' && (
+        <GradesTable
+          students={classStudents} subjects={subjects} trimester={selectedTrimester}
+          getGrade={getGrade} onSave={handleSave} calculateAverage={calculateAverage} getMention={getMention}
+        />
       )}
 
       {/* ── Cartes élèves ── */}
-      {selectedClass && classStudents.map(student => {
+      {selectedClass && view === 'cards' && classStudents.map(student => {
         const avg = calculateAverage(student.id, selectedTrimester);
         const ment = getMention(avg);
 
@@ -497,7 +536,7 @@ export default function GradesForm({
                   <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>
                     {student.firstName} {student.lastName}
                   </div>
-                  <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 1 }}>
+                  <div style={{ fontSize: 11, color: '#64748B', marginTop: 1 }}>
                     {subjects.length} matière{subjects.length > 1 ? 's' : ''} · {selectedTrimester === '1' ? '1er' : selectedTrimester === '2' ? '2ème' : '3ème'} Trimestre
                   </div>
                 </div>
@@ -516,7 +555,7 @@ export default function GradesForm({
             </div>
 
             {/* Grille matières */}
-            <div style={{ padding: '14px 18px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 10 }}>
+            <div style={{ padding: '14px 18px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(340px, 100%), 1fr))', gap: 10 }}>
               {subjects.map(subject => (
                 <GradeRow
                   key={subject.id}

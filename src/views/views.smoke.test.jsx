@@ -88,7 +88,9 @@ describe('vues extraites de App.jsx : rendu sans erreur', () => {
     expect(html).toContain('Koffi Mensah');
     expect(html).toContain('13.71/20'); // (15*4 + 12*3) / 7
     expect(html).toContain('Imprimer PDF');
-    expect(html).toContain('aucun numéro de contact valide'); // pas de contact d'urgence renseigné
+    // pas de contact d'urgence renseigné : dit une seule fois en haut, et plus sur chaque carte
+    expect(html).toContain('2 élèves sans numéro de contact valide');
+    expect(html).not.toContain('Envoyer par WhatsApp');
   });
 
   it('BulletinsView propose WhatsApp avec le rang quand un contact est renseigné', () => {

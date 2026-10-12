@@ -19,7 +19,7 @@ const Topbar = ({
     </button>
 
     {/* Page title */}
-    <div className="flex-1 flex items-center gap-2">
+    <div className="flex-1 min-w-0 flex items-center gap-2 md:invisible">
         {(() => {
             const item = visibleNavItems.find(i => i.view === currentView);
             if (!item) return null;
@@ -27,7 +27,7 @@ const Topbar = ({
             return (
                 <>
                     <Icon className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    <span className="text-[15px] font-bold text-gray-900">{item.label}</span>
+                    <span className="text-[15px] font-bold text-gray-900 truncate whitespace-nowrap">{item.label}</span>
                 </>
             );
         })()}
@@ -42,8 +42,8 @@ const Topbar = ({
     {/* SyncStatus */}
     <SyncStatus />
 
-    {/* Language toggle */}
-    <LanguageToggle />
+    {/* Language toggle (masqué sur petit écran : la place manque et on change rarement de langue) */}
+    <div className="hidden sm:block"><LanguageToggle /></div>
 
     {/* Dark mode */}
     <DarkModeToggle isDark={isDark} toggle={toggleDark} />

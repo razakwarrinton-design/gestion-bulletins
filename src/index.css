@@ -166,3 +166,9 @@ body {
   transition-duration: 0.2s;
   transition-timing-function: ease;
 }
+
+/* ── Contraste ─────────────────────────────────────────────────────────────────
+   Le gris clair des sous-titres et étiquettes (gray-400, 2,5:1 sur fond blanc) se lit mal en plein soleil sur un
+   téléphone : on le fonce (4,8:1) en mode clair ; le mode sombre garde son gris d'origine. */
+.text-gray-400 { color: #6b7280; }
+.dark .text-gray-400 { color: #9ca3af; }

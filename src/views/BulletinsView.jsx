@@ -12,6 +12,23 @@ const BulletinsView = ({
     const className = classes.find(c => c.id === selectedClass)?.name;
     const classStudents = selectedClass ? students.filter(s => s.classId === selectedClass) : [];
 
+    const cards = classStudents.map(student => {
+        const average = calculateAverage(student.id, selectedTrimester);
+        const mention = getMention(average);
+        const { rank, outOf } = getRank
+            ? getRank(student.id, selectedTrimester, classStudents)
+            : { rank: 0, outOf: 0 };
+        const whatsappLink = buildWhatsappLink(
+            student.emergencyPhone,
+            buildBulletinMessage({
+                student, className, trimester: selectedTrimester, average,
+                mentionText: mention.text, rank, outOf, schoolName,
+            }),
+        );
+        return { student, average, mention, rank, outOf, whatsappLink };
+    });
+    const withoutNumber = cards.filter(card => !card.whatsappLink).length;
+
     const printSummary = () => {
         const html = buildClassSummaryHtml({
             className, trimester: selectedTrimester, yearLabel: schoolInfo.year, schoolInfo,
@@ -59,21 +76,15 @@ const BulletinsView = ({
                     <span>Imprimer le tableau récapitulatif de la classe</span>
                 </button>
             )}
+            {selectedClass && withoutNumber > 0 && (
+                <p className="text-sm text-gray-600">
+                    WhatsApp : {withoutNumber} élève{withoutNumber > 1 ? 's' : ''} sans numéro de contact valide.
+                    Renseignez le contact d'urgence dans la fiche de l'élève (numéro avec indicatif, ou 8 chiffres) pour pouvoir lui envoyer le bulletin.
+                </p>
+            )}
             {selectedClass && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {classStudents.map(student => {
-                        const average = calculateAverage(student.id, selectedTrimester);
-                        const mention = getMention(average);
-                        const { rank, outOf } = getRank
-                            ? getRank(student.id, selectedTrimester, classStudents)
-                            : { rank: 0, outOf: 0 };
-                        const whatsappLink = buildWhatsappLink(
-                            student.emergencyPhone,
-                            buildBulletinMessage({
-                                student, className, trimester: selectedTrimester, average,
-                                mentionText: mention.text, rank, outOf, schoolName,
-                            }),
-                        );
+                    {cards.map(({ student, average, mention, rank, outOf, whatsappLink }) => {
                         return (
                             <div key={student.id} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow p-6 border-l-4" style={{ borderColor: mention.color }}>
                                 <h3 className="text-lg font-bold mb-2 text-gray-800">{student.firstName} {student.lastName}</h3>
@@ -90,7 +101,7 @@ const BulletinsView = ({
                                         <Printer className="w-5 h-5" />
                                         <span className="font-medium">Imprimer PDF</span>
                                     </button>
-                                    {whatsappLink ? (
+                                    {whatsappLink && (
                                         <a
                                             href={whatsappLink}
                                             target="_blank"
@@ -100,10 +111,6 @@ const BulletinsView = ({
                                             <MessageCircle className="w-4 h-4" />
                                             <span>Envoyer par WhatsApp</span>
                                         </a>
-                                    ) : (
-                                        <p className="text-xs text-gray-400 text-center" title="Renseignez le contact d'urgence de l'élève (numéro avec indicatif ou 8 chiffres)">
-                                            WhatsApp : aucun numéro de contact valide
-                                        </p>
                                     )}
                                 </div>
                             </div>
