@@ -77,14 +77,14 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
             ))}
 
             {/* Card */}
-            <div style={{
+            <div className="login-card" style={{
                 width: '100%', maxWidth: 820, background: '#fff', borderRadius: 20,
                 border: '1px solid #DBEAFE', boxShadow: '0 20px 60px rgba(37,99,235,0.08)',
                 display: 'flex', overflow: 'hidden', position: 'relative', zIndex: 1,
             }}>
 
                 {/* ── Left branding panel ── */}
-                <div style={{
+                <div className="login-brand" style={{
                     width: 320, flexShrink: 0, padding: '36px 28px',
                     background: 'linear-gradient(160deg, #1E3A5F 0%, #2563EB 100%)',
                     display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
@@ -106,16 +106,16 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
                         </div>
 
                         {/* Headline */}
-                        <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 800, lineHeight: 1.25, marginBottom: 10 }}>
+                        <h2 className="brand-extra" style={{ color: '#fff', fontSize: 22, fontWeight: 800, lineHeight: 1.25, marginBottom: 10 }}>
                             Gérez votre école{' '}
                             <span style={{ color: '#93C5FD' }}>avec intelligence.</span>
                         </h2>
-                        <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12.5, lineHeight: 1.65, marginBottom: 24 }}>
+                        <p className="brand-extra" style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12.5, lineHeight: 1.65, marginBottom: 24 }}>
                             EduPulse centralise la gestion des notes, bulletins, paiements et communication parents en une seule plateforme.
                         </p>
 
                         {/* Feature pills */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div className="brand-extra" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {FEATURES.map(({ icon: Icon, label }) => (
                                 <div key={label} style={{
                                     display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
@@ -136,13 +136,13 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
                         </div>
                     </div>
 
-                    <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, marginTop: 24 }}>
+                    <p className="brand-extra" style={{ color: 'rgba(255,255,255,0.25)', fontSize: 11, marginTop: 24 }}>
                         EduPulse © 2026 — Tous droits réservés
                     </p>
                 </div>
 
                 {/* ── Right form panel ── */}
-                <div style={{ flex: 1, padding: '36px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflowY: 'auto' }}>
+                <div className="login-form" style={{ flex: 1, minWidth: 0, padding: '36px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflowY: 'auto' }}>
 
                     {/* Tabs */}
                     <div style={{
@@ -290,7 +290,17 @@ export default function LoginPage({ isRegister, setIsRegister, onSignIn, onSignU
                 </div>
             </div>
 
-            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+            <style>{`
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                /* Téléphone : le panneau de présentation passe au-dessus du formulaire et se réduit au logo */
+                @media (max-width: 720px) {
+                    .login-card { flex-direction: column; }
+                    .login-brand { width: auto !important; padding: 18px 20px !important; }
+                    .login-brand .brand-extra { display: none !important; }
+                    .login-brand > div > div { margin-bottom: 0 !important; }
+                    .login-form { padding: 22px 18px !important; }
+                }
+            `}</style>
         </div>
     );
 }

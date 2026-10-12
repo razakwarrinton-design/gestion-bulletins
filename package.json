@@ -11,7 +11,8 @@
     "test": "vitest run",
     "sql:baseline": "node scripts/build-baseline.mjs",
     "backup": "node scripts/backup-data.mjs",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.1",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.2.4",
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19.2.5",

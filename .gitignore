@@ -28,3 +28,7 @@ dist-ssr
 
 # Sauvegardes des données (données personnelles d'élèves : jamais dans git)
 backups/
+
+# Playwright
+test-results/
+playwright-report/

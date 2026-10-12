@@ -43,8 +43,8 @@ export default defineConfig([
     },
   },
   {
-    // Fichiers de test : variables globales de Node (process, etc.)
-    files: ['**/*.test.{js,jsx}'],
+    // Fichiers de test (unitaires et de bout en bout) : variables globales de Node (process, Buffer, etc.)
+    files: ['**/*.test.{js,jsx}', 'e2e/**/*.js', 'playwright.config.js'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
 ])
