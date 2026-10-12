@@ -84,9 +84,10 @@ describe.each(MODELS)('%s', (template) => {
     expect(text).toContain('EN DIFFICULTÉ < 8');
   });
 
-  it(`passe en mise en page compacte au-delà de ${DENSE_FROM_ROWS} matières seulement`, () => {
-    expect(html(template, { subjectCount: DENSE_FROM_ROWS })).not.toContain('page dense');
-    expect(html(template, { subjectCount: DENSE_FROM_ROWS + 1 })).toContain('class="page dense"');
+  it('passe en mise en page compacte au-delà du seuil de son modèle seulement', () => {
+    const limit = DENSE_FROM_ROWS[template];
+    expect(html(template, { subjectCount: limit })).not.toContain('page dense');
+    expect(html(template, { subjectCount: limit + 1 })).toContain('class="page dense"');
   });
 });
 

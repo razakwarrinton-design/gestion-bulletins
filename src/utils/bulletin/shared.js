@@ -4,8 +4,13 @@ import { mentionLevels } from '../mentions';
 import { getMention, decisionFor as defaultDecisionFor } from '../grades';
 import { getScale } from '../gradingScale';
 
-/** Au-delà de ce nombre de matières, le bulletin passe en mise en page compacte pour tenir sur une page A4. */
-export const DENSE_FROM_ROWS = 11;
+/**
+ * Au-delà de ce nombre de matières, le bulletin passe en mise en page compacte pour tenir sur une page A4. Le seuil
+ * dépend du modèle : chaque ligne du modèle Moderne est plus haute (nom de l'enseignant, signature), il se compacte
+ * donc plus tôt. Mesuré par impression réelle (e2e/print.spec.js) : à 10 matières il dépassait la page d'un pixel, à 11
+ * de quarante.
+ */
+export const DENSE_FROM_ROWS = { model1: 11, model2: 9, model3: 11 };
 
 /** Texte inséré dans le HTML : `&`, `<`, `>` et guillemets neutralisés (un nom comme « <b> » ne casse plus la page). */
 export const esc = (value) => String(value ?? '')

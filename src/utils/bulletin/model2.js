@@ -12,7 +12,7 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
     const directorName = schoolInfo?.directorName || schoolInfo?.director || '';
     const principalTeacher = schoolInfo?.principalTeacher || '';
     // Beaucoup de matières : mise en page compacte pour que le bulletin tienne sur une page
-    const dense = sGrades.length > DENSE_FROM_ROWS;
+    const dense = sGrades.length > DENSE_FROM_ROWS.model2;
 
     const rows = sGrades.map(g => {
       const subj = subjects.find(sub => sub.id === (g.subjectId || g.subject_id));
@@ -104,7 +104,7 @@ export function renderModel2(c, s, sGrades, sAvg, sRank, sStatus, sMention, sTot
   .sigs { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0 16px 12px; }
   .footer { background: #f1f5f9; padding: 6px 16px; font-size: 7pt; color: #94a3b8; display: flex; justify-content: space-between; }
   .legend-wrap { margin: 0 16px 8px; }
-  /* Mise en page compacte (plus de ${DENSE_FROM_ROWS} matières) */
+  /* Mise en page compacte (plus de ${DENSE_FROM_ROWS.model2} matières) */
   .dense .grade-row { padding: 1px 0; gap: 6px; }
   .dense .section-title { margin-bottom: 3px; }
   .dense .top-banner { padding: 8px 20px 22px; }

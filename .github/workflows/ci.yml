@@ -33,8 +33,12 @@ jobs:
 
   # Tests de bout en bout (navigateur réel, Supabase simulé) : téléphone, impression des bulletins en PDF.
   # Séparé du job « verify » : plus lent, et il télécharge un navigateur.
+  # Pas encore bloquant : ces tests n'ont été exécutés que sous Windows avec Microsoft Edge. Les polices d'Ubuntu/Chromium
+  # diffèrent et un bulletin de 14 matières, serré, peut y déborder d'une ligne. Une fois le job passé au vert, retirer
+  # `continue-on-error` pour en faire une condition de fusion.
   e2e:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

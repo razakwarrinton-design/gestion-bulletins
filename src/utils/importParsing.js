@@ -162,5 +162,5 @@ export function workbookInput(bytes) {
   } catch {
     text = new TextDecoder('windows-1252').decode(bytes);
   }
-  return { data: text.replace(/^﻿/, ''), type: 'string' };
+  return { data: text.replace(/^\uFEFF/, ''), type: 'string' };
 }
