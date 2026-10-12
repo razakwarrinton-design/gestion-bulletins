@@ -47,7 +47,7 @@ export default function ErrorLogPanel({ showNotification }) {
                 Incidents de l'application
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-                Erreurs rencontrées par les utilisateurs (message et écran concernés, jamais de notes ni de noms d'élèves).
+                Erreurs rencontrées par les utilisateurs (message et écran concernés). Ces rapports sont conçus pour ne contenir ni notes ni noms d'élèves ; un message d'erreur peut cependant, rarement, reprendre une valeur saisie.
                 Utile pour comprendre un « ça ne marche pas ».
             </p>
             <div className="flex gap-3">

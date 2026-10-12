@@ -22,6 +22,15 @@ describe('scrub', () => {
     expect(scrub('Bearer eyJhbGciOi.eyJzdWIiOi.SflKxwRJ', 200)).toBe('Bearer [jeton]');
   });
 
+  it('masque les valeurs saisies que citent les messages de PostgreSQL', () => {
+    expect(scrub('invalid input syntax for type integer: "Mensah"', 300)).toBe('invalid input syntax for type integer: "[valeur]"');
+    expect(scrub('duplicate key value violates unique constraint "students_pkey" Key (last_name)=(Mensah) already exists.', 300))
+      .toBe('duplicate key value violates unique constraint "students_pkey" Key (last_name)=([valeur]) already exists.');
+    expect(scrub('value "Koffi Mensah" is out of range', 300)).toBe('value "[valeur]" is out of range');
+    // le nom de la contrainte, utile pour diagnostiquer, reste
+    expect(scrub('violates unique constraint "students_pkey"', 300)).toContain('students_pkey');
+  });
+
   it('garde les numéros de ligne et les versions, et tronque', () => {
     expect(scrub('at f (app.js:120:15) xlsx 0.18.5', 200)).toBe('at f (app.js:120:15) xlsx 0.18.5');
     expect(scrub('x'.repeat(1000), 300)).toHaveLength(300);

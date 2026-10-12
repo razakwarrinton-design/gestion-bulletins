@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeText, parseGradeValue, parseStudentRows, parseGradeRows, summarizeProblems } from './importParsing';
+import { normalizeText, parseGradeValue, parseStudentRows, parseGradeRows, summarizeProblems, workbookInput } from './importParsing';
 
 describe('normalizeText', () => {
   it('ignore accents, majuscules et espaces superflus', () => {
@@ -153,5 +153,22 @@ describe('summarizeProblems', () => {
     expect(summarizeProblems(problems)).toBe('ligne 1 : raison 1 ; ligne 2 : raison 2 ; ligne 3 : raison 3 … et 2 autre(s)');
     expect(summarizeProblems(problems.slice(0, 1))).toBe('ligne 1 : raison 1');
     expect(summarizeProblems([])).toBe('');
+  });
+});
+
+describe('workbookInput', () => {
+  it('lit un classeur (.xlsx « PK », .xls OLE) tel quel', () => {
+    expect(workbookInput(Uint8Array.from([0x50, 0x4b, 3, 4])).type).toBe('array');
+    expect(workbookInput(Uint8Array.from([0xd0, 0xcf, 0x11, 0xe0, 0])).type).toBe('array');
+  });
+
+  it('décode un texte en UTF-8, avec ou sans BOM, sans déformer les accents', () => {
+    const bytes = new TextEncoder().encode('Prénom;Éléonore');
+    expect(workbookInput(bytes)).toEqual({ data: 'Prénom;Éléonore', type: 'string' });
+    expect(workbookInput(Uint8Array.from([0xef, 0xbb, 0xbf, ...bytes])).data).toBe('Prénom;Éléonore');
+  });
+
+  it('retombe sur Windows-1252 quand le texte n’est pas de l’UTF-8 valide', () => {
+    expect(workbookInput(Uint8Array.from([0x50, 0x72, 0xe9, 0x6e, 0x6f, 0x6d])).data).toBe('Prénom');
   });
 });

@@ -56,12 +56,22 @@ export async function readAll(fetchPage, { pageSize = PAGE_SIZE, maxRows = 5_000
   throw new Error(`Plus de ${maxRows} lignes : lecture interrompue`);
 }
 
-/** Manifeste : date, et pour chaque table son nombre de lignes (ou la raison pour laquelle elle manque). */
+/**
+ * Une table qui n'existe simplement pas dans cette installation (script facultatif non exécuté) est la seule erreur
+ * qu'on a le droit d'ignorer. Toute autre erreur (droits, colonne de tri fausse, panne du serveur) est un échec.
+ */
+export function isAbsentTable(status, body) {
+  return status === 404 || /PGRST205|42P01|Could not find the table|relation "[^"]*" does not exist/i.test(String(body ?? ''));
+}
+
+/** Manifeste : date, et pour chaque table son nombre de lignes, « absente » (ignorable) ou l'erreur rencontrée. */
 export function buildManifest(results, now = new Date()) {
-  return {
-    createdAt: now.toISOString(),
-    tables: Object.fromEntries(results.map((r) => [r.name, r.error ? { error: r.error } : { rows: r.rows.length }])),
+  const entry = (r) => {
+    if (r.absent) return { absent: true };
+    if (r.error) return { error: r.error };
+    return { rows: r.rows.length };
   };
+  return { createdAt: now.toISOString(), tables: Object.fromEntries(results.map((r) => [r.name, entry(r)])) };
 }
 
 /**
@@ -71,7 +81,8 @@ export function buildManifest(results, now = new Date()) {
 export function verifyManifest(manifest, readTable) {
   const problems = [];
   for (const [name, info] of Object.entries(manifest.tables ?? {})) {
-    if (info.error) continue; // table absente de cette installation, signalée à la sauvegarde
+    if (info.absent) continue; // table absente de cette installation (script facultatif non exécuté)
+    if (info.error) { problems.push(`${name} : lecture échouée (${info.error})`); continue; }
     const rows = readTable(name);
     if (!Array.isArray(rows)) problems.push(`${name} : fichier manquant ou illisible`);
     else if (rows.length !== info.rows) problems.push(`${name} : ${rows.length} lignes dans le fichier, ${info.rows} attendues`);
@@ -88,7 +99,7 @@ async function fetchTablePage(baseUrl, key, table, offset, limit) {
   if (response.status === 416) return { rows: [], total: null };
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`${response.status} ${body.slice(0, 200)}`);
+    throw Object.assign(new Error(`${response.status} ${body.slice(0, 200)}`), { status: response.status, body });
   }
   // Content-Range : « 0-999/2345 » (ou « */0 » pour une table vide)
   const match = /\/(\d+)$/.exec(response.headers.get('content-range') ?? '');
@@ -115,12 +126,23 @@ async function backup() {
       results.push({ name: table.name, rows });
       console.log(`✓ ${table.name} : ${rows.length} ligne(s)`);
     } catch (error) {
-      results.push({ name: table.name, error: error.message });
-      console.warn(`– ${table.name} : ignorée (${error.message})`);
+      if (isAbsentTable(error.status, error.body)) {
+        results.push({ name: table.name, absent: true });
+        console.warn(`– ${table.name} : absente de cette installation, ignorée`);
+      } else {
+        results.push({ name: table.name, error: error.message });
+        console.error(`✗ ${table.name} : ÉCHEC (${error.message})`);
+      }
     }
   }
   writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(buildManifest(results), null, 2));
+  const failed = results.filter((r) => r.error).map((r) => r.name);
   console.log(`\nSauvegarde écrite dans ${dir}`);
+  if (failed.length) {
+    console.error(`SAUVEGARDE INCOMPLÈTE : ${failed.join(', ')} n'ont pas pu être lues. Ne la considérez pas comme une sauvegarde.`);
+    process.exitCode = 1;
+    return;
+  }
   console.log('Vérifiez-la : node scripts/backup-data.mjs --verify "' + dir + '"');
 }
 

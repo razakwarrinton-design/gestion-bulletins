@@ -25,6 +25,11 @@ export function scrub(text, max) {
   return String(text ?? '')
     .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+/g, '[jeton]')
     .replace(/\b(access_token|refresh_token|token|apikey|key)=[^&\s)]+/gi, '$1=[masqué]')
+    // Messages de PostgreSQL : ils citent la valeur saisie (« invalid input syntax for type integer: "Mensah" »,
+    // « Key (last_name)=(Mensah) already exists », « value "Mensah" is out of range »)
+    .replace(/(invalid input syntax for[^:\n]*:\s*)"[^"]*"/gi, '$1"[valeur]"')
+    .replace(/\bKey \(([^)]*)\)=\([^)]*\)/g, 'Key ($1)=([valeur])')
+    .replace(/\b(value|valeur)\s+"[^"]*"/gi, '$1 "[valeur]"')
     .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[e-mail]')
     .replace(/\+?\d[\d\s.-]{6,}\d/g, '[numéro]')
     .slice(0, max);

@@ -53,7 +53,7 @@ function Privacy() {
           'Élèves : nom, prénom, classe, informations de dossier saisies par l\'établissement, notes, absences, appréciations, rang et moyennes.',
           'Parents et tuteurs : nom, adresse e-mail ou numéro de téléphone, lien avec l\'élève, messages échangés avec l\'établissement.',
           'Personnel (administrateurs, professeurs, secrétaires) : nom, adresse e-mail, rôle, actions importantes (journal d\'audit).',
-          'Techniques : incidents de fonctionnement de l\'application (message d\'erreur, page concernée, identifiant du compte), sans notes ni noms d\'élèves.',
+          'Techniques : incidents de fonctionnement de l\'application (message d\'erreur, page concernée, identifiant du compte). Ces rapports sont conçus pour ne contenir ni notes ni noms d\'élèves ; un message d\'erreur peut, rarement, reprendre une valeur saisie, et il est supprimé après 30 jours.',
         ]} />
         <p>Les données des élèves, souvent mineurs, ne sont consultables que par les personnes autorisées par l'établissement.</p>
       </Section>

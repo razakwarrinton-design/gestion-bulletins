@@ -1,4 +1,4 @@
-import { normalizeText, parseStudentRows, parseGradeRows, summarizeProblems } from './importParsing';
+import { normalizeText, parseStudentRows, parseGradeRows, summarizeProblems, workbookInput } from './importParsing';
 
 // La bibliothèque xlsx est lourde : elle n'est téléchargée qu'au premier export ou import.
 const loadXlsx = () => import('xlsx');
@@ -59,7 +59,8 @@ export const createExcelHandlers = ({
             reader.readAsArrayBuffer(file);
         });
         const XLSX = await loadXlsx();
-        const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+        const { data, type } = workbookInput(new Uint8Array(buffer));
+        const workbook = XLSX.read(data, { type });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         if (!worksheet) throw new Error('aucune feuille');
         // blankrows : les lignes vides sont gardées (et ignorées ensuite) pour que les numéros de ligne cités dans les

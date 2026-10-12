@@ -1662,8 +1662,10 @@ GRANT EXECUTE ON FUNCTION public.purge_audit_logs(INT) TO authenticated;
 -- À exécuter dans l'éditeur SQL de Supabase APRÈS security-hardening.sql. Additif et ré-exécutable.
 --
 -- L'application envoie ici, pour chaque erreur d'affichage ou erreur inattendue, un court rapport : message
--- et pile d'appels tronqués, écran concerné (sans paramètres d'adresse), identifiant du compte. Jamais de
--- notes, de noms d'élèves ni de contenu de formulaire (le client masque aussi adresses e-mail et numéros).
+-- et pile d'appels tronqués, écran concerné (sans paramètres d'adresse), identifiant du compte. Le rapport est
+-- conçu pour ne contenir ni notes, ni noms d'élèves, ni contenu de formulaire : le client masque adresses e-mail,
+-- numéros, jetons et valeurs citées par la base. Un message d'erreur peut néanmoins, rarement, reprendre une valeur
+-- saisie ; c'est pourquoi les rapports sont lisibles par les seuls administrateurs et purgés après 30 jours.
 --
 -- Garanties :
 --   * un compte connecté ne peut écrire qu'une ligne à son propre nom (user_id = auth.uid()) ;

@@ -137,3 +137,23 @@ describe('lecture d’un vrai classeur Excel', () => {
     expect(deps.addStudent).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('import d’un fichier CSV (Excel en français, Google Sheets, LibreOffice)', () => {
+  const CSV = 'Nom;Prénom;Classe\r\nDossou;Éléonore;4ème C\r\nAgbo;Yao;4ème C\r\n';
+  const fileOf = (bytes) => new File([bytes], 'eleves.csv');
+  const utf8 = (text, bom = false) => new Uint8Array([...(bom ? [0xef, 0xbb, 0xbf] : []), ...new TextEncoder().encode(text)]);
+  const win1252 = (text) => Uint8Array.from([...text].map((ch) => ch.charCodeAt(0))); // é, è… tiennent sur un octet
+
+  it.each([
+    ['UTF-8 sans BOM (Google Sheets, LibreOffice)', utf8(CSV)],
+    ['UTF-8 avec BOM', utf8(CSV, true)],
+    ['Windows-1252 (Excel en français, « CSV séparateur point-virgule »)', win1252(CSV)],
+    ['séparateur virgule', utf8(CSV.replace(/;/g, ','))],
+  ])('%s : les accents et les colonnes sont reconnus', async (_, bytes) => {
+    const { deps, importStudents } = setup();
+    await importStudents({ target: { files: [fileOf(bytes)], value: 'x' } });
+    expect(deps.addClass).toHaveBeenCalledWith('4ème C');
+    expect(deps.addStudent.mock.calls.map((c) => [c[0], c[1]])).toEqual([['Éléonore', 'Dossou'], ['Yao', 'Agbo']]);
+    expect(deps.showNotification).toHaveBeenCalledWith('2 élève(s) importé(s)');
+  });
+});

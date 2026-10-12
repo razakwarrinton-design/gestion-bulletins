@@ -146,3 +146,21 @@ export function summarizeProblems(problems, max = 3) {
   const rest = problems.length - shown.length;
   return `${shown.join(' ; ')}${rest > 0 ? ` … et ${rest} autre(s)` : ''}`;
 }
+
+/**
+ * Choisit comment faire lire un fichier à la bibliothèque Excel. Un classeur (.xlsx = archive « PK », .xls = format OLE)
+ * est lu tel quel. Tout autre fichier est du texte (CSV) : on le décode nous-mêmes, car la bibliothèque suppose du
+ * Windows-1252 et déformerait les accents d'un CSV en UTF-8 sans BOM (Google Sheets, LibreOffice) — « Prénom » devenait
+ * « PrÃ©nom » et la colonne n'était plus reconnue. UTF-8 d'abord (strict), à défaut Windows-1252 (Excel en français).
+ */
+export function workbookInput(bytes) {
+  const startsWith = (...sig) => sig.every((b, i) => bytes[i] === b);
+  if (startsWith(0x50, 0x4b) || startsWith(0xd0, 0xcf, 0x11, 0xe0)) return { data: bytes, type: 'array' };
+  let text;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    text = new TextDecoder('windows-1252').decode(bytes);
+  }
+  return { data: text.replace(/^﻿/, ''), type: 'string' };
+}

@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { createDatabase, asUser } from './harness';
-import { readAll, buildManifest, verifyManifest, TABLES } from '../../scripts/backup-data.mjs';
+import { readAll, buildManifest, verifyManifest, isAbsentTable, TABLES } from '../../scripts/backup-data.mjs';
 
 const SCRIPTS = [
   'supabase-schema.sql',
@@ -126,16 +126,39 @@ describe('script de sauvegarde des données (scripts/backup-data.mjs)', () => {
     const manifest = buildManifest([
       { name: 'students', rows: [1, 2, 3] },
       { name: 'grades', rows: [1] },
-      { name: 'client_errors', error: '404 table absente' },
+      { name: 'client_errors', absent: true },
+      { name: 'payments', error: '401 permission denied' },
     ], new Date('2026-10-11T10:00:00Z'));
-    expect(manifest.tables).toEqual({ students: { rows: 3 }, grades: { rows: 1 }, client_errors: { error: '404 table absente' } });
+    expect(manifest.tables).toEqual({ students: { rows: 3 }, grades: { rows: 1 }, client_errors: { absent: true }, payments: { error: '401 permission denied' } });
 
     const files = { students: [1, 2, 3], grades: [] };
-    expect(verifyManifest(manifest, (name) => files[name] ?? null)).toEqual(['grades : 0 lignes dans le fichier, 1 attendues']);
-    expect(verifyManifest(manifest, () => null)).toEqual([
-      'students : fichier manquant ou illisible', 'grades : fichier manquant ou illisible',
+    // une table absente de l'installation est ignorable ; une table dont la lecture a échoué ne l'est jamais
+    expect(verifyManifest(manifest, (name) => files[name] ?? null)).toEqual([
+      'grades : 0 lignes dans le fichier, 1 attendues', 'payments : lecture échouée (401 permission denied)',
     ]);
-    expect(verifyManifest(manifest, (name) => ({ students: [1, 2, 3], grades: [9] })[name])).toEqual([]);
+    expect(verifyManifest(manifest, () => null)).toEqual([
+      'students : fichier manquant ou illisible', 'grades : fichier manquant ou illisible', 'payments : lecture échouée (401 permission denied)',
+    ]);
+    const ok = buildManifest([{ name: 'students', rows: [1] }, { name: 'client_errors', absent: true }]);
+    expect(verifyManifest(ok, () => [1])).toEqual([]);
+  });
+
+  it('seule une table réellement absente peut être ignorée (404, table introuvable) ; droits ou serveur en panne : échec', () => {
+    expect(isAbsentTable(404, '')).toBe(true);
+    expect(isAbsentTable(404, '{"code":"PGRST205","message":"Could not find the table public.client_errors"}')).toBe(true);
+    expect(isAbsentTable(400, '{"code":"42P01","message":"relation \\"public.client_errors\\" does not exist"}')).toBe(true);
+    expect(isAbsentTable(401, '{"message":"permission denied for table payments"}')).toBe(false);
+    // colonne de tri fausse : message « does not exist » lui aussi, mais ce n'est PAS une table absente
+    expect(isAbsentTable(400, '{"code":"42703","message":"column payments.idd does not exist"}')).toBe(false);
+    expect(isAbsentTable(500, 'Internal Server Error')).toBe(false);
+  });
+
+  it('chaque colonne de tri de la sauvegarde existe dans sa table (sinon la table serait ignorée à tort)', async () => {
+    const { rows } = await source.query(`SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'`);
+    const columns = new Map();
+    for (const r of rows) columns.set(r.table_name, [...(columns.get(r.table_name) ?? []), r.column_name]);
+    const missing = TABLES.flatMap((t) => t.order.split(',').filter((c) => !(columns.get(t.name) ?? []).includes(c)).map((c) => `${t.name}.${c}`));
+    expect(missing).toEqual([]);
   });
 
   it('chaque table sauvegardée existe dans le schéma installé par les scripts', async () => {

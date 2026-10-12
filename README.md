@@ -62,7 +62,7 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 8. **`sql/security-hardening.sql`** : règles d'accès (un parent ne voit que ses enfants, comptes inscrits « en attente » jusqu'à validation). **Obligatoire avant toute mise en service**, voir [docs/SECURITE.md](docs/SECURITE.md)
 9. `sql/appreciations-activities.sql` : appréciations et journal d'activité dans des tables (une ligne par élément) au lieu d'un bloc partagé que deux utilisateurs pouvaient s'écraser ; reprend les données existantes. **À exécuter avant de déployer cette version.** À lancer après `security-hardening.sql`
 10. `sql/audit-log.sql` : journal d'audit tenu par la base (qui a créé, modifié ou supprimé quoi), lisible par les administrateurs dans le menu *Journal d'audit*. À exécuter après `security-hardening.sql`
-11. `sql/client-errors.sql` : journal des incidents (erreurs rencontrées dans le navigateur, sans notes ni noms d'élèves), lisible par les administrateurs dans *Paramètres → Incidents de l'application*. Facultatif : sans lui, l'application fonctionne et ne garde simplement aucun rapport. À exécuter après `security-hardening.sql`
+11. `sql/client-errors.sql` : journal des incidents (erreurs rencontrées dans le navigateur ; conçu pour ne contenir ni notes ni noms d'élèves, un message d'erreur pouvant rarement reprendre une valeur saisie), lisible par les administrateurs dans *Paramètres → Incidents de l'application*. Facultatif : sans lui, l'application fonctionne et ne garde simplement aucun rapport. À exécuter après `security-hardening.sql`
 
 ### Créer le premier administrateur
 
