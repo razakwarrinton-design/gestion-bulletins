@@ -16,6 +16,27 @@ export function useSupabaseAuth() {
   const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState(null);
 
+  // Charger le profil utilisateur
+  const loadUserProfile = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+      return { ok: true };
+    } catch (err) {
+      console.error('Erreur lors du chargement du profil:', err);
+      setError(err.message);
+      return { ok: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Charger la session au montage du composant
   useEffect(() => {
     if (!supabaseConfigured) {
@@ -53,27 +74,6 @@ export function useSupabaseAuth() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // Charger le profil utilisateur
-  const loadUserProfile = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-      setProfile(data);
-      return { ok: true };
-    } catch (err) {
-      console.error('Erreur lors du chargement du profil:', err);
-      setError(err.message);
-      return { ok: false, error: err.message };
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Connexion avec email/mot de passe
   // Connexion avec email/mot de passe

@@ -21,13 +21,6 @@ export default function AdminPaymentsDashboard() {
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [filterStatus, setFilterStatus] = useState('all');
 
-    /**
-     * Charger les paiements
-     */
-    useEffect(() => {
-        loadPayments();
-    }, []);
-
     const loadPayments = async () => {
         try {
             setLoading(true);
@@ -66,6 +59,13 @@ export default function AdminPaymentsDashboard() {
             setLoading(false);
         }
     };
+
+    /**
+     * Charger les paiements
+     */
+    useEffect(() => {
+        loadPayments();
+    }, []);
 
     /**
      * Marquer un paiement comme complété

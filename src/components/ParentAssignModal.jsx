@@ -20,10 +20,6 @@ export default function ParentAssignModal({ isOpen, onClose, students, classes, 
     const [linkStudent, setLinkStudent] = useState('');
     const [linkClass, setLinkClass] = useState('');
 
-    useEffect(() => {
-        if (isOpen) fetchParents();
-    }, [isOpen]);
-
     const fetchParents = async () => {
         const { data } = await supabase
             .from('user_profiles')
@@ -32,6 +28,10 @@ export default function ParentAssignModal({ isOpen, onClose, students, classes, 
             .order('last_name');
         setParents(data || []);
     };
+
+    useEffect(() => {
+        if (isOpen) fetchParents();
+    }, [isOpen]);
 
     const filteredStudents = selectedClass
         ? students.filter(s => sameId(s.classId || s.class_id, selectedClass))

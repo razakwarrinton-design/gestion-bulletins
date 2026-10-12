@@ -5,10 +5,6 @@ export function useClasses() {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchClasses();
-  }, []);
-
   const fetchClasses = async () => {
     setLoading(true);
     // ✅ Optimisation : sélectionne SEULEMENT les colonnes nécessaires
@@ -19,6 +15,10 @@ export function useClasses() {
     if (!error) setClasses(data);
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchClasses();
+  }, []);
 
   const addClass = async (name) => {
     const { data, error } = await supabase

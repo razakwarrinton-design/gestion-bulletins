@@ -14,12 +14,6 @@ export function useParent(currentUserId, academicYear) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // On attend de connaître l'année scolaire pour ne charger qu'une fois
-    if (!currentUserId || !academicYear) return;
-    fetchParentData();
-  }, [currentUserId, academicYear]);
-
   const fetchParentData = async () => {
     setLoading(true);
     setError(null);
@@ -93,6 +87,12 @@ export function useParent(currentUserId, academicYear) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // On attend de connaître l'année scolaire pour ne charger qu'une fois
+    if (!currentUserId || !academicYear) return;
+    fetchParentData();
+  }, [currentUserId, academicYear]);
 
   // Moyenne d'un élève pour un trimestre : même formule que le bulletin (utils/grades)
   const calculateAverage = (studentId, trimester) => {

@@ -5,10 +5,6 @@ export function useSubjects() {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
-
   const fetchSubjects = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -18,6 +14,10 @@ export function useSubjects() {
     if (!error) setSubjects(data);
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   const addSubject = async (name, coefficient) => {
     const { data, error } = await supabase

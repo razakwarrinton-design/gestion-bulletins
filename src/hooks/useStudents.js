@@ -6,10 +6,6 @@ export function useStudents() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
   const fetchStudents = async () => {
     setLoading(true);
     // select('*') : renvoie aussi les colonnes de profil (contact d'urgence…) quand
@@ -24,6 +20,10 @@ export function useStudents() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
 
   /** profile : birthDate, gender, photoUrl, emergencyName, emergencyPhone, emergencyRelation */
   const addStudent = async (firstName, lastName, classId, profile = {}) => {

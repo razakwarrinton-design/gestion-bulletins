@@ -10,14 +10,14 @@ export default function SMSDashboard() {
     const [smsHistory, setSmsHistory] = useState([]);
     const [filterStatus, setFilterStatus] = useState('all');
 
-    useEffect(() => {
-        loadSMSHistory();
-    }, []);
-
     const loadSMSHistory = () => {
         const history = smsService.getSMSHistory();
         setSmsHistory(history);
     };
+
+    useEffect(() => {
+        loadSMSHistory();
+    }, []);
 
     /**
      * Filtrer les SMS

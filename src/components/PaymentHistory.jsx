@@ -7,12 +7,6 @@ export default function PaymentHistory({ child }) {
     const [loading, setLoading] = useState(true);
     const [totalAmount, setTotalAmount] = useState(0);
 
-    useEffect(() => {
-        if (child?.id) {
-            fetchPayments();
-        }
-    }, [child?.id]);
-
     const fetchPayments = async () => {
         setLoading(true);
         try {
@@ -36,6 +30,12 @@ export default function PaymentHistory({ child }) {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (child?.id) {
+            fetchPayments();
+        }
+    }, [child?.id]);
 
     /**
      * Formater un montant

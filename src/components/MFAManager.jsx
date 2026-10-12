@@ -12,10 +12,6 @@ export default function MFAManager({ showNotification }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [checking, setChecking]       = useState(true);
 
-  useEffect(() => {
-    loadMFAStatus();
-  }, []);
-
   const loadMFAStatus = async () => {
     setChecking(true);
     const { enabled, factors } = await checkMFAStatus();
@@ -23,6 +19,10 @@ export default function MFAManager({ showNotification }) {
     setFactors(factors);
     setChecking(false);
   };
+
+  useEffect(() => {
+    loadMFAStatus();
+  }, []);
 
   const handleDisable = async () => {
     if (factors.length === 0) return;
