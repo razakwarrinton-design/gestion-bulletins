@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { supabase } from '../config/supabase';
 import { sameId } from '../utils/ids';
+import { readFunctionError } from '../utils/functionError';
+
+/** Messages de l'authentification Supabase (en anglais) rendus compréhensibles. */
+export function parentAccountMessage(message = '') {
+    if (/already (been )?registered|already exists/i.test(message)) {
+        return 'cette adresse e-mail a déjà un compte (peut-être le vôtre). Utilisez une autre adresse pour le parent.';
+    }
+    if (/invalid.*email|email.*invalid/i.test(message)) return "l'adresse e-mail n'est pas valide.";
+    return message;
+}
 
 export default function ParentAssignModal({ isOpen, onClose, students, classes, showNotification }) {
     const [tab, setTab] = useState('assign');
@@ -58,7 +68,7 @@ export default function ParentAssignModal({ isOpen, onClose, students, classes, 
                 }
             });
 
-            if (fnError) throw fnError;
+            if (fnError) throw new Error(await readFunctionError(fnError, 'Création impossible', 'create-parent-account'));
             if (data?.error) throw new Error(data.error);
 
             showNotification(`✅ Compte parent créé : ${firstName} ${lastName}`);
@@ -68,7 +78,7 @@ export default function ParentAssignModal({ isOpen, onClose, students, classes, 
             setTab('assign');
             onClose();
         } catch (e) {
-            setError('Erreur : ' + e.message);
+            setError('Erreur : ' + parentAccountMessage(e.message));
         } finally {
             setLoading(false);
         }
