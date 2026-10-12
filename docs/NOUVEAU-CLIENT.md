@@ -21,7 +21,10 @@ Dans *SQL Editor*, exécuter **un seul** de ces deux chemins :
   ordre, générés par `npm run sql:baseline`) et l'exécuter d'un bloc ;
 - ou exécuter les scripts de `sql/` un par un dans l'ordre du [README](../README.md#base-de-données).
 
-Le script `client-errors.sql` (journal des incidents) est inclus ; il est facultatif.
+Les scripts `client-errors.sql` (journal des incidents) et `notifications.sql` (cloche de notifications des parents) sont inclus ; ils sont facultatifs.
+
+**Ordre de mise en ligne d'une mise à jour** : exécuter d'abord `notifications.sql`, puis déployer l'application. Une application
+déployée avant le script reste utilisable (la cloche est simplement absente), mais le bouton « Prévenir les parents » le signale.
 
 ## 3. Régler l'authentification
 
@@ -67,6 +70,15 @@ administrateur.
 | `generate-appreciation` | facultatif | demande un fournisseur d'IA, donc un abonnement |
 | `payment-initiate`, `payment-webhook` | facultatif | paiements Mobile Money, donc un abonnement |
 | `send-sms` | facultatif | fournisseur de SMS, donc un abonnement |
+| `notify-parents` | facultatif | e-mail aux parents ; compte Brevo gratuit (300 e-mails/jour), voir ci-dessous. Sans elle, la cloche de l'application fonctionne seule |
+
+### E-mail aux parents (`notify-parents`)
+
+1. Créer un compte Brevo, puis *Expéditeurs, domaines* : ajouter et **valider** l'adresse d'expédition (Brevo envoie un e-mail de confirmation). Brevo recommande un nom de domaine à l'école : une adresse gratuite de type gmail.com est moins bien distribuée (risque de courrier indésirable).
+2. *SMTP & API* → créer une clé API.
+3. `supabase secrets set BREVO_API_KEY=xkeysib-… MAIL_FROM_EMAIL=ecole@votre-domaine.tg APP_URL=https://adresse-de-l-application` (ajouter `MAIL_FROM_NAME="Nom de l'école"` si le nom des réglages ne convient pas).
+4. `supabase functions deploy notify-parents`.
+5. Vérifier avec un parent de test dont l'adresse est la vôtre : saisir une classe, cliquer *Prévenir les parents*, contrôler la réception **et le dossier courrier indésirable**.
 
 Les secrets se définissent **par projet** (`supabase secrets set …`) : ceux d'un établissement ne servent pas à un autre.
 

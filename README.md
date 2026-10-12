@@ -63,6 +63,7 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 9. `sql/appreciations-activities.sql` : appréciations et journal d'activité dans des tables (une ligne par élément) au lieu d'un bloc partagé que deux utilisateurs pouvaient s'écraser ; reprend les données existantes. **À exécuter avant de déployer cette version.** À lancer après `security-hardening.sql`
 10. `sql/audit-log.sql` : journal d'audit tenu par la base (qui a créé, modifié ou supprimé quoi), lisible par les administrateurs dans le menu *Journal d'audit*. À exécuter après `security-hardening.sql`
 11. `sql/client-errors.sql` : journal des incidents (erreurs rencontrées dans le navigateur ; conçu pour ne contenir ni notes ni noms d'élèves, un message d'erreur pouvant rarement reprendre une valeur saisie), lisible par les administrateurs dans *Paramètres → Incidents de l'application*. Facultatif : sans lui, l'application fonctionne et ne garde simplement aucun rapport. À exécuter après `security-hardening.sql`
+12. `sql/notifications.sql` : notifications aux parents (cloche dans l'application) quand les notes d'un trimestre sont disponibles ; sert aussi de file d'envoi pour l'e-mail. Un parent ne lit que les siennes, seuls les administrateurs et professeurs en créent (fonction `notify_class_parents`, destinataires lus dans la base). Facultatif : sans lui, pas de cloche et le bouton « Prévenir les parents » demande de l'exécuter. **À exécuter AVANT de déployer cette version de l'application**, puis après `security-hardening.sql`
 
 ### Créer le premier administrateur
 
@@ -96,7 +97,7 @@ Les scripts d'installation sont ré-exécutables. Pour passer une base déjà en
 1. **Sauvegarder, ou tester sur une branche Supabase** : ces scripts modifient des tables en place.
 2. Vérifier les contraintes actuelles de `grades` (une base modifiée à la main peut différer des scripts du dépôt) :
    `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = 'public.grades'::regclass;`
-3. Exécuter, **dans cet ordre** : `grades-alignment.sql` → `security-hardening.sql` → `appreciations-activities.sql` → `audit-log.sql` → `client-errors.sql`.
+3. Exécuter, **dans cet ordre** : `grades-alignment.sql` → `security-hardening.sql` → `appreciations-activities.sql` → `audit-log.sql` → `client-errors.sql` → `notifications.sql`.
 4. Déployer l'application, puis les fonctions Edge (voir ci-dessous).
 
 `security-hardening.sql` doit être relancé : `child_class_rank` (rang de l'enfant dans sa classe) prend maintenant
@@ -162,6 +163,7 @@ Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURAT
 | `create-parent-account` | Création d'un compte parent par l'administrateur | (fournis par la plateforme) |
 | `payment-initiate`, `payment-webhook` | Paiement Mobile Money via FedaPay ([docs/PAIEMENTS.md](docs/PAIEMENTS.md)) | `FEDAPAY_SECRET_KEY`, `FEDAPAY_ENV`, `APP_URL` |
 | `send-sms` | SMS via Africa's Talking, réservé à l'administrateur et au secrétariat | `AT_USERNAME`, `AT_API_KEY`, `AT_ENV` (`sandbox` ou `production`), `AT_SENDER_ID` (facultatif) |
+| `notify-parents` | E-mail « les notes du trimestre sont disponibles » aux parents d'une classe (service Brevo, offre gratuite de 300 e-mails par jour), réservé à l'administrateur et aux professeurs | `BREVO_API_KEY`, `MAIL_FROM_EMAIL` (expéditeur validé chez Brevo), `MAIL_FROM_NAME` et `APP_URL` (facultatifs) |
 | `generate-appreciation` | Appréciation de bulletin rédigée par une IA, réservée à l'administrateur et aux professeurs | `AI_API_KEY`, `AI_MODEL`, `AI_BASE_URL` (service compatible avec l'API « chat completions ») |
 
 Déploiement : `supabase functions deploy <nom>`, puis `supabase secrets set NOM=valeur …`. Tant qu'une fonction
@@ -174,10 +176,23 @@ ni la photo). La clé du service reste dans les secrets Supabase, jamais dans le
 modèle se choisissent par les secrets ; les tests (`supabase/functions/_shared/appreciation*.test.ts`) simulent le
 fournisseur : la fonction n'a pas été appelée contre un vrai service.
 
-Le bouton « Notifier les parents » (écran de saisie des notes) appelle `notify-parents`, qui **n'existe pas** :
-le projet n'a ni service d'envoi d'e-mails, et les seuls numéros disponibles sont les contacts d'urgence des élèves
-(un SMS payant vers de vraies personnes). Le canal (e-mail, SMS ou notification dans l'application) est à choisir
-avant de l'écrire ; d'ici là le bouton affiche que la fonction n'est pas déployée.
+Le bouton « Prévenir les parents » (écran de saisie des notes) agit en deux temps indépendants :
+
+1. la fonction SQL `notify_class_parents` crée une notification par parent et par élève (« Les notes du 1er trimestre de
+   Koffi sont disponibles »), affichée dans la cloche de l'application du parent, avec un avis à l'écran à l'arrivée. Elle
+   ne dépend d'aucun service externe. Pas de doublon : un parent déjà prévenu pour le même élève et le même trimestre dans
+   les dernières 24 h ne l'est pas une seconde fois ;
+2. la fonction Edge `notify-parents` envoie l'e-mail correspondant (un seul e-mail par parent, même s'il a plusieurs enfants
+   dans la classe). Sans `BREVO_API_KEY`, l'étape 1 fonctionne quand même et l'écran indique que les e-mails ne sont pas
+   configurés.
+
+Ni les notes ni les moyennes ne figurent dans la notification ni dans l'e-mail : le parent se connecte pour les consulter
+(l'accès au bulletin reste soumis aux règles de paiement). Les destinataires, le texte, le lien (`APP_URL`) et le nom de
+l'école viennent de la base et des secrets du serveur, jamais de la requête. La cloche n'est visible que pour les comptes
+parents ; la liste se rafraîchit toutes les minutes et au retour sur l'onglet (pas de notification quand l'application est
+fermée : c'est le rôle de l'e-mail).
+
+L'envoi réel d'e-mails n'a été testé qu'avec des réponses simulées, jamais contre le service Brevo.
 
 ### Tests de bout en bout
 

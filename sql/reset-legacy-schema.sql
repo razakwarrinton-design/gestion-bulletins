@@ -23,6 +23,7 @@ DROP VIEW IF EXISTS public.v_parent_dashboard CASCADE;
 DROP VIEW IF EXISTS public.v_users CASCADE;
 
 DROP TABLE IF EXISTS
+  public.notifications,
   public.messages,
   public.conversations,
   public.payments,

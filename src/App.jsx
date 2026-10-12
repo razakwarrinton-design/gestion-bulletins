@@ -3,6 +3,7 @@ import { useAppreciations } from './hooks/useAppreciations';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import { useHashRoute } from './hooks/useHashRoute';
 import { useToast } from './hooks/useToast';
+import { useNotifications } from './hooks/useNotifications';
 import { useConfirmDialog } from './hooks/useConfirmDialog';
 import { useActivityLog } from './hooks/useActivityLog';
 import { useSchoolSettings } from './hooks/useSchoolSettings';
@@ -122,6 +123,13 @@ const BulletinApp = () => {
         if (gradesError) showNotification(`Impossible de charger les notes : ${gradesError}`);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [gradesError]);
+
+    // Cloche : les parents reçoivent une notification quand les notes d'un trimestre sont disponibles
+    const notifications = useNotifications({
+        userId: currentUser?.id,
+        enabled: role === 'parent',
+        onArrival: (fresh) => showNotification(`🔔 ${fresh.length > 1 ? `${fresh.length} nouvelles notifications` : fresh[0].body}`, 6000),
+    });
 
     const handleViewChange = (view) => {
         navigate(view);
@@ -277,6 +285,7 @@ const BulletinApp = () => {
                     visibleNavItems={visibleNavItems} currentView={currentView}
                     currentYear={currentYear} isDark={isDark} toggleDark={toggleDark}
                     currentUser={currentUser} onLogout={handleLogout}
+                    notifications={notifications} onNavigate={handleViewChange}
                 />
 
                 {/* ── Scrollable content ──────────────────────────────────────────── */}

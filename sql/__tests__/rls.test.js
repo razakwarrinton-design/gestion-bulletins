@@ -18,6 +18,7 @@ const SCRIPTS = [
   'appreciations-activities.sql',
   'audit-log.sql',
   'client-errors.sql',
+  'notifications.sql',
 ];
 
 // Comptes de test (UUID fixes)

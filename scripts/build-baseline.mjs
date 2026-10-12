@@ -20,6 +20,7 @@ export const INSTALL_SCRIPTS = [
   'appreciations-activities.sql',
   'audit-log.sql',
   'client-errors.sql',
+  'notifications.sql',
 ];
 
 export const BASELINE_PATH = path.join(root, 'supabase', 'migrations', '20261009000000_baseline.sql');

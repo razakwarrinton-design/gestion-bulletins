@@ -2,10 +2,11 @@ import { Menu, X, LogOut } from 'lucide-react';
 import SyncStatus from '../components/SyncStatus';
 import LanguageToggle from '../components/LanguageToggle';
 import DarkModeToggle from '../components/DarkModeToggle';
+import NotificationBell from '../components/NotificationBell';
 
 const Topbar = ({
     mobileMenuOpen, setMobileMenuOpen, visibleNavItems, currentView,
-    currentYear, isDark, toggleDark, currentUser, onLogout,
+    currentYear, isDark, toggleDark, currentUser, onLogout, notifications, onNavigate,
 }) => (
 <header className="bg-white flex items-center gap-3 px-5 py-2.5 flex-shrink-0"
     style={{ borderBottom: '1px solid #EFF6FF' }}>
@@ -41,6 +42,15 @@ const Topbar = ({
 
     {/* SyncStatus */}
     <SyncStatus />
+
+    {/* Notifications (comptes qui en reçoivent, table installée) */}
+    {notifications?.available && (
+        <NotificationBell
+            notifications={notifications}
+            allowedViews={visibleNavItems.map(i => i.view)}
+            onNavigate={onNavigate}
+        />
+    )}
 
     {/* Language toggle (masqué sur petit écran : la place manque et on change rarement de langue) */}
     <div className="hidden sm:block"><LanguageToggle /></div>

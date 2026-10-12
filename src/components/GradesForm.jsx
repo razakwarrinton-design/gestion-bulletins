@@ -3,7 +3,7 @@ import { Save, CheckCircle, ChevronDown, ChevronUp, User, Pen, Star, Bell, Send 
 import { supabase } from '../config/supabase';
 import { getMentionLevel } from '../utils/mentions';
 import { weightedBase, applyBonus, gradeInputProblem, MAX_BONUS, MAX_GRADE } from '../utils/finalGrade';
-import { readFunctionError } from '../utils/functionError';
+import { notifyParents, describeOutcome } from '../utils/notifyParents';
 import GradesTable from './GradesTable';
 
 // ─── Hook debounce ────────────────────────────────────────────────────────────
@@ -355,29 +355,22 @@ export default function GradesForm({
   const [notifState, setNotifState] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
   const [notifResult, setNotifResult] = useState(null);
 
-  const notifyParents = async () => {
+  // Le résultat n'est affiché que pour la classe et le trimestre auxquels il se rapporte
+  const notifKey = `${selectedClass}:${selectedTrimester}`;
+  const shownResult = notifResult?.key === notifKey ? notifResult : null;
+  const shownState = notifState === 'loading' ? 'loading' : shownResult ? notifState : 'idle';
+
+  const sendNotifications = async () => {
     if (!selectedClass || !selectedTrimester) return;
     setNotifState('loading');
     setNotifResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke('notify-parents', {
-        body: {
-          trimester: selectedTrimester,
-          classId: selectedClass,
-          schoolName: 'EduPulse',
-          appUrl: 'https://gestion-bulletins-rho.vercel.app',
-        },
-      });
-      if (error) throw new Error(await readFunctionError(error, "Envoi impossible", 'notify-parents'));
-      if (data?.error) throw new Error(data.error);
-      setNotifState('success');
-      setNotifResult(data);
-      setTimeout(() => setNotifState('idle'), 5000);
+      const result = await notifyParents(supabase, { classId: selectedClass, trimester: selectedTrimester });
+      setNotifResult({ ...result, key: notifKey });
+      setNotifState(result.inApp.notified > 0 || result.inApp.already > 0 ? 'success' : 'error');
     } catch (err) {
       setNotifState('error');
-      setNotifResult({ error: err.message });
-      // plus long qu'un succès : le message d'erreur doit avoir le temps d'être lu
-      setTimeout(() => setNotifState('idle'), 12000);
+      setNotifResult({ error: err.message, key: notifKey });
     }
   };
 
@@ -400,29 +393,33 @@ export default function GradesForm({
           {selectedClass && classStudents.length > 0 && (
             <div className="flex flex-col items-end gap-1">
               <button
-                onClick={notifyParents}
-                disabled={notifState === 'loading'}
-                title="Envoie un e-mail à chaque parent de la classe pour lui dire que les notes du trimestre sont disponibles"
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${notifState === 'success' ? 'bg-green-100 text-green-700 border border-green-200' :
-                    notifState === 'error' ? 'bg-red-100 text-red-700 border border-red-200' :
+                onClick={sendNotifications}
+                disabled={shownState === 'loading'}
+                title="Affiche une notification sur l'écran de chaque parent de la classe et lui envoie un e-mail (si le service d'e-mail est configuré) pour lui dire que les notes du trimestre sont disponibles"
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${shownState === 'success' ? 'bg-green-100 text-green-700 border border-green-200' :
+                    shownState === 'error' ? 'bg-red-100 text-red-700 border border-red-200' :
                       'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'
                   } disabled:opacity-60`}
               >
-                {notifState === 'loading' ? (
+                {shownState === 'loading' ? (
                   <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> Envoi...</>
-                ) : notifState === 'success' ? (
-                  <><CheckCircle className="w-4 h-4" /> {notifResult?.sent ?? 0} email{notifResult?.sent > 1 ? 's' : ''} envoyé{notifResult?.sent > 1 ? 's' : ''} ✓</>
-                ) : notifState === 'error' ? (
-                  <><Bell className="w-4 h-4" /> Erreur d'envoi</>
+                ) : shownState === 'success' ? (
+                  <><CheckCircle className="w-4 h-4" /> Parents prévenus</>
+                ) : shownState === 'error' ? (
+                  <><Bell className="w-4 h-4" /> Envoi impossible</>
                 ) : (
-                  <><Send className="w-4 h-4" /> Prévenir les parents par e-mail</>
+                  <><Send className="w-4 h-4" /> Prévenir les parents</>
                 )}
               </button>
-              {notifState === 'success' && notifResult?.failed > 0 && (
-                <p className="text-xs text-orange-500">{notifResult.failed} échec{notifResult.failed > 1 ? 's' : ''}</p>
+              {shownState === 'error' && shownResult?.error && (
+                <p role="alert" className="text-xs text-red-600 max-w-[260px] text-right">{shownResult.error}</p>
               )}
-              {notifState === 'error' && (
-                <p className="text-xs text-red-500 max-w-[200px] text-right">{notifResult?.error}</p>
+              {shownResult?.inApp && (
+                <ul aria-live="polite" className="text-xs max-w-[260px] text-right space-y-0.5">
+                  {describeOutcome(shownResult).map((line, i) => (
+                    <li key={i} className={line.tone === 'ok' ? 'text-green-700' : line.tone === 'error' ? 'text-red-600' : 'text-orange-700'}>{line.text}</li>
+                  ))}
+                </ul>
               )}
             </div>
           )}
