@@ -18,15 +18,20 @@ npm run dev
 | `npm run build` | Build de production |
 | `npm test` | Tests unitaires (Vitest) |
 | `npm run lint` | ESLint |
+| `npm run e2e` | Tests de bout en bout (Playwright) : téléphone, impression PDF des bulletins. Voir ci-dessous |
+| `npm run backup` | Sauvegarde des données en JSON (voir *Sauvegardes*) |
 
 ## Fonctionnalités
 
 - Classes, élèves, matières et coefficients
 - Saisie des notes, moyennes pondérées, mentions, classement
-- Bulletins imprimables, appréciations (enseignant, conseil de classe, assistant IA)
+- Barème réglable par établissement (seuils de mention, d'admission, de difficulté) : *Paramètres → Barème de l'établissement*. Par défaut : « Excellent » dès 18 et « Très Bien » de 16 à 17,99 (échelle des examens nationaux togolais 2026) ; les autres seuils sont l'usage courant, **non confirmé par un texte officiel**
+- Bulletins imprimables (3 modèles, une page A4 jusqu'à 14 matières), tableau récapitulatif de classe (procès-verbal), appréciations (enseignant, conseil de classe, assistant IA)
 - Envoi des résultats d'un élève au parent par WhatsApp (lien pré-rempli, sans clé API)
 - Paiement des frais de scolarité par Mobile Money (Moov Money/Flooz, T-Money, MTN, Wave, Orange) via FedaPay
+- Import Excel des élèves et des notes (en-têtes tolérants, doublons et lignes ignorées expliqués)
 - Absences, SMS, messagerie
+- Pages publiques *Confidentialité* et *Conditions d'utilisation* (modèles à faire valider), journal d'audit, journal des incidents
 - Rôles : Admin, Professeur, Secrétaire, Parent (double authentification disponible)
 - Portail parents, mode sombre, interface multilingue, PWA
 
@@ -174,6 +179,13 @@ le projet n'a ni service d'envoi d'e-mails, et les seuls numéros disponibles so
 (un SMS payant vers de vraies personnes). Le canal (e-mail, SMS ou notification dans l'application) est à choisir
 avant de l'écrire ; d'ici là le bouton affiche que la fonction n'est pas déployée.
 
+### Tests de bout en bout
+
+`npm run e2e` construit l'application avec une adresse Supabase factice, simule toutes les requêtes Supabase (aucun compte ni
+aucune clé réels) et pilote un vrai navigateur : écrans à 375 px sans défilement horizontal, impression PDF des trois
+modèles de bulletin (une page A4 avec 8 et 14 matières) et du tableau récapitulatif. Première fois :
+`npx playwright install chromium` ; avec Microsoft Edge déjà installé : `PW_CHANNEL=msedge npm run e2e`.
+
 ## Calcul des moyennes
 
 La moyenne d'un trimestre est la moyenne des notes pondérées par le coefficient de chaque matière.
@@ -181,6 +193,7 @@ Une note non saisie est ignorée ; une note de 0 compte. Voir [docs/CALCUL-MOYEN
 
 ## Documentation
 
+- [Installer un nouvel établissement](docs/NOUVEAU-CLIENT.md)
 - [Déploiement](docs/DEPLOYMENT-GUIDE.md)
 - [Portail parents](docs/SETUP-PARENT-PORTAL.md)
 - [Roadmap](docs/ROADMAP.md) · [Plan d'amélioration](docs/PLAN-AMELIORATIONS.md)
