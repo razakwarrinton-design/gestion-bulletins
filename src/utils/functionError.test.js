@@ -27,6 +27,11 @@ describe('readFunctionError', () => {
     expect(message).toMatch(/injoignable/);
   });
 
+  it('reprend le champ `message` des réponses de la plateforme, avec le code HTTP', async () => {
+    expect(await readFunctionError(httpError(401, { code: 401, message: 'Invalid JWT' }), 'x', 'create-parent-account'))
+      .toBe('Invalid JWT (HTTP 401)');
+  });
+
   it('retombe sur le message générique, puis sur le texte par défaut', async () => {
     expect(await readFunctionError(httpError(500, null), 'défaut')).toMatch(/non-2xx/);
     expect(await readFunctionError({}, 'défaut')).toBe('défaut');

@@ -14,6 +14,8 @@ export async function readFunctionError(error, fallback = "Erreur du service", f
       if (body?.error) return body.error;
       // La plateforme répond 404 (sans champ `error`) quand la fonction n'a jamais été déployée.
       if (response.status === 404) return `${label} n'est pas déployée sur ce projet Supabase.`;
+      // Réponses de la plateforme (passerelle) : { code, message }, ex. « Invalid JWT »
+      if (typeof body?.message === "string" && body.message) return `${body.message} (HTTP ${response.status})`;
     }
   } catch {
     // corps illisible : on retombe sur le message générique
