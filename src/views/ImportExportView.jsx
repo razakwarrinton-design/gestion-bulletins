@@ -90,6 +90,9 @@ const ImportExportView = ({
                 <li>• Pour importer des élèves : colonnes obligatoires "Nom", "Prénom", "Classe"</li>
                 <li>• Pour importer des notes : colonnes "Nom", "Prénom" + une colonne par matière</li>
                 <li>• Les exports créent des fichiers Excel prêts à être utilisés ou imprimés</li>
+                <li>• Les accents et majuscules des en-têtes n'ont pas d'importance ; les notes peuvent s'écrire « 12,5 »</li>
+                <li>• Un élève déjà présent dans sa classe n'est pas recréé : importer deux fois le même fichier est sans danger</li>
+                <li>• Les lignes ignorées (élève introuvable, note hors de 0–20…) sont listées avec leur numéro de ligne</li>
             </ul>
         </div>
     </div>
