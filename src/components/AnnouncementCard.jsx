@@ -7,7 +7,7 @@ const STYLES = {
   autre: { Icon: Megaphone, badge: 'bg-blue-100 text-blue-800', border: 'border-blue-200' },
 };
 
-const ROLE_LABELS = { admin: 'Direction', professeur: 'Professeur' };
+const ROLE_LABELS = { admin: 'Direction', professeur: 'Professeur', secretaire: 'Secrétariat' };
 
 /**
  * Une info de l'établissement. Le texte est affiché tel quel (retours à la ligne conservés), jamais interprété comme du HTML.

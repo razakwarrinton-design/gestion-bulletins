@@ -14,11 +14,11 @@ const noHorizontalScroll = (page) => page.evaluate(() => document.documentElemen
 test.describe('téléphone (375 px)', () => {
   test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
 
-  test('espace parent : bandeau, onglet « Infos école » et cinq onglets dans l\'écran', async ({ page, context }) => {
+  test('espace parent : bandeau, onglet « Actualités » et cinq onglets dans l\'écran', async ({ page, context }) => {
     await mockSupabase(context, { role: 'parent', data: { ...buildData({ studentCount: 2 }), announcements: [info(2, { class_id: 1 }), info(1, { category: 'reglement', amount_fcfa: null, deadline: null, title: 'Nouvelle règle : uniforme' })] } });
     await page.goto('/#/parents');
 
-    const banner = page.getByRole('button', { name: /2 nouvelles infos de l'école/ });
+    const banner = page.getByRole('button', { name: /2 nouvelles actualités de l'école/ });
     await expect(banner).toBeVisible();
     expect(await noHorizontalScroll(page)).toBe(true);
 
@@ -40,7 +40,7 @@ test.describe('téléphone (375 px)', () => {
   test('écran de publication (administrateur) : formulaire et liste dans l\'écran', async ({ page, context }) => {
     await mockSupabase(context, { role: 'admin', data: { ...buildData(), announcements: [info(1, { author_id: 'u-1' })] } });
     await page.goto('/#/annonces');
-    await expect(page.getByRole('heading', { name: 'Infos aux parents' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: "Actualités de l'établissement" })).toBeVisible();
     await expect(page.getByLabel('Titre')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Publier' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Modifier : Frais du relevé/ })).toBeVisible();
@@ -51,16 +51,16 @@ test.describe('téléphone (375 px)', () => {
   });
 });
 
-test('menu : « Infos aux parents » pour l\'administrateur et le professeur, pas pour le parent', async ({ page, context }) => {
+test('menu : « Actualités » pour l\'administrateur, le professeur et le secrétariat, pas pour le parent', async ({ page, context }) => {
   await mockSupabase(context, { role: 'professeur', data: { ...buildData(), announcements: [] } });
   await page.goto('/#/dashboard');
-  await expect(page.getByRole('navigation').getByText('Infos aux parents')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Actualités', { exact: true })).toBeVisible();
 });
 
 test('menu parent : aucune entrée de publication, et l\'adresse #/annonces ne l\'ouvre pas', async ({ page, context }) => {
   await mockSupabase(context, { role: 'parent', data: { ...buildData(), announcements: [] } });
   await page.goto('/#/annonces');
-  await expect(page.getByRole('navigation').getByText('Infos aux parents')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Infos aux parents' })).toHaveCount(0);
+  await expect(page.getByRole('navigation').getByText('Actualités', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: "Actualités de l'établissement" })).toHaveCount(0);
   await expect(page.getByText(/Espace Parents/).first()).toBeVisible();
 });

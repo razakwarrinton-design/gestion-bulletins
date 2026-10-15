@@ -9,8 +9,8 @@ import {
 const EMPTY = { title: '', body: '', category: 'frais', amount: '', deadline: '', classId: '', notify: true };
 
 /**
- * Publication des infos de l'établissement (frais, règles) par la direction et les professeurs.
- * Les parents les lisent dans leur espace ; « Prévenir les parents » ajoute un avis dans leur cloche.
+ * Actualités de l'établissement : tout le personnel les consulte ; la direction, les professeurs et le secrétariat publient
+ * (frais, règles…). Les parents les lisent dans leur espace ; « Prévenir les parents » ajoute un avis dans leur cloche.
  */
 export default function AnnouncementsManager({ currentUser, classes = [], openConfirm, showNotification }) {
   const { items, loading, error, installed, publish, update, remove } = useAnnouncements();
@@ -81,11 +81,11 @@ export default function AnnouncementsManager({ currentUser, classes = [], openCo
     <div className="space-y-5">
       <div>
         <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 whitespace-nowrap">
-          <Megaphone className="w-5 h-5 text-blue-600" /> Infos aux parents
+          <Megaphone className="w-5 h-5 text-blue-600" /> Actualités de l'établissement
         </h2>
         <p className="text-sm text-gray-600 mt-0.5">
-          Publiez ici les frais (relevés, documents…) et les règles de l'établissement : les parents les consultent dans leur espace,
-          sans dépendre de ce que l'élève rapporte.
+          Consultez ici les nouvelles de l'établissement et publiez les frais (relevés, documents…) et les règles : les parents les lisent
+          dans leur espace, sans dépendre de ce que l'élève rapporte.
         </p>
       </div>
 

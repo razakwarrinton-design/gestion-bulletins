@@ -1011,7 +1011,7 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint, current
                         { key: 'notes', icon: <BookOpen className="w-4 h-4" />, label: 'Notes' },
                         { key: 'paiements', icon: <CreditCard className="w-4 h-4" />, label: 'Paiements' },
                         { key: 'absences', icon: <Calendar className="w-4 h-4" />, label: 'Absences' },
-                        { key: 'infos', icon: <Megaphone className="w-4 h-4" />, label: 'Infos école' },
+                        { key: 'infos', icon: <Megaphone className="w-4 h-4" />, label: 'Actualités' },
                     ].map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)} aria-label={tab.label} title={tab.label}
                             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'

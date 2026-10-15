@@ -67,7 +67,10 @@ export function toRow({ title, body, category, amount, deadline, classId }) {
   };
 }
 
-/** Qui peut modifier : l'administrateur, ou le professeur auteur (la base applique la même règle). */
+/** Rôles qui publient (la base applique la même règle). */
+export const PUBLISHER_ROLES = ['admin', 'professeur', 'secretaire'];
+
+/** Qui peut modifier : l'administrateur, ou l'auteur de la publication s'il est professeur ou du secrétariat. */
 export function canEdit(user, item) {
-  return user?.role === 'admin' || (user?.role === 'professeur' && item.author_id === user.id);
+  return user?.role === 'admin' || (['professeur', 'secretaire'].includes(user?.role) && item.author_id === user.id);
 }

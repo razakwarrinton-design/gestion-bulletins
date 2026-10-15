@@ -62,8 +62,11 @@ describe('publication', () => {
     expect(rows[1].author_name).toBe('Prénom prof');
   });
 
-  it("refuse un secrétaire, un parent, un compte en attente, un visiteur", async () => {
-    await expect(publish(SECRETAIRE)).rejects.toThrow(/row-level security/);
+  it("le secrétariat publie aussi, signé « secretaire » ; un parent, un compte en attente et un visiteur sont refusés", async () => {
+    const { rows: [created] } = await publish(SECRETAIRE, { title: 'Ouverture du secrétariat', category: 'autre', amount: null, body: 'Du lundi au vendredi, 8 h - 16 h.' });
+    const { rows: [row] } = await db.query(`SELECT author_id, author_role FROM announcements WHERE id = ${created.id}`);
+    expect(row).toEqual({ author_id: SECRETAIRE, author_role: 'secretaire' });
+    await db.exec(`DELETE FROM announcements WHERE id = ${created.id}`);
     await expect(publish(PARENT_A)).rejects.toThrow(/row-level security/);
     await expect(publish(PENDING)).rejects.toThrow(/row-level security/);
     await expect(publish(null)).rejects.toThrow();
@@ -119,6 +122,15 @@ describe('qui lit quoi', () => {
 });
 
 describe('modification et suppression', () => {
+  it('le secrétariat ne touche pas aux publications des autres, mais gère les siennes', async () => {
+    const { rows: [mine] } = await publish(SECRETAIRE, { title: 'Reçus de paiement', category: 'frais', amount: 500, body: 'Un reçu coûte 500 FCFA.' });
+    expect((await run(SECRETAIRE, `UPDATE announcements SET title = 'piraté' WHERE author_id <> '${SECRETAIRE}' RETURNING id`)).rows).toEqual([]);
+    expect((await run(SECRETAIRE, `DELETE FROM announcements WHERE author_id <> '${SECRETAIRE}' RETURNING id`)).rows).toEqual([]);
+    expect((await run(PROF, `UPDATE announcements SET title = 'piraté' WHERE id = ${mine.id} RETURNING id`)).rows).toEqual([]);
+    expect((await run(SECRETAIRE, `UPDATE announcements SET amount_fcfa = 600 WHERE id = ${mine.id} RETURNING id`)).rows.length).toBe(1);
+    expect((await run(SECRETAIRE, `DELETE FROM announcements WHERE id = ${mine.id} RETURNING id`)).rows.length).toBe(1);
+  });
+
   it('un professeur ne touche pas à la publication d\'un collègue ni à celle de l\'administrateur', async () => {
     expect((await run(PROF2, `UPDATE announcements SET title = 'piraté' RETURNING id`)).rows).toEqual([]);
     expect((await run(PROF, `UPDATE announcements SET title = 'piraté' WHERE author_role = 'admin' RETURNING id`)).rows).toEqual([]);
@@ -168,6 +180,14 @@ describe('avis dans la cloche (notify_announcement)', () => {
     const { rows: [r] } = await run(PROF, `SELECT notify_announcement($1) AS r`, [classOne]);
     expect(r.r).toMatchObject({ notified: 1, parents: 1 });
     expect((await run(PARENT_B, `SELECT title FROM notifications WHERE announcement_id = ${classOne}`)).rows).toEqual([]);
+  });
+
+  it("le secrétariat prévient les parents pour sa propre publication seulement", async () => {
+    const { rows: [mine] } = await publish(SECRETAIRE, { title: 'Reçus', category: 'frais', amount: 500, body: 'Un reçu : 500 FCFA.' });
+    const { rows: [r] } = await run(SECRETAIRE, `SELECT notify_announcement($1) AS r`, [mine.id]);
+    expect(r.r).toMatchObject({ notified: 2, parents: 2 });
+    await expect(run(SECRETAIRE, `SELECT notify_announcement($1)`, [schoolWide])).rejects.toThrow(/Réservé/);
+    await db.exec(`DELETE FROM announcements WHERE id = ${mine.id}`);
   });
 
   it("réservé à l'auteur et à l'administrateur", async () => {

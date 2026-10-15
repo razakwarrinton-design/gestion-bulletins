@@ -20,7 +20,7 @@ export function AnnouncementsList({ announcements, classNames = {} }) {
   );
 }
 
-/** Bandeau de la vue d'ensemble : « N nouvelles infos de l'école » avec un bouton pour les ouvrir. */
+/** Bandeau de la vue d'ensemble : « N nouvelles actualités de l'école » avec un bouton pour les ouvrir. */
 export function AnnouncementsBanner({ announcements, onOpen }) {
   const recent = announcements.items.filter((item) => isRecent(item.created_at));
   if (!announcements.installed || recent.length === 0) return null;
@@ -29,19 +29,19 @@ export function AnnouncementsBanner({ announcements, onOpen }) {
       className="w-full flex items-center gap-3 text-left bg-amber-50 border border-amber-200 rounded-2xl p-4 hover:bg-amber-100 transition-colors">
       <Megaphone className="w-5 h-5 text-amber-700 flex-shrink-0" aria-hidden="true" />
       <span className="text-sm text-amber-900">
-        <strong>{recent.length} nouvelle{recent.length > 1 ? 's' : ''} info{recent.length > 1 ? 's' : ''} de l'école</strong>
+        <strong>{recent.length} nouvelle{recent.length > 1 ? 's' : ''} actualité{recent.length > 1 ? 's' : ''} de l'école</strong>
         {' : '}{recent[0].title}{recent.length > 1 ? '…' : ''}
       </span>
     </button>
   );
 }
 
-/** Onglet « Infos école » : charge les infos une fois pour tout l'espace parent. */
+/** Onglet « Actualités » : charge les infos une fois pour tout l'espace parent. */
 export default function AnnouncementsParent({ announcements, classNames }) {
   return (
     <section aria-label="Infos de l'établissement" className="space-y-3">
       <p className="text-sm text-gray-600">
-        Frais et règles publiés par la direction et les professeurs. Un montant annoncé ici est une information ;
+        Frais et règles publiés par la direction, les professeurs et le secrétariat. Un montant annoncé ici est une information ;
         le solde de votre enfant se consulte dans l'onglet Paiements.
       </p>
       <AnnouncementsList announcements={announcements} classNames={classNames} />

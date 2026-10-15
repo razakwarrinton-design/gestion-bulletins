@@ -17,7 +17,7 @@ export const NAV_ITEMS = [
     { view: 'dashboard', label: 'Tableau de bord', Icon: LayoutDashboard, section: 'principal', roles: ['admin', 'professeur', 'secretaire'] },
     { view: 'classes', label: 'Classes', Icon: GraduationCap, section: 'principal', roles: ['admin', 'secretaire'] },
     { view: 'students', label: 'Élèves', Icon: Users, section: 'principal', roles: ['admin', 'professeur', 'secretaire'] },
-    { view: 'annonces', label: 'Infos aux parents', Icon: Megaphone, section: 'principal', roles: ['admin', 'professeur'] },
+    { view: 'annonces', label: 'Actualités', Icon: Megaphone, section: 'principal', roles: ['admin', 'professeur', 'secretaire'] },
     { view: 'subjects', label: 'Matières', Icon: BookOpen, section: 'principal', roles: ['admin'] },
     { view: 'grades', label: 'Saisir notes', Icon: Pencil, section: 'notes', roles: ['admin', 'professeur'] },
     { view: 'absences', label: 'Absences', Icon: ClipboardList, section: 'notes', roles: ['admin', 'professeur', 'secretaire'] },

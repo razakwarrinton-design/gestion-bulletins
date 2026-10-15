@@ -21,7 +21,7 @@ Dans *SQL Editor*, exécuter **un seul** de ces deux chemins :
   ordre, générés par `npm run sql:baseline`) et l'exécuter d'un bloc ;
 - ou exécuter les scripts de `sql/` un par un dans l'ordre du [README](../README.md#base-de-données).
 
-Les scripts `client-errors.sql` (journal des incidents), `notifications.sql` (cloche de notifications des parents) et `announcements.sql` (infos de l'établissement : frais et règles lus par les parents) sont inclus ; ils sont facultatifs.
+Les scripts `client-errors.sql` (journal des incidents), `notifications.sql` (cloche de notifications des parents) et `announcements.sql` (actualités de l'établissement : frais et règles publiés par le personnel, lus par les parents) sont inclus ; ils sont facultatifs.
 
 **Ordre de mise en ligne d'une mise à jour** : exécuter d'abord `notifications.sql` puis `announcements.sql` (dans cet ordre), puis déployer l'application. Une application
 déployée avant le script reste utilisable (la cloche est simplement absente), mais le bouton « Prévenir les parents » le signale.

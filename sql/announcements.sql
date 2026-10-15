@@ -1,15 +1,15 @@
 -- ============================================================================
--- INFOS DE L'ÉTABLISSEMENT : frais et règles publiés par la direction et les professeurs, lus par les parents
+-- ACTUALITÉS DE L'ÉTABLISSEMENT : frais et règles publiés par la direction, les professeurs et le secrétariat, lus par les parents
 -- À exécuter dans l'éditeur SQL de Supabase APRÈS notifications.sql (et audit-log.sql). Additif et ré-exécutable.
 --
 -- Pourquoi : un élève peut mal rapporter à sa famille le montant d'un frais (relevé de notes, document…) ou une règle
--- nouvelle. La direction et les professeurs publient l'information une fois ; le parent la lit lui-même dans son espace.
+-- nouvelle. La direction, les professeurs et le secrétariat publient l'information une fois ; le parent la lit lui-même dans son espace.
 -- Le montant d'un frais est une INFORMATION, pas une facture : le solde dû reste celui de la gestion des paiements.
 --
 -- Garanties :
---   * seuls l'administrateur et les professeurs publient ; un professeur ne modifie ni ne supprime que ses propres
---     publications (l'administrateur toutes) ; l'auteur et son rôle sont fixés par la base, pas par le navigateur ;
---   * le personnel (dont le secrétariat) lit tout ; un parent lit les infos de tout l'établissement et celles de la
+--   * l'administrateur, les professeurs et le secrétariat publient ; un professeur ou un membre du secrétariat ne modifie
+--     ni ne supprime que ses propres publications (l'administrateur toutes) ; l'auteur et son rôle sont fixés par la base, pas par le navigateur ;
+--   * tout le personnel consulte toutes les publications ; un parent lit les infos de tout l'établissement et celles de la
 --     classe de l'un de ses enfants, jamais celles d'une autre classe ; un compte « en attente » ne lit rien ;
 --   * le texte est stocké brut : l'application l'affiche comme du texte, jamais comme du HTML ;
 --   * notify_announcement prévient les parents concernés dans la cloche (un seul avis par parent et par publication).
@@ -75,6 +75,7 @@ ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Lecture personnel" ON announcements;
 DROP POLICY IF EXISTS "Lecture parents" ON announcements;
 DROP POLICY IF EXISTS "Publication admin et professeur" ON announcements;
+DROP POLICY IF EXISTS "Publication par le personnel" ON announcements;
 DROP POLICY IF EXISTS "Modification par l'auteur ou l'admin" ON announcements;
 DROP POLICY IF EXISTS "Suppression par l'auteur ou l'admin" ON announcements;
 
@@ -92,13 +93,13 @@ CREATE POLICY "Lecture parents" ON announcements FOR SELECT
       )
     )
   );
-CREATE POLICY "Publication admin et professeur" ON announcements FOR INSERT
-  WITH CHECK (public.get_user_role() IN ('admin', 'professeur') AND author_id = auth.uid());
+CREATE POLICY "Publication par le personnel" ON announcements FOR INSERT
+  WITH CHECK (public.get_user_role() IN ('admin', 'professeur', 'secretaire') AND author_id = auth.uid());
 CREATE POLICY "Modification par l'auteur ou l'admin" ON announcements FOR UPDATE
-  USING (public.get_user_role() = 'admin' OR (public.get_user_role() = 'professeur' AND author_id = auth.uid()))
-  WITH CHECK (public.get_user_role() = 'admin' OR (public.get_user_role() = 'professeur' AND author_id = auth.uid()));
+  USING (public.get_user_role() = 'admin' OR (public.get_user_role() IN ('professeur', 'secretaire') AND author_id = auth.uid()))
+  WITH CHECK (public.get_user_role() = 'admin' OR (public.get_user_role() IN ('professeur', 'secretaire') AND author_id = auth.uid()));
 CREATE POLICY "Suppression par l'auteur ou l'admin" ON announcements FOR DELETE
-  USING (public.get_user_role() = 'admin' OR (public.get_user_role() = 'professeur' AND author_id = auth.uid()));
+  USING (public.get_user_role() = 'admin' OR (public.get_user_role() IN ('professeur', 'secretaire') AND author_id = auth.uid()));
 
 REVOKE ALL ON announcements FROM anon;
 REVOKE TRUNCATE ON announcements FROM authenticated;
@@ -137,8 +138,8 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Information introuvable';
   END IF;
-  -- l'administrateur, ou le professeur qui l'a publiée
-  IF NOT (v_role = 'admin' OR (v_role = 'professeur' AND a.author_id = auth.uid())) THEN
+  -- l'administrateur, ou l'auteur de la publication (professeur ou secrétariat)
+  IF NOT (v_role = 'admin' OR (v_role IN ('professeur', 'secretaire') AND a.author_id = auth.uid())) THEN
     RAISE EXCEPTION 'Réservé à l''auteur de la publication et aux administrateurs';
   END IF;
 

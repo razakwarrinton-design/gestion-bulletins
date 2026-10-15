@@ -71,12 +71,13 @@ describe('toRow', () => {
 });
 
 describe('canEdit / isAbsentAnnouncements', () => {
-  it("l'administrateur modifie tout, le professeur seulement ses publications, les autres rien", () => {
+  it("l'administrateur modifie tout, le professeur et le secrétariat seulement leurs publications, le parent rien", () => {
     const item = { author_id: 'u1' };
     expect(canEdit({ role: 'admin', id: 'x' }, item)).toBe(true);
     expect(canEdit({ role: 'professeur', id: 'u1' }, item)).toBe(true);
     expect(canEdit({ role: 'professeur', id: 'u2' }, item)).toBe(false);
-    expect(canEdit({ role: 'secretaire', id: 'u1' }, item)).toBe(false);
+    expect(canEdit({ role: 'secretaire', id: 'u1' }, item)).toBe(true);
+    expect(canEdit({ role: 'secretaire', id: 'u2' }, item)).toBe(false);
     expect(canEdit({ role: 'parent', id: 'u1' }, item)).toBe(false);
     expect(canEdit(null, item)).toBe(false);
   });

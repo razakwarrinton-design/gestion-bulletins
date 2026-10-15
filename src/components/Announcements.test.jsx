@@ -65,9 +65,9 @@ describe('AnnouncementsManager (personnel)', () => {
     expect((await screen.findByRole('alert')).textContent).toMatch(/row-level security/);
   });
 
-  it("un professeur ne voit les boutons Modifier/Supprimer que sur ses propres infos", () => {
+  it.each(["professeur", "secretaire"])("%s : boutons Modifier/Supprimer seulement sur ses propres infos", (role) => {
     state.api = api({ items: [item({ id: 1, author_id: 'p1', title: 'Mienne' }), item({ id: 2, author_id: 'p2', title: 'Celle du collègue' })] });
-    renderManager({ id: 'p1', role: 'professeur' });
+    renderManager({ id: 'p1', role });
     expect(screen.getByRole('button', { name: 'Modifier : Mienne' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Modifier : Celle du collègue' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Supprimer : Celle du collègue' })).toBeNull();
@@ -126,7 +126,7 @@ describe("espace parent : infos de l'établissement", () => {
     state.api = api({ items: [item({ id: 1 }), old] });
     const { container, rerender } = render(<AnnouncementsBanner announcements={state.api} onOpen={onOpen} />);
     const banner = screen.getByRole('button');
-    expect(within(banner).getByText(/1 nouvelle info de l'école/)).toBeTruthy();
+    expect(within(banner).getByText(/1 nouvelle actualité de l'école/)).toBeTruthy();
     fireEvent.click(banner);
     expect(onOpen).toHaveBeenCalled();
     rerender(<AnnouncementsBanner announcements={api({ items: [old] })} onOpen={onOpen} />);
