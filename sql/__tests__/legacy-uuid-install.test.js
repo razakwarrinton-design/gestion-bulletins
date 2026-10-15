@@ -75,6 +75,7 @@ const INSTALL = [
   'audit-log.sql',
   'client-errors.sql',
   'notifications.sql',
+  'announcements.sql',
 ];
 
 // Comme l'éditeur SQL de Supabase : tout le texte d'un coup, en une seule requête.

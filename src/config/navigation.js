@@ -1,7 +1,7 @@
 import {
     LayoutDashboard, GraduationCap, Users, BookOpen, Pencil, ClipboardList,
     FileText, Calendar, Star, TrendingUp, BarChart2, Bot, FolderUp, UsersRound,
-    CreditCard, Settings, UserCheck, UserCog, MessageSquare, MessageCircle, ScrollText,
+    CreditCard, Settings, UserCheck, UserCog, MessageSquare, MessageCircle, ScrollText, Megaphone,
 } from 'lucide-react';
 
 // ─── Sections de navigation ───────────────────────────────────────────────────
@@ -17,6 +17,7 @@ export const NAV_ITEMS = [
     { view: 'dashboard', label: 'Tableau de bord', Icon: LayoutDashboard, section: 'principal', roles: ['admin', 'professeur', 'secretaire'] },
     { view: 'classes', label: 'Classes', Icon: GraduationCap, section: 'principal', roles: ['admin', 'secretaire'] },
     { view: 'students', label: 'Élèves', Icon: Users, section: 'principal', roles: ['admin', 'professeur', 'secretaire'] },
+    { view: 'annonces', label: 'Infos aux parents', Icon: Megaphone, section: 'principal', roles: ['admin', 'professeur'] },
     { view: 'subjects', label: 'Matières', Icon: BookOpen, section: 'principal', roles: ['admin'] },
     { view: 'grades', label: 'Saisir notes', Icon: Pencil, section: 'notes', roles: ['admin', 'professeur'] },
     { view: 'absences', label: 'Absences', Icon: ClipboardList, section: 'notes', roles: ['admin', 'professeur', 'secretaire'] },

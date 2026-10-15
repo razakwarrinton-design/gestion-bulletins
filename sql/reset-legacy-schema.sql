@@ -24,6 +24,7 @@ DROP VIEW IF EXISTS public.v_users CASCADE;
 
 DROP TABLE IF EXISTS
   public.notifications,
+  public.announcements,
   public.messages,
   public.conversations,
   public.payments,

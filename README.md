@@ -64,6 +64,7 @@ Exécuter dans l'éditeur SQL de Supabase, dans cet ordre :
 10. `sql/audit-log.sql` : journal d'audit tenu par la base (qui a créé, modifié ou supprimé quoi), lisible par les administrateurs dans le menu *Journal d'audit*. À exécuter après `security-hardening.sql`
 11. `sql/client-errors.sql` : journal des incidents (erreurs rencontrées dans le navigateur ; conçu pour ne contenir ni notes ni noms d'élèves, un message d'erreur pouvant rarement reprendre une valeur saisie), lisible par les administrateurs dans *Paramètres → Incidents de l'application*. Facultatif : sans lui, l'application fonctionne et ne garde simplement aucun rapport. À exécuter après `security-hardening.sql`
 12. `sql/notifications.sql` : notifications aux parents (cloche dans l'application) quand les notes d'un trimestre sont disponibles ; sert aussi de file d'envoi pour l'e-mail. Un parent ne lit que les siennes, seuls les administrateurs et professeurs en créent (fonction `notify_class_parents`, destinataires lus dans la base). Facultatif : sans lui, pas de cloche et le bouton « Prévenir les parents » demande de l'exécuter. **À exécuter AVANT de déployer cette version de l'application**, puis après `security-hardening.sql`
+13. `sql/announcements.sql` : infos de l'établissement (frais, règles) publiées par la direction et les professeurs (menu *Infos aux parents*) et lues par les parents dans l'onglet *Infos école* de leur espace. Un parent lit les infos de tout l'établissement et celles de la classe de ses enfants ; un professeur ne modifie que les siennes ; l'auteur est fixé par la base ; les changements sont tracés dans le journal d'audit ; un avis dans la cloche est envoyé si l'auteur le demande. Un montant annoncé est une information, pas une facture (le solde reste celui de la gestion des paiements). Facultatif. **À exécuter AVANT de déployer cette version**, après `notifications.sql`
 
 ### Créer le premier administrateur
 
@@ -97,7 +98,7 @@ Les scripts d'installation sont ré-exécutables. Pour passer une base déjà en
 1. **Sauvegarder, ou tester sur une branche Supabase** : ces scripts modifient des tables en place.
 2. Vérifier les contraintes actuelles de `grades` (une base modifiée à la main peut différer des scripts du dépôt) :
    `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = 'public.grades'::regclass;`
-3. Exécuter, **dans cet ordre** : `grades-alignment.sql` → `security-hardening.sql` → `appreciations-activities.sql` → `audit-log.sql` → `client-errors.sql` → `notifications.sql`.
+3. Exécuter, **dans cet ordre** : `grades-alignment.sql` → `security-hardening.sql` → `appreciations-activities.sql` → `audit-log.sql` → `client-errors.sql` → `notifications.sql` → `announcements.sql`.
 4. Déployer l'application, puis les fonctions Edge (voir ci-dessous).
 
 `security-hardening.sql` doit être relancé : `child_class_rank` (rang de l'enfant dans sa classe) prend maintenant

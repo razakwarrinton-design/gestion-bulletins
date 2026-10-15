@@ -17,6 +17,7 @@ const SCRIPTS = [
   'audit-log.sql',
   'client-errors.sql',
   'notifications.sql',
+  'announcements.sql',
 ];
 
 const PARENT = '00000000-0000-0000-0000-0000000000e1';

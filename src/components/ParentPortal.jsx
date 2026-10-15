@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParent } from '../hooks/useParent';
+import { useAnnouncements } from '../hooks/useAnnouncements';
+import AnnouncementsParent, { AnnouncementsBanner } from './AnnouncementsParent';
+import { Megaphone } from 'lucide-react';
 import { supabase } from '../config/supabase';
 import PaymentHistory from './PaymentHistory';
 import PaymentModal from './PaymentModal';
@@ -864,6 +867,9 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint, current
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
     const { children, loading, error, calculateAverage, getStudentGrades } = useParent(currentUser?.id, currentYear);
+    // Infos de l'établissement (frais, règles) : la base ne renvoie que celles de l'établissement et de la classe des enfants
+    const announcements = useAnnouncements();
+    const classNames = Object.fromEntries(children.map(c => [c.classId, c.className]));
 
     const showLocalNotif = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3500); };
 
@@ -1005,8 +1011,9 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint, current
                         { key: 'notes', icon: <BookOpen className="w-4 h-4" />, label: 'Notes' },
                         { key: 'paiements', icon: <CreditCard className="w-4 h-4" />, label: 'Paiements' },
                         { key: 'absences', icon: <Calendar className="w-4 h-4" />, label: 'Absences' },
+                        { key: 'infos', icon: <Megaphone className="w-4 h-4" />, label: 'Infos école' },
                     ].map(tab => (
-                        <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                        <button key={tab.key} onClick={() => setActiveTab(tab.key)} aria-label={tab.label} title={tab.label}
                             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                                 }`}>
                             {tab.icon}
@@ -1014,6 +1021,10 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint, current
                         </button>
                     ))}
                 </div>
+            )}
+
+            {activeTab === 'dashboard' && selectedChild && (
+                <AnnouncementsBanner announcements={announcements} onOpen={() => setActiveTab('infos')} />
             )}
 
             {/* ── Vue d'ensemble ── */}
@@ -1080,6 +1091,11 @@ export default function ParentPortal({ currentUser, schoolInfo, onPrint, current
                     setTimeout(() => setNotification(null), 5000);
                 }}
             />
+
+            {/* ── Infos de l'établissement ── */}
+            {activeTab === 'infos' && selectedChild && (
+                <AnnouncementsParent announcements={announcements} classNames={classNames} />
+            )}
 
             {/* ── Absences ── */}
             {activeTab === 'absences' && selectedChild && (
