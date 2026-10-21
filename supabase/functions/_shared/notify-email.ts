@@ -104,6 +104,9 @@ export function parseBrevoResponse(status: number, body: unknown): MailResult {
   const b = body as { messageId?: string; message?: string; code?: string } | null;
   if (status >= 200 && status < 300 && b?.messageId) return { success: true };
   const detail = typeof b?.message === "string" ? cleanText(b.message, 160) : "";
-  if (status === 401) return { success: false, error: "Clé API e-mail refusée (BREVO_API_KEY)" };
+  // 401 : clé invalide, mais aussi adresse IP non autorisée dans le compte Brevo ; le motif de Brevo est repris tel quel
+  if (status === 401) {
+    return { success: false, error: `Clé API e-mail refusée (BREVO_API_KEY)${detail ? ` : ${detail}` : ""}` };
+  }
   return { success: false, error: detail || `Refusé par le service d'e-mail (HTTP ${status})` };
 }

@@ -87,8 +87,9 @@ describe('parseBrevoResponse', () => {
   it('accepte une réponse 201 avec identifiant de message', () => {
     expect(parseBrevoResponse(201, { messageId: '<abc@smtp-relay.mailin.fr>' })).toEqual({ success: true });
   });
-  it('refuse une clé invalide avec un message clair', () => {
-    expect(parseBrevoResponse(401, { code: 'unauthorized', message: 'Key not found' })).toEqual({ success: false, error: 'Clé API e-mail refusée (BREVO_API_KEY)' });
+  it('refuse une clé invalide avec un message clair, en reprenant le motif de Brevo', () => {
+    expect(parseBrevoResponse(401, { code: 'unauthorized', message: 'Key not found' })).toEqual({ success: false, error: 'Clé API e-mail refusée (BREVO_API_KEY) : Key not found' });
+    expect(parseBrevoResponse(401, null)).toEqual({ success: false, error: 'Clé API e-mail refusée (BREVO_API_KEY)' });
   });
   it('reprend le message du fournisseur, sans retour à la ligne', () => {
     const result = parseBrevoResponse(400, { message: 'Sender not valid\nplease validate' });
