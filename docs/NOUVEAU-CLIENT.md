@@ -78,6 +78,7 @@ administrateur.
 2. *SMTP & API* → créer une clé API.
 3. `supabase secrets set BREVO_API_KEY=xkeysib-… MAIL_FROM_EMAIL=ecole@votre-domaine.tg APP_URL=https://adresse-de-l-application` (ajouter `MAIL_FROM_NAME="Nom de l'école"` si le nom des réglages ne convient pas).
 4. `supabase functions deploy notify-parents`.
+   Sans la ligne de commande Supabase : dans le tableau de bord, *Edge Functions* → `notify-parents` → *Code*, remplacer tout le contenu par celui de `docs/dashboard/notify-parents.ts` (version en un seul fichier, générée par `npm run functions:bundle`), puis *Deploy*. Les secrets se définissent dans *Edge Functions* → *Secrets*.
 5. Vérifier avec un parent de test dont l'adresse est la vôtre : saisir une classe, cliquer *Prévenir les parents*, contrôler la réception **et le dossier courrier indésirable**.
 
 Les secrets se définissent **par projet** (`supabase secrets set …`) : ceux d'un établissement ne servent pas à un autre.
