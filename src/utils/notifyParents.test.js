@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { notifyParents, describeOutcome } from './notifyParents';
+import { notifyParents, describeOutcome, emailAnnouncement, emailSummary } from './notifyParents';
 
 const fakeSupabase = ({ rpc, invoke }) => ({
   rpc: vi.fn().mockResolvedValue(rpc),
@@ -50,6 +50,35 @@ describe('notifyParents', () => {
   it('rôle non autorisé : le message de la base est transmis', async () => {
     const supabase = fakeSupabase({ rpc: { data: null, error: { code: 'P0001', message: 'Réservé aux administrateurs et aux professeurs' } }, invoke: { data: {}, error: null } });
     await expect(notifyParents(supabase, { classId: 1, trimester: '1' })).rejects.toThrow('Réservé aux administrateurs et aux professeurs');
+  });
+});
+
+describe('emailAnnouncement', () => {
+  it("n'envoie que l'identifiant de l'actualité (ni texte ni destinataires)", async () => {
+    const supabase = fakeSupabase({ invoke: { data: { sent: 12, failed: 0, noEmail: 1 }, error: null } });
+    const email = await emailAnnouncement(supabase, 9);
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('notify-parents', { body: { announcementId: 9 } });
+    expect(email).toMatchObject({ status: 'sent', sent: 12, noEmail: 1 });
+  });
+
+  it("ne lève jamais : service non configuré ou erreur réseau deviennent un statut", async () => {
+    const unavailable = fakeSupabase({ invoke: httpError(503, { error: "L'envoi d'e-mails n'est pas configuré (BREVO_API_KEY, MAIL_FROM_EMAIL)" }) });
+    expect((await emailAnnouncement(unavailable, 9)).status).toBe('unavailable');
+    const down = { functions: { invoke: vi.fn().mockRejectedValue(new Error('network down')) } };
+    expect(await emailAnnouncement(down, 9)).toMatchObject({ status: 'failed', error: 'network down' });
+  });
+});
+
+describe('emailSummary', () => {
+  it('résume les envois et les échecs', () => {
+    expect(emailSummary({ status: 'sent', sent: 1, failed: 0 })).toBe('1 e-mail envoyé');
+    expect(emailSummary({ status: 'sent', sent: 5, failed: 2 })).toBe('5 e-mails envoyés, 2 échecs');
+    expect(emailSummary({ status: 'failed', error: 'Sender not valid' })).toBe('e-mails non envoyés (Sender not valid)');
+  });
+  it("se tait quand l'e-mail n'est pas configuré ou qu'il n'y avait rien à envoyer", () => {
+    expect(emailSummary({ status: 'unavailable' })).toBeNull();
+    expect(emailSummary({ status: 'none' })).toBeNull();
+    expect(emailSummary(null)).toBeNull();
   });
 });
 

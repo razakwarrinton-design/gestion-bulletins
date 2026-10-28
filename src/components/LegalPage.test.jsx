@@ -16,6 +16,21 @@ describe('LegalPage', () => {
     expect(document.body.textContent).toMatch(/à faire relire et valider/);
   });
 
+  it("confidentialité : déclare les actualités, les avis aux parents et le service d'e-mail qui les transmet", () => {
+    render(<LegalPage kind="confidentialite" />);
+    const text = document.body.textContent;
+    expect(text).toMatch(/Actualités de l'établissement/);
+    expect(text).toMatch(/Brevo/);
+    expect(text).toMatch(/ni note ni moyenne/);
+  });
+
+  it("conditions : les infos publiées ne sont pas une facture et les avis ne sont pas garantis", () => {
+    render(<LegalPage kind="conditions" />);
+    const text = document.body.textContent;
+    expect(text).toMatch(/ni une facture ni un reçu/);
+    expect(text).toMatch(/réception n'est pas garantie/);
+  });
+
   it("conditions d'utilisation : renvoie vers la politique de confidentialité", () => {
     render(<LegalPage kind="conditions" />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe("Conditions d'utilisation");

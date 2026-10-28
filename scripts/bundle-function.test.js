@@ -21,7 +21,7 @@ describe('bundle de notify-parents', () => {
   it('est du TypeScript valide et utilise toutes les fonctions partagées sans les redéfinir', () => {
     const text = bundleFunction('notify-parents');
     expect(() => transformSync(text, { loader: 'ts' })).not.toThrow();
-    for (const name of ['buildParentEmail', 'cleanText', 'groupByParent', 'isEmail', 'NOTIFY_ALLOWED_ROLES', 'parseBrevoResponse', 'parseClassId', 'trimesterLabel']) {
+    for (const name of ['ANNOUNCE_ALLOWED_ROLES', 'buildAnnouncementEmail', 'buildParentEmail', 'cleanText', 'groupByParent', 'isEmail', 'NOTIFY_ALLOWED_ROLES', 'parseBrevoResponse', 'parseClassId', 'trimesterLabel']) {
       expect(text.match(new RegExp(`(function|const) ${name}\\b`, 'g'))).toHaveLength(1);
     }
   });

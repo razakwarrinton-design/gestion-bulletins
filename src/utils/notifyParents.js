@@ -24,27 +24,45 @@ export async function notifyParents(supabase, { classId, trimester }) {
     studentsWithoutParent: Number(data?.studentsWithoutParent ?? 0),
   };
 
-  let email;
+  return { inApp, email: await sendEmails(supabase, { classId, trimester }) };
+}
+
+/**
+ * Appelle la fonction Edge notify-parents (qui n'envoie que ce qui a été préparé par les fonctions SQL) et ne lève jamais :
+ * renvoie { status: 'sent' | 'none' | 'unavailable' | 'failed', sent, failed, noEmail, error }.
+ */
+export async function sendEmails(supabase, body) {
   try {
-    const { data: mailData, error: mailError } = await supabase.functions.invoke('notify-parents', { body: { classId, trimester } });
-    if (mailError) {
-      const message = await readFunctionError(mailError, "Envoi d'e-mails impossible", 'notify-parents');
-      email = {
+    const { data, error } = await supabase.functions.invoke('notify-parents', { body });
+    if (error) {
+      const message = await readFunctionError(error, "Envoi d'e-mails impossible", 'notify-parents');
+      return {
         status: /n'est pas configuré|n'est pas déployée|injoignable/.test(message) ? 'unavailable' : 'failed',
         sent: 0, failed: 0, noEmail: 0, error: message,
       };
-    } else {
-      const sent = Number(mailData?.sent ?? 0);
-      const failed = Number(mailData?.failed ?? 0);
-      email = {
-        status: failed > 0 && sent === 0 ? 'failed' : sent > 0 ? 'sent' : 'none',
-        sent, failed, noEmail: Number(mailData?.noEmail ?? 0), error: mailData?.error,
-      };
     }
+    const sent = Number(data?.sent ?? 0);
+    const failed = Number(data?.failed ?? 0);
+    return {
+      status: failed > 0 && sent === 0 ? 'failed' : sent > 0 ? 'sent' : 'none',
+      sent, failed, noEmail: Number(data?.noEmail ?? 0), error: data?.error,
+    };
   } catch (err) {
-    email = { status: 'failed', sent: 0, failed: 0, noEmail: 0, error: err?.message || "Envoi d'e-mails impossible" };
+    return { status: 'failed', sent: 0, failed: 0, noEmail: 0, error: err?.message || "Envoi d'e-mails impossible" };
   }
-  return { inApp, email };
+}
+
+/** Les e-mails d'une actualité déjà préparée par notify_announcement. */
+export const emailAnnouncement = (supabase, announcementId) => sendEmails(supabase, { announcementId });
+
+/** Fragment de phrase pour une alerte courte (null si rien à dire, ex. e-mail non configuré : la cloche suffit). */
+export function emailSummary(email) {
+  if (!email) return null;
+  if (email.status === 'sent') {
+    return `${plural(email.sent, 'e-mail envoyé', 'e-mails envoyés')}${email.failed ? `, ${plural(email.failed, 'échec', 'échecs')}` : ''}`;
+  }
+  if (email.status === 'failed') return `e-mails non envoyés (${email.error ?? 'erreur inconnue'})`;
+  return null;
 }
 
 const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;

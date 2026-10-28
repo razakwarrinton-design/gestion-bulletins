@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Megaphone, Pencil, Trash2, Send, X } from 'lucide-react';
 import { useAnnouncements } from '../hooks/useAnnouncements';
 import AnnouncementCard from './AnnouncementCard';
+import { emailSummary } from '../utils/notifyParents';
 import {
   BODY_MAX, CATEGORIES, TITLE_MAX, canEdit, toRow, validateAnnouncement,
 } from '../utils/announcements';
@@ -36,8 +37,12 @@ export default function AnnouncementsManager({ currentUser, classes = [], openCo
         await update(editingId, row);
         showNotification?.('Info modifiée');
       } else {
-        const { notified } = await publish(row, { notify: form.notify });
-        showNotification?.(notified == null ? 'Info publiée' : `Info publiée · ${notified} parent${notified > 1 ? 's' : ''} prévenu${notified > 1 ? 's' : ''}`);
+        const { notified, email } = await publish(row, { notify: form.notify });
+        const parts = ['Info publiée'];
+        if (notified != null) parts.push(`${notified} parent${notified > 1 ? 's' : ''} prévenu${notified > 1 ? 's' : ''}`);
+        const mail = emailSummary(email);
+        if (mail) parts.push(mail);
+        showNotification?.(parts.join(' · '));
       }
       reset();
     } catch (err) {
@@ -143,7 +148,7 @@ export default function AnnouncementsManager({ currentUser, classes = [], openCo
           {!editingId && (
             <label className="flex items-center gap-2 text-sm text-gray-800">
               <input type="checkbox" checked={form.notify} onChange={(e) => set({ notify: e.target.checked })} className="w-4 h-4" />
-              Prévenir les parents (avis dans leur cloche)
+              Prévenir les parents (cloche de l'application et e-mail)
             </label>
           )}
         </div>

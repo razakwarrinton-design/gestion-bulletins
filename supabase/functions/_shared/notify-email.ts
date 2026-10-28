@@ -3,6 +3,9 @@
 /** Rôles autorisés à prévenir les parents (mêmes que la fonction SQL notify_class_parents). */
 export const NOTIFY_ALLOWED_ROLES = ["admin", "professeur"];
 
+/** Rôles qui peuvent publier une actualité (mêmes que la fonction SQL notify_announcement) ; l'auteur ou l'admin seulement. */
+export const ANNOUNCE_ALLOWED_ROLES = ["admin", "professeur", "secretaire"];
+
 export interface PendingNotification {
   id: number;
   user_id: string;
@@ -90,6 +93,60 @@ export function buildParentEmail(
     "",
   ];
   if (appUrl) lines.push(`Connectez-vous pour les consulter : ${appUrl}`, "");
+  lines.push("Cordialement,", school);
+  return { subject, text: lines.join("\n") };
+}
+
+const CATEGORY_PREFIXES: Record<string, string> = {
+  frais: "Frais : ",
+  reglement: "Règlement : ",
+};
+
+/** « 2 000 FCFA » (espaces ordinaires : un e-mail en texte brut ne gère pas toujours les espaces insécables fines). */
+export function formatAmount(amount: unknown): string {
+  if (amount == null || amount === "") return "";
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n < 0) return "";
+  return `${Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`;
+}
+
+/** « 2026-11-15 » → « 15/11/2026 » ; autre chose → chaîne vide. */
+export function formatDeadline(date: unknown): string {
+  const m = typeof date === "string" ? /^(\d{4})-(\d{2})-(\d{2})/.exec(date) : null;
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+}
+
+/**
+ * Annonce d'une actualité : titre, montant et date limite éventuels, puis renvoi vers l'espace parents pour le détail.
+ * Le texte complet n'est pas copié dans l'e-mail (il reste dans l'application). Texte brut, entrées nettoyées.
+ */
+export function buildAnnouncementEmail(
+  { schoolName, title, category, amountFcfa, deadline, appUrl }: {
+    schoolName: string;
+    title: string;
+    category: string;
+    amountFcfa?: number | null;
+    deadline?: string | null;
+    appUrl?: string | null;
+  },
+): { subject: string; text: string } {
+  const school = cleanText(schoolName, 80) || "l'école";
+  const heading = cleanText(title, 150) || "Nouvelle information";
+  const subject = `${school} : ${CATEGORY_PREFIXES[category] ?? "Info de l'école : "}${heading}`;
+  const details: string[] = [];
+  const amount = formatAmount(amountFcfa);
+  if (category === "frais" && amount) details.push(`Montant : ${amount}`);
+  const limit = formatDeadline(deadline);
+  if (category === "frais" && limit) details.push(`À régler avant le ${limit}`);
+  const lines = [
+    "Bonjour,",
+    "",
+    `${school} vient de publier une information pour les parents : « ${heading} ».`,
+  ];
+  if (details.length) lines.push(details.join(" — "));
+  lines.push("");
+  if (appUrl) lines.push(`Lisez le détail dans l'espace parents : ${appUrl}`, "");
+  else lines.push("Le détail est disponible dans l'espace parents de l'application.", "");
   lines.push("Cordialement,", school);
   return { subject, text: lines.join("\n") };
 }

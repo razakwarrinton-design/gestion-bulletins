@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../config/supabase';
 import { isAbsentAnnouncements } from '../utils/announcements';
+import { emailAnnouncement } from '../utils/notifyParents';
 
 const COLUMNS = 'id, title, body, category, amount_fcfa, deadline, class_id, author_id, author_name, author_role, created_at, updated_at';
 
@@ -35,11 +36,15 @@ export function useAnnouncements({ enabled = true } = {}) {
     return () => clearTimeout(timer);
   }, [enabled, refresh]);
 
-  /** Publie ; `notify` prévient ensuite les parents concernés dans leur cloche. Renvoie { id, notified }. */
+  /**
+   * Publie ; `notify` prévient ensuite les parents concernés : cloche d'abord (fonction SQL), puis e-mail au mieux (fonction
+   * Edge, qui peut ne pas être configurée sans que la publication en souffre). Renvoie { id, notified, email }.
+   */
   const publish = useCallback(async (row, { notify = false } = {}) => {
     const { data, error: insertError } = await supabase.from('announcements').insert(row).select('id').single();
     if (insertError) throw new Error(insertError.message || 'Publication impossible');
     let notified = null;
+    let email = null;
     if (notify) {
       const { data: result, error: notifyError } = await supabase.rpc('notify_announcement', { p_announcement_id: data.id });
       if (notifyError) {
@@ -47,9 +52,10 @@ export function useAnnouncements({ enabled = true } = {}) {
         throw new Error(`Publiée, mais les parents n'ont pas pu être prévenus : ${notifyError.message}`);
       }
       notified = Number(result?.notified ?? 0);
+      if (notified > 0) email = await emailAnnouncement(supabase, data.id);
     }
     await refresh();
-    return { id: data.id, notified };
+    return { id: data.id, notified, email };
   }, [refresh]);
 
   const update = useCallback(async (id, row) => {

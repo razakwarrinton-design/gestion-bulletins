@@ -42,6 +42,26 @@ describe('AnnouncementsManager (personnel)', () => {
     await waitFor(() => expect(showNotification).toHaveBeenCalledWith('Info publiée · 3 parents prévenus'));
   });
 
+  it("ajoute au message le résultat de l'envoi des e-mails, sans bruit quand ils ne sont pas configurés", async () => {
+    const fill = () => {
+      fireEvent.change(screen.getByLabelText('Titre'), { target: { value: 'T' } });
+      fireEvent.change(screen.getByLabelText('Texte'), { target: { value: 'B' } });
+      fireEvent.click(screen.getByRole('button', { name: /Publier/ }));
+    };
+    const sent = vi.fn();
+    state.api = api({ publish: vi.fn().mockResolvedValue({ id: 9, notified: 3, email: { status: 'sent', sent: 3, failed: 0 } }) });
+    renderManager(admin, { showNotification: sent });
+    fill();
+    await waitFor(() => expect(sent).toHaveBeenCalledWith('Info publiée · 3 parents prévenus · 3 e-mails envoyés'));
+    cleanup();
+
+    const silent = vi.fn();
+    state.api = api({ publish: vi.fn().mockResolvedValue({ id: 9, notified: 3, email: { status: 'unavailable' } }) });
+    renderManager(admin, { showNotification: silent });
+    fill();
+    await waitFor(() => expect(silent).toHaveBeenCalledWith('Info publiée · 3 parents prévenus'));
+  });
+
   it('refuse un formulaire incomplet sans rien envoyer', () => {
     renderManager();
     fireEvent.click(screen.getByRole('button', { name: /Publier/ }));

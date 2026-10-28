@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
+  ANNOUNCE_ALLOWED_ROLES,
+  buildAnnouncementEmail,
   buildParentEmail,
   cleanText,
+  formatAmount,
+  formatDeadline,
   groupByParent,
   isEmail,
   NOTIFY_ALLOWED_ROLES,
@@ -80,6 +84,55 @@ describe('buildParentEmail', () => {
 
   it('cleanText borne la longueur', () => {
     expect(cleanText('x'.repeat(500), 20)).toHaveLength(20);
+  });
+});
+
+describe('annonce d\'une actualité', () => {
+  it('les trois rôles du personnel peuvent la diffuser (l\'auteur ou l\'admin est vérifié dans la fonction)', () => {
+    expect(ANNOUNCE_ALLOWED_ROLES).toEqual(['admin', 'professeur', 'secretaire']);
+  });
+
+  it.each([[2000, '2 000 FCFA'], [1500, '1 500 FCFA'], [250, '250 FCFA'], [1234567, '1 234 567 FCFA'], [0, '0 FCFA'], [null, ''], ['', ''], [-5, ''], ['abc', ''], [undefined, '']])(
+    'formatAmount(%j) = %j', (value, expected) => { expect(formatAmount(value)).toBe(expected); });
+
+  it.each([['2026-11-15', '15/11/2026'], ['2026-11-15T00:00:00Z', '15/11/2026'], ['15 novembre', ''], [null, ''], [42, '']])(
+    'formatDeadline(%j) = %j', (value, expected) => { expect(formatDeadline(value)).toBe(expected); });
+
+  it('annonce des frais avec montant et date limite, sans recopier le texte', () => {
+    const { subject, text } = buildAnnouncementEmail({
+      schoolName: 'Collège Saint-Jean', title: 'Frais du relevé de notes', category: 'frais', amountFcfa: 1500, deadline: '2026-11-15', appUrl: 'https://ecole.example.tg',
+    });
+    expect(subject).toBe('Collège Saint-Jean : Frais : Frais du relevé de notes');
+    expect(text).toContain('« Frais du relevé de notes »');
+    expect(text).toContain('Montant : 1 500 FCFA — À régler avant le 15/11/2026');
+    expect(text).toContain('https://ecole.example.tg');
+  });
+
+  it('un règlement ou une info ne mentionne ni montant ni date', () => {
+    const regle = buildAnnouncementEmail({ schoolName: 'E', title: 'Tenue obligatoire', category: 'reglement', amountFcfa: 1000, deadline: '2026-11-15', appUrl: null });
+    expect(regle.subject).toBe('E : Règlement : Tenue obligatoire');
+    expect(regle.text).not.toMatch(/FCFA|régler/);
+    expect(regle.text).not.toContain('https://'); // pas de lien sans adresse configurée
+    expect(regle.text).toContain("espace parents de l'application");
+    expect(buildAnnouncementEmail({ schoolName: 'E', title: 'Sortie', category: 'autre', appUrl: null }).subject).toBe("E : Info de l'école : Sortie");
+  });
+
+  it("frais sans montant ni date : pas de ligne de détail vide", () => {
+    const { text } = buildAnnouncementEmail({ schoolName: 'E', title: 'Frais', category: 'frais', amountFcfa: null, deadline: null, appUrl: null });
+    expect(text).not.toMatch(/Montant|régler/);
+    expect(text).not.toContain('\n\n\n');
+  });
+
+  it("ne laisse passer ni saut de ligne ni balise venant d'un titre saisi", () => {
+    const { subject, text } = buildAnnouncementEmail({ schoolName: 'École\r\nBcc: x@y.z', title: 'Frais\r\nBcc: a@b.c <script>', category: 'frais', appUrl: null });
+    expect(subject).not.toMatch(/[\r\n<>]/);
+    expect(text).not.toMatch(/<|>/);
+    expect(text.split('\n').some((line) => line.startsWith('Bcc:'))).toBe(false);
+  });
+
+  it('retombe sur un titre et une école par défaut', () => {
+    const { subject } = buildAnnouncementEmail({ schoolName: ' ', title: '  ', category: 'autre', appUrl: null });
+    expect(subject).toBe("l'école : Info de l'école : Nouvelle information");
   });
 });
 

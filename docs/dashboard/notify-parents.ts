@@ -8,6 +8,9 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 /** Rôles autorisés à prévenir les parents (mêmes que la fonction SQL notify_class_parents). */
 const NOTIFY_ALLOWED_ROLES = ["admin", "professeur"];
 
+/** Rôles qui peuvent publier une actualité (mêmes que la fonction SQL notify_announcement) ; l'auteur ou l'admin seulement. */
+const ANNOUNCE_ALLOWED_ROLES = ["admin", "professeur", "secretaire"];
+
 interface PendingNotification {
   id: number;
   user_id: string;
@@ -99,6 +102,60 @@ function buildParentEmail(
   return { subject, text: lines.join("\n") };
 }
 
+const CATEGORY_PREFIXES: Record<string, string> = {
+  frais: "Frais : ",
+  reglement: "Règlement : ",
+};
+
+/** « 2 000 FCFA » (espaces ordinaires : un e-mail en texte brut ne gère pas toujours les espaces insécables fines). */
+function formatAmount(amount: unknown): string {
+  if (amount == null || amount === "") return "";
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n < 0) return "";
+  return `${Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} FCFA`;
+}
+
+/** « 2026-11-15 » → « 15/11/2026 » ; autre chose → chaîne vide. */
+function formatDeadline(date: unknown): string {
+  const m = typeof date === "string" ? /^(\d{4})-(\d{2})-(\d{2})/.exec(date) : null;
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+}
+
+/**
+ * Annonce d'une actualité : titre, montant et date limite éventuels, puis renvoi vers l'espace parents pour le détail.
+ * Le texte complet n'est pas copié dans l'e-mail (il reste dans l'application). Texte brut, entrées nettoyées.
+ */
+function buildAnnouncementEmail(
+  { schoolName, title, category, amountFcfa, deadline, appUrl }: {
+    schoolName: string;
+    title: string;
+    category: string;
+    amountFcfa?: number | null;
+    deadline?: string | null;
+    appUrl?: string | null;
+  },
+): { subject: string; text: string } {
+  const school = cleanText(schoolName, 80) || "l'école";
+  const heading = cleanText(title, 150) || "Nouvelle information";
+  const subject = `${school} : ${CATEGORY_PREFIXES[category] ?? "Info de l'école : "}${heading}`;
+  const details: string[] = [];
+  const amount = formatAmount(amountFcfa);
+  if (category === "frais" && amount) details.push(`Montant : ${amount}`);
+  const limit = formatDeadline(deadline);
+  if (category === "frais" && limit) details.push(`À régler avant le ${limit}`);
+  const lines = [
+    "Bonjour,",
+    "",
+    `${school} vient de publier une information pour les parents : « ${heading} ».`,
+  ];
+  if (details.length) lines.push(details.join(" — "));
+  lines.push("");
+  if (appUrl) lines.push(`Lisez le détail dans l'espace parents : ${appUrl}`, "");
+  else lines.push("Le détail est disponible dans l'espace parents de l'application.", "");
+  lines.push("Cordialement,", school);
+  return { subject, text: lines.join("\n") };
+}
+
 interface MailResult {
   success: boolean;
   error?: string;
@@ -119,14 +176,17 @@ function parseBrevoResponse(status: number, body: unknown): MailResult {
 
 // supabase/functions/notify-parents/index.ts
 //
-// Envoie par e-mail aux parents d'une classe l'annonce « les notes du trimestre sont disponibles ».
-// Appelée par l'écran de saisie des notes (GradesForm) APRÈS la fonction SQL notify_class_parents, qui crée les
-// notifications affichées dans l'application. Cette fonction ne fait que l'e-mail : elle envoie un message pour chaque
-// notification pas encore envoyée (colonne emailed_at vide) et la marque ensuite — un second clic n'envoie donc rien de plus.
+// Envoie par e-mail aux parents deux sortes d'avis :
+//   • { classId, trimester } : « les notes du trimestre sont disponibles » (écran de saisie des notes) ;
+//   • { announcementId }     : « une nouvelle information de l'école est publiée » (écran Actualités).
+// Appelée APRÈS les fonctions SQL notify_class_parents / notify_announcement, qui créent les notifications affichées dans
+// l'application. Cette fonction ne fait que l'e-mail : elle envoie un message pour chaque notification pas encore envoyée
+// (colonne emailed_at vide) et la marque ensuite — un second clic n'envoie donc rien de plus.
 //
-// Ce que l'appelant NE choisit PAS : les destinataires (parents liés aux élèves de la classe, lus dans la base), le texte
-// du message (modèle ci-dessous), le lien (secret APP_URL), le nom de l'école (réglages de l'école). Sans cela, la
-// fonction serait un relais d'e-mails ouvert à tout compte connecté. Aucune note ni moyenne n'est envoyée.
+// Ce que l'appelant NE choisit PAS : les destinataires (parents liés aux élèves, lus dans la base), le texte du message
+// (modèles ci-dessous), le lien (secret APP_URL), le nom de l'école (réglages de l'école). Sans cela, la fonction serait un
+// relais d'e-mails ouvert à tout compte connecté. Aucune note ni moyenne n'est envoyée ; une actualité n'est annoncée que par
+// son titre (et son montant / sa date limite pour les frais).
 //
 // Déploiement : supabase functions deploy notify-parents
 // Secrets : supabase secrets set BREVO_API_KEY=xkeysib-... MAIL_FROM_EMAIL=ecole@votre-domaine.tg \
@@ -152,6 +212,10 @@ function json(body: unknown, status = 200) {
 
 const BREVO_URL = "https://api.brevo.com/v3/smtp/email";
 const MAX_PARENTS_PER_CALL = 200;
+const PARALLEL_SENDS = 5; // une école entière = des centaines d'envois : par petits groupes pour tenir dans le délai de la fonction
+const NOTHING = { sent: 0, failed: 0, pending: 0, noEmail: 0 };
+
+interface Mail { userId: string; notificationIds: number[]; firstNames: string[] }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -177,54 +241,88 @@ Deno.serve(async (req) => {
     if (userError || !user) return json({ error: "Non authentifié" }, 401);
 
     const { data: profile } = await callerClient.from("user_profiles").select("role").eq("id", user.id).single();
-    if (!profile || !NOTIFY_ALLOWED_ROLES.includes(profile.role)) {
-      return json({ error: "Action non autorisée pour votre rôle" }, 403);
-    }
+    if (!profile) return json({ error: "Action non autorisée pour votre rôle" }, 403);
 
     const body = await req.json().catch(() => ({}));
-    const classId = parseClassId(body.classId);
-    const trimester = trimesterLabel(body.trimester) ? String(body.trimester) : null;
-    if (!classId || !trimester) return json({ error: "Classe ou trimestre invalide" }, 400);
+    const announcementId = body.announcementId != null ? parseClassId(body.announcementId) : null;
+    if (body.announcementId != null && !announcementId) return json({ error: "Information invalide" }, 400);
 
-    // Lectures privilégiées (les e-mails des parents ne sont pas lisibles par le professeur)
+    // Lectures privilégiées (les e-mails des parents ne sont pas lisibles par le personnel)
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { data: students, error: studentsError } = await admin
-      .from("students").select("id, first_name").eq("class_id", classId);
-    if (studentsError) throw studentsError;
-    const firstNames = new Map<number, string>((students ?? []).map((s) => [Number(s.id), String(s.first_name ?? "")]));
-    if (firstNames.size === 0) return json({ sent: 0, failed: 0, pending: 0, noEmail: 0 });
+    // Ce qui diffère entre les deux avis : qui est prévenu, et le message
+    let mails: Mail[];
+    let build: (mail: Mail) => { subject: string; text: string };
+    const { data: info } = await admin.from("app_data").select("value").eq("key", "schoolInfo").maybeSingle();
+    const schoolName = cleanText(info?.value?.name, 80) || "École";
+    const fromName = cleanText(Deno.env.get("MAIL_FROM_NAME"), 80) || schoolName;
+    const appUrl = Deno.env.get("APP_URL") || null;
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
 
-    const { data: pending, error: pendingError } = await admin
-      .from("notifications")
-      .select("id, user_id, student_id, trimester, body")
-      .eq("kind", "grades_available").eq("trimester", trimester)
-      .in("student_id", [...firstNames.keys()])
-      .is("emailed_at", null)
-      .gt("created_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString());
-    if (pendingError) throw pendingError;
+    if (announcementId) {
+      if (!ANNOUNCE_ALLOWED_ROLES.includes(profile.role)) return json({ error: "Action non autorisée pour votre rôle" }, 403);
+      const { data: announcement, error: announcementError } = await admin
+        .from("announcements").select("id, title, category, amount_fcfa, deadline, author_id").eq("id", announcementId).maybeSingle();
+      if (announcementError) throw announcementError;
+      if (!announcement) return json({ error: "Information introuvable" }, 404);
+      // comme notify_announcement : l'administrateur ou l'auteur de la publication
+      if (profile.role !== "admin" && announcement.author_id !== user.id) {
+        return json({ error: "Réservé à l'auteur de la publication et aux administrateurs" }, 403);
+      }
 
-    const mails = groupByParent(pending ?? [], firstNames).slice(0, MAX_PARENTS_PER_CALL);
-    if (mails.length === 0) return json({ sent: 0, failed: 0, pending: 0, noEmail: 0 });
+      const { data: pending, error: pendingError } = await admin
+        .from("notifications")
+        .select("id, user_id, student_id, trimester, body")
+        .eq("kind", "announcement").eq("announcement_id", announcementId)
+        .is("emailed_at", null).gt("created_at", since);
+      if (pendingError) throw pendingError;
+      mails = groupByParent(pending ?? [], new Map());
+      const content = buildAnnouncementEmail({
+        schoolName, title: announcement.title, category: announcement.category,
+        amountFcfa: announcement.amount_fcfa, deadline: announcement.deadline, appUrl,
+      });
+      build = () => content;
+    } else {
+      if (!NOTIFY_ALLOWED_ROLES.includes(profile.role)) return json({ error: "Action non autorisée pour votre rôle" }, 403);
+      const classId = parseClassId(body.classId);
+      const trimester = trimesterLabel(body.trimester) ? String(body.trimester) : null;
+      if (!classId || !trimester) return json({ error: "Classe ou trimestre invalide" }, 400);
+
+      const { data: students, error: studentsError } = await admin
+        .from("students").select("id, first_name").eq("class_id", classId);
+      if (studentsError) throw studentsError;
+      const firstNames = new Map<number, string>((students ?? []).map((s) => [Number(s.id), String(s.first_name ?? "")]));
+      if (firstNames.size === 0) return json(NOTHING);
+
+      const { data: pending, error: pendingError } = await admin
+        .from("notifications")
+        .select("id, user_id, student_id, trimester, body")
+        .eq("kind", "grades_available").eq("trimester", trimester)
+        .in("student_id", [...firstNames.keys()])
+        .is("emailed_at", null).gt("created_at", since);
+      if (pendingError) throw pendingError;
+      mails = groupByParent(pending ?? [], firstNames);
+      build = (mail) => buildParentEmail({ schoolName, trimester, firstNames: mail.firstNames, appUrl });
+    }
+
+    mails = mails.slice(0, MAX_PARENTS_PER_CALL);
+    if (mails.length === 0) return json(NOTHING);
 
     const { data: profiles, error: profilesError } = await admin
       .from("user_profiles").select("id, email").in("id", mails.map((m) => m.userId));
     if (profilesError) throw profilesError;
     const emails = new Map<string, string>((profiles ?? []).map((p) => [String(p.id), String(p.email ?? "")]));
 
-    const { data: info } = await admin.from("app_data").select("value").eq("key", "schoolInfo").maybeSingle();
-    const schoolName = cleanText(info?.value?.name, 80) || "École";
-    const fromName = cleanText(Deno.env.get("MAIL_FROM_NAME"), 80) || schoolName;
-    const appUrl = Deno.env.get("APP_URL") || null;
-
     let sent = 0;
     let failed = 0;
     let noEmail = 0;
     let firstError: string | undefined;
-    for (const mail of mails) {
+    let keyRefused = false;
+
+    const deliver = async (mail: Mail) => {
       const to = emails.get(mail.userId);
-      if (!isEmail(to)) { noEmail += 1; continue; }
-      const { subject, text } = buildParentEmail({ schoolName, trimester, firstNames: mail.firstNames, appUrl });
+      if (!isEmail(to)) { noEmail += 1; return; }
+      const { subject, text } = build(mail);
       const response = await fetch(BREVO_URL, {
         method: "POST",
         headers: { "api-key": apiKey, "Content-Type": "application/json", Accept: "application/json" },
@@ -242,8 +340,13 @@ Deno.serve(async (req) => {
         failed += 1;
         firstError ??= result.error;
         console.error("notify-parents : refusé par le fournisseur", response.status, result.error);
-        if (response.status === 401) break; // clé invalide : inutile d'insister pour chaque parent
+        if (response.status === 401) keyRefused = true;
       }
+    };
+
+    for (let i = 0; i < mails.length && !keyRefused; i += PARALLEL_SENDS) {
+      // clé invalide : inutile d'insister pour chaque parent, on s'arrête après le groupe en cours
+      await Promise.all(mails.slice(i, i + PARALLEL_SENDS).map(deliver));
     }
 
     return json({ sent, failed, noEmail, pending: mails.length, error: sent === 0 && failed > 0 ? firstError : undefined });

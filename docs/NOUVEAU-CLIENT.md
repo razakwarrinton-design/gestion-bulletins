@@ -70,7 +70,7 @@ administrateur.
 | `generate-appreciation` | facultatif | demande un fournisseur d'IA, donc un abonnement |
 | `payment-initiate`, `payment-webhook` | facultatif | paiements Mobile Money, donc un abonnement |
 | `send-sms` | facultatif | fournisseur de SMS, donc un abonnement |
-| `notify-parents` | facultatif | e-mail aux parents ; compte Brevo gratuit (300 e-mails/jour), voir ci-dessous. Sans elle, la cloche de l'application fonctionne seule |
+| `notify-parents` | facultatif | e-mail aux parents (notes disponibles, nouvelles actualités) ; compte Brevo gratuit (300 e-mails/jour : une actualité pour tout l'établissement envoie un e-mail par parent), voir ci-dessous. Sans elle, la cloche de l'application fonctionne seule |
 
 ### E-mail aux parents (`notify-parents`)
 

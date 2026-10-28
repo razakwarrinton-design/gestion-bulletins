@@ -53,6 +53,8 @@ function Privacy() {
           'Élèves : nom, prénom, classe, informations de dossier saisies par l\'établissement, notes, absences, appréciations, rang et moyennes.',
           'Parents et tuteurs : nom, adresse e-mail ou numéro de téléphone, lien avec l\'élève, messages échangés avec l\'établissement.',
           'Personnel (administrateurs, professeurs, secrétaires) : nom, adresse e-mail, rôle, actions importantes (journal d\'audit).',
+          'Actualités de l\'établissement : texte publié (frais, règles…) avec le nom et le rôle de la personne qui le publie, visible par les parents concernés.',
+          'Avis aux parents (cloche de l\'application et e-mail) : adresse e-mail du parent, prénom de l\'enfant, trimestre ou titre de l\'information publiée. Ces avis ne contiennent ni note ni moyenne.',
           'Techniques : incidents de fonctionnement de l\'application (message d\'erreur, page concernée, identifiant du compte). Ces rapports sont conçus pour ne contenir ni notes ni noms d\'élèves ; un message d\'erreur peut, rarement, reprendre une valeur saisie, et il est supprimé après 30 jours.',
         ]} />
         <p>Les données des élèves, souvent mineurs, ne sont consultables que par les personnes autorisées par l'établissement.</p>
@@ -62,6 +64,7 @@ function Privacy() {
         <List items={[
           'Tenir les notes, calculer les moyennes et produire les bulletins.',
           'Permettre aux parents de consulter les résultats de leurs enfants.',
+          'Prévenir les parents (notes disponibles, frais et règles de l\'établissement) par la cloche de l\'application et par e-mail.',
           'Sécuriser l\'accès (comptes, double authentification, journal d\'audit) et corriger les incidents.',
         ]} />
         <p>Les données ne sont ni vendues ni utilisées pour de la publicité.</p>
@@ -72,6 +75,7 @@ function Privacy() {
           'Les comptes de l\'établissement, selon leur rôle (administrateur, professeur, secrétaire).',
           'Chaque parent : uniquement les données de ses propres enfants.',
           `L'hébergeur des données : ${LEGAL.hosting || TODO}.`,
+          'Le service d\'envoi d\'e-mails (Brevo), qui reçoit l\'adresse du parent et le texte de l\'avis pour le lui transmettre, sans note ni moyenne.',
         ]} />
         <p>
           Quand un bulletin est généré avec l'aide de l'intelligence artificielle, seules des informations sans identité de
@@ -82,7 +86,8 @@ function Privacy() {
       <Section title="5. Durée de conservation">
         <p>
           Les données sont conservées pendant la scolarité puis pendant la durée fixée par l'établissement : <Todo>durée à
-          préciser par l'établissement</Todo>. L'établissement peut exporter ou faire supprimer les données à tout moment.
+          préciser par l'établissement</Todo>. Cela vaut aussi pour les actualités et les avis aux parents. L'établissement peut
+          exporter ou faire supprimer les données à tout moment.
         </p>
       </Section>
 
@@ -139,6 +144,7 @@ function Terms() {
           'Il est responsable de l\'exactitude des notes et des appréciations qu\'il saisit, et du barème qu\'il choisit.',
           'Il informe les élèves et les parents de l\'usage de leurs données (voir la politique de confidentialité).',
           'Il vérifie chaque bulletin avant de le remettre : le bulletin imprimé engage l\'établissement.',
+          'Il est responsable des informations qu\'il publie dans les actualités (frais, règles). Elles sont données à titre d\'information : elles ne constituent ni une facture ni un reçu, et les paiements ne passent pas par le service.',
         ]} />
       </Section>
 
@@ -153,6 +159,8 @@ function Terms() {
         <p>
           L'éditeur met en œuvre des moyens raisonnables pour que le service soit disponible et les données sauvegardées,
           sans garantir une disponibilité permanente. Il est conseillé d'exporter régulièrement les données importantes.
+          Les avis envoyés aux parents (cloche, e-mail) sont une aide : leur réception n'est pas garantie (un e-mail peut arriver
+          dans les courriers indésirables). L'espace parents reste la référence.
         </p>
       </Section>
 

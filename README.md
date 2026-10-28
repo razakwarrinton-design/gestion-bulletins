@@ -164,7 +164,7 @@ Détails : [docs/GUIDE-SUPABASE-CONFIGURATION.md](docs/GUIDE-SUPABASE-CONFIGURAT
 | `create-parent-account` | Création d'un compte parent par l'administrateur | (fournis par la plateforme) |
 | `payment-initiate`, `payment-webhook` | Paiement Mobile Money via FedaPay ([docs/PAIEMENTS.md](docs/PAIEMENTS.md)) | `FEDAPAY_SECRET_KEY`, `FEDAPAY_ENV`, `APP_URL` |
 | `send-sms` | SMS via Africa's Talking, réservé à l'administrateur et au secrétariat | `AT_USERNAME`, `AT_API_KEY`, `AT_ENV` (`sandbox` ou `production`), `AT_SENDER_ID` (facultatif) |
-| `notify-parents` | E-mail « les notes du trimestre sont disponibles » aux parents d'une classe (service Brevo, offre gratuite de 300 e-mails par jour), réservé à l'administrateur et aux professeurs | `BREVO_API_KEY`, `MAIL_FROM_EMAIL` (expéditeur validé chez Brevo), `MAIL_FROM_NAME` et `APP_URL` (facultatifs) |
+| `notify-parents` | E-mail « les notes du trimestre sont disponibles » aux parents d'une classe, et e-mail « nouvelle actualité » aux parents concernés par une publication (service Brevo, offre gratuite de 300 e-mails par jour) ; notes : administrateur et professeurs, actualités : l'auteur de la publication ou l'administrateur | `BREVO_API_KEY`, `MAIL_FROM_EMAIL` (expéditeur validé chez Brevo), `MAIL_FROM_NAME` et `APP_URL` (facultatifs) |
 | `generate-appreciation` | Appréciation de bulletin rédigée par une IA, réservée à l'administrateur et aux professeurs | `AI_API_KEY`, `AI_MODEL`, `AI_BASE_URL` (service compatible avec l'API « chat completions ») |
 
 Déploiement : `supabase functions deploy <nom>`, puis `supabase secrets set NOM=valeur …`. Tant qu'une fonction
