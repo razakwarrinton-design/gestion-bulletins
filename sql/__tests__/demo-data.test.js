@@ -172,8 +172,29 @@ describe('classe existante complétée à 20 élèves (TA4)', () => {
     expect(await count('classes')).toBe(5);
     expect(await count('subjects')).toBe(10); // aucune matière ajoutée : celles de l'école sont notées
     expect(await names('SELECT first_name FROM students WHERE id IN (1, 2) ORDER BY id')).toEqual(['Diallo', 'Diallo']);
-    expect((await db.query(`SELECT id, value, interro, devoir, composition, updated_at FROM grades WHERE student_id IN (1, 2) ORDER BY id`)).rows).toEqual(before);
-    expect(await count('grades', 'student_id IN (1, 2)')).toBe(20);
+    // les 20 notes d'origine (1er trimestre) sont identiques, octet pour octet
+    expect((await db.query(`SELECT id, value, interro, devoir, composition, updated_at FROM grades WHERE trimester = '1' AND student_id IN (1, 2) ORDER BY id`)).rows).toEqual(before);
+  }, 120000);
+
+  it("remplit les trimestres 2 et 3 des élèves d'origine, dans leurs matières, autour de leurs notes existantes", async () => {
+    await fresh(REAL_SCHOOL);
+    await install();
+    expect(await count('grades', 'student_id IN (1, 2)')).toBe(2 * 10 * 3);
+    expect(await names(`SELECT DISTINCT trimester FROM grades WHERE student_id IN (1, 2) ORDER BY 1`)).toEqual(['1', '2', '3']);
+    expect(await count('grades', `student_id IN (1, 2) AND trimester <> '1' AND academic_year <> '2026-2027'`)).toBe(0);
+    // leurs notes d'origine valaient 12 : les nouvelles restent dans une fourchette plausible
+    expect(await count('grades', `student_id IN (1, 2) AND trimester <> '1' AND value BETWEEN 7 AND 17`)).toBeGreaterThan(30);
+    expect(await count('grades', `student_id IN (1, 2) AND value <> round((interro + 2 * devoir + 3 * composition) / 6, 2) + COALESCE(bonus, 0) AND trimester <> '1'`)).toBe(0);
+  }, 120000);
+
+  it("ne remplace jamais une note déjà saisie et ne rajoute pas de matière que l'élève n'a pas", async () => {
+    await fresh(`${REAL_SCHOOL}
+      INSERT INTO grades (student_id, subject_id, trimester, academic_year, value) VALUES (1, 1, '2', '2026-2027', 5.25);
+      DELETE FROM grades WHERE student_id = 2 AND subject_id = (SELECT id FROM subjects WHERE name = 'Espagnol');`);
+    await install();
+    expect(await names(`SELECT value FROM grades WHERE student_id = 1 AND subject_id = 1 AND trimester = '2'`)).toEqual(['5.25']);
+    expect(await count('grades', `student_id = 2 AND subject_id = (SELECT id FROM subjects WHERE name = 'Espagnol')`)).toBe(0);
+    expect(await count('grades', 'student_id = 2')).toBe(9 * 3);
   }, 120000);
 
   it('les nouveaux élèves de TA4 ont 3 trimestres de notes, dans l\'année où se trouvent déjà les notes de l\'école', async () => {
@@ -222,7 +243,8 @@ describe('nettoyage de la démonstration', () => {
     await cleanup();
     expect(await count('classes')).toBe(1);
     expect(await count('students')).toBe(2);
-    expect(await count('grades')).toBe(20);
+    expect(await count('grades')).toBe(20); // les notes ajoutées aux deux élèves partent aussi
+    expect(await count('grades', "trimester <> '1'")).toBe(0);
     expect(await count('subjects')).toBe(10);
     expect(await count('app_data', "key = 'demoSeed'")).toBe(0);
   }, 120000);

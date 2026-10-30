@@ -4,8 +4,10 @@
 --
 -- Ce que le script crée :
 --   • 4 classes neuves : 6ème A, 4ème A, 3ème A, 2nde A (20 élèves chacune, noms fictifs) ;
---   • la classe existante « TA4 » (variable v_complete_class) complétée à 20 élèves : ses élèves actuels et leurs notes
---     ne sont pas touchés, seuls les élèves manquants sont ajoutés (mettre NULL pour ne compléter aucune classe) ;
+--   • la classe existante « TA4 » (variable v_complete_class) complétée à 20 élèves : seuls les élèves manquants sont
+--     ajoutés (mettre NULL pour ne compléter aucune classe). Les notes déjà saisies de ses élèves actuels ne sont jamais
+--     modifiées ; leurs trimestres sans note sont remplis (dans les matières où ils ont déjà une note), à partir de leurs
+--     notes existantes, pour que leur bulletin annuel soit complet ;
 --   • pour chaque nouvel élève, chaque matière et chaque trimestre : interrogation, devoir, composition (0 à 20, avec la
 --     pondération de l'application ×1 / ×2 / ×3), parfois un bonus, la note finale et une appréciation.
 -- Matières : si la base en contient déjà 5 ou plus, ce sont elles qui sont notées (rien n'est ajouté, aucun doublon) ;
@@ -68,6 +70,12 @@ DECLARE
   v_value       NUMERIC;
   v_grades      INT := 0;
   v_students    INT := 0;
+  v_stu         BIGINT;
+  v_gid         TEXT;
+  v_filled      TEXT[] := ARRAY[]::TEXT[];
+  v_avg         DOUBLE PRECISION;
+  v_base        DOUBLE PRECISION;
+  v_has         BOOLEAN;
   v_audit       TEXT;
   v_audited     TEXT[] := ARRAY[]::TEXT[];
   v_years       JSONB;
@@ -210,15 +218,60 @@ BEGIN
     END LOOP;
   END LOOP;
 
+  -- ── Élèves déjà présents dans la classe complétée : trimestres sans note ─────────────────────────────────
+  -- Les notes existantes restent telles quelles (ON CONFLICT DO NOTHING) ; les notes ajoutées sont tirées autour de la
+  -- note existante de l'élève dans la matière (ou de sa moyenne), et leurs identifiants sont gardés pour le nettoyage.
+  IF v_complete_id IS NOT NULL THEN
+    FOR v_stu IN SELECT id FROM students WHERE class_id = v_complete_id AND NOT (id = ANY (v_added)) ORDER BY id LOOP
+      SELECT avg(value) INTO v_avg FROM grades WHERE student_id = v_stu AND academic_year = v_year;
+      v_has := v_avg IS NOT NULL;
+      v_ability := COALESCE(v_avg, 8 + 8 * random());
+
+      FOR t IN 1..array_length(v_subj_ids, 1) LOOP
+        -- un élève qui a déjà des notes ne reçoit que les matières qu'il a déjà
+        CONTINUE WHEN v_has AND NOT EXISTS (
+          SELECT 1 FROM grades WHERE student_id = v_stu AND subject_id = v_subj_ids[t] AND academic_year = v_year);
+        SELECT value INTO v_base FROM grades
+         WHERE student_id = v_stu AND subject_id = v_subj_ids[t] AND academic_year = v_year ORDER BY trimester LIMIT 1;
+        v_offset := (random() - 0.5) * 5;
+        FOR tri IN 1..3 LOOP
+          v_mean := COALESCE(v_base, v_ability + v_offset) + (tri - 1) * 0.3 + (random() - 0.5) * 1.5;
+          v_i := greatest(0, least(20, round((v_mean + (random() - 0.5) * 6)::NUMERIC * 2) / 2));
+          v_d := greatest(0, least(20, round((v_mean + (random() - 0.5) * 4)::NUMERIC * 2) / 2));
+          v_c := greatest(0, least(20, round((v_mean + (random() - 0.5) * 4)::NUMERIC * 2) / 2));
+          v_bonus := CASE WHEN random() < 0.05 THEN 0.5 * (1 + floor(random() * 3)) ELSE NULL END;
+          v_value := least(20, round(((v_i + 2 * v_d + 3 * v_c) / 6)::NUMERIC + COALESCE(v_bonus, 0), 2));
+
+          INSERT INTO grades (student_id, subject_id, trimester, academic_year, value, appreciation,
+                              interro, devoir, composition, bonus, teacher_name)
+          VALUES (
+            v_stu, v_subj_ids[t], tri::TEXT, v_year, v_value,
+            CASE WHEN v_value >= 16 THEN 'Excellent travail'
+                 WHEN v_value >= 14 THEN 'Très bon travail'
+                 WHEN v_value >= 12 THEN 'Bon travail'
+                 WHEN v_value >= 10 THEN 'Résultats satisfaisants'
+                 ELSE 'Doit fournir plus d''efforts' END,
+            v_i, v_d, v_c, v_bonus, v_teachers[(t - 1) % 8 + 1]
+          )
+          ON CONFLICT DO NOTHING
+          RETURNING id INTO v_gid;
+          IF FOUND THEN v_filled := v_filled || v_gid; END IF;
+        END LOOP;
+      END LOOP;
+    END LOOP;
+  END IF;
+
   INSERT INTO app_data (key, value)
   VALUES ('demoSeed', jsonb_build_object('classIds', to_jsonb(v_class_ids), 'newSubjectIds', to_jsonb(v_new_subjs),
-                                         'addedStudentIds', to_jsonb(v_added), 'completedClassId', v_complete_id,
+                                         'addedStudentIds', to_jsonb(v_added), 'addedGradeIds', to_jsonb(v_filled),
+                                         'completedClassId', v_complete_id,
                                          'academicYear', v_year, 'createdAt', now()));
 
   FOREACH v_audit IN ARRAY v_audited LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE TRIGGER %I', v_audit, 'audit_' || v_audit);
   END LOOP;
 
-  RAISE NOTICE 'Démonstration installée pour l''année % : % classes neuves, % élèves ajoutés (dont % dans « % »), % notes.',
-    v_year, array_length(v_class_ids, 1), v_students, COALESCE(array_length(v_added, 1), 0), v_complete_class, v_grades;
+  RAISE NOTICE 'Démonstration installée pour l''année % : % classes neuves, % élèves ajoutés (dont % dans « % »), % notes (+ % notes ajoutées aux élèves déjà présents).',
+    v_year, array_length(v_class_ids, 1), v_students, COALESCE(array_length(v_added, 1), 0), v_complete_class, v_grades,
+    COALESCE(array_length(v_filled, 1), 0);
 END $$;

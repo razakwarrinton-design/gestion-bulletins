@@ -94,12 +94,12 @@ puis toute la chaîne d'installation ci-dessus. Cette procédure est testée dan
 ### Données de démonstration (présentation à un établissement)
 
 `sql/demo-data.sql` crée 4 classes neuves de 20 élèves (noms fictifs) et complète à 20 élèves la classe existante `TA4`
-(variable `v_complete_class` en tête du script ; ses élèves et leurs notes ne sont pas touchés), avec les notes des 3 trimestres
+(variable `v_complete_class` en tête du script ; ses élèves et leurs notes déjà saisies ne sont jamais modifiées ; leurs trimestres sans note sont remplis), avec les notes des 3 trimestres
 (interrogation, devoir, composition, bonus, appréciation). Il note les matières déjà présentes dans la base (sinon il crée
 8 matières courantes), laisse vides la philosophie avant la terminale et les LV2 en 6ème, et choisit l'année scolaire où se
 trouvent déjà vos notes. À réserver à une base de démonstration. Il s'arrête sans rien créer si l'une des classes neuves existe
 déjà ou si la démonstration est déjà installée, et n'encombre pas le journal d'audit.
-`sql/demo-data-cleanup.sql` supprime uniquement ce que le premier a créé (repéré par la clé `demoSeed` de `app_data`).
+`sql/demo-data-cleanup.sql` supprime uniquement ce que le premier a créé, y compris les notes ajoutées aux élèves d'origine (repéré par la clé `demoSeed` de `app_data`).
 Ces deux scripts ne font pas partie de la chaîne d'installation ni de la migration de référence. Testés dans
 `sql/__tests__/demo-data.test.js`.
 

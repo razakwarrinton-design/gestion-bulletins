@@ -2,7 +2,7 @@
 -- SUPPRESSION DES DONNÉES DE DÉMONSTRATION créées par sql/demo-data.sql
 -- À exécuter dans l'éditeur SQL de Supabase. Ne supprime que ce que le script de démonstration a créé
 -- (classes neuves avec leurs élèves et leurs notes, élèves ajoutés à une classe existante comme « TA4 » avec leurs notes,
--- et matières ajoutées), repéré par la clé « demoSeed » de app_data. Vos autres classes, élèves et notes ne sont pas
+-- notes ajoutées aux élèves d'origine de cette classe, et matières ajoutées), repéré par la clé « demoSeed » de app_data. Vos autres classes, élèves et notes ne sont pas
 -- touchés : la classe complétée reste, avec ses élèves d'origine. Sans « demoSeed », le script ne fait rien.
 --
 -- Attention : si vous avez saisi des notes, des paiements ou des liens parents sur les élèves de démonstration, ils
@@ -15,6 +15,7 @@ DECLARE
   v_class_ids BIGINT[];
   v_subj_ids  BIGINT[];
   v_added_ids BIGINT[];
+  v_grade_ids TEXT[];
   v_audit     TEXT;
   v_audited   TEXT[] := ARRAY[]::TEXT[];
   v_students  INT;
@@ -28,6 +29,7 @@ BEGIN
   SELECT COALESCE(array_agg(x::BIGINT), ARRAY[]::BIGINT[]) INTO v_class_ids FROM jsonb_array_elements_text(v_seed->'classIds') AS x;
   SELECT COALESCE(array_agg(x::BIGINT), ARRAY[]::BIGINT[]) INTO v_subj_ids FROM jsonb_array_elements_text(v_seed->'newSubjectIds') AS x;
   SELECT COALESCE(array_agg(x::BIGINT), ARRAY[]::BIGINT[]) INTO v_added_ids FROM jsonb_array_elements_text(COALESCE(v_seed->'addedStudentIds', '[]'::JSONB)) AS x;
+  SELECT COALESCE(array_agg(x), ARRAY[]::TEXT[]) INTO v_grade_ids FROM jsonb_array_elements_text(COALESCE(v_seed->'addedGradeIds', '[]'::JSONB)) AS x;
 
   -- Journal d'audit suspendu le temps de la suppression (rétabli ensuite)
   FOREACH v_audit IN ARRAY ARRAY['grades', 'students', 'classes', 'subjects'] LOOP
@@ -42,6 +44,7 @@ BEGIN
 
   -- les élèves et leurs notes partent avec la classe (ON DELETE CASCADE) ; les élèves ajoutés à une classe existante
   -- sont supprimés un par un, pas la classe
+  DELETE FROM grades WHERE id = ANY (v_grade_ids); -- notes ajoutées aux élèves d'origine de la classe complétée
   DELETE FROM classes WHERE id = ANY (v_class_ids);
   DELETE FROM students WHERE id = ANY (v_added_ids);
   DELETE FROM subjects s WHERE s.id = ANY (v_subj_ids) AND NOT EXISTS (SELECT 1 FROM grades g WHERE g.subject_id = s.id);
