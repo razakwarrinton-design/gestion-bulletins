@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import { mapStudentRow, buildStudentProfilePayload } from '../utils/studentProfile';
+import { fetchAllRows } from '../utils/fetchAllRows';
 
 export function useStudents() {
   const [students, setStudents] = useState([]);
@@ -10,10 +11,10 @@ export function useStudents() {
     setLoading(true);
     // select('*') : renvoie aussi les colonnes de profil (contact d'urgence…) quand
     // sql/students-profile.sql a été appliqué, sans casser la liste s'il ne l'est pas.
-    const { data, error } = await supabase
-      .from('students')
-      .select('*')
-      .order('last_name');
+    // Page par page : le serveur plafonne à 1000 lignes par requête. Tri sur last_name puis id (unique) pour des pages stables.
+    const { data, error } = await fetchAllRows(() =>
+      supabase.from('students').select('*').order('last_name').order('id'),
+    );
     if (!error) {
       // Mapper snake_case → camelCase pour compatibilité avec le code existant
       setStudents(data.map(mapStudentRow));

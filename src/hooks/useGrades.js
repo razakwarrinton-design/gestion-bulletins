@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from '../config/supabase';
+import { fetchAllRows } from '../utils/fetchAllRows';
 
 // Colonnes de la table grades (voir sql/grades-alignment.sql pour la colonne `bonus`)
 const GRADE_COLUMNS =
@@ -31,11 +32,11 @@ export function useGrades(academicYear = null) {
     if (!academicYear) return;
 
     setLoading(true);
-    // Sélectionne seulement les colonnes nécessaires
-    const { data, error: fetchError } = await supabase
-      .from("grades")
-      .select(GRADE_COLUMNS)
-      .eq("academic_year", academicYear);
+    // Sélectionne seulement les colonnes nécessaires. Page par page : au-delà de 1000 notes, le serveur
+    // en renverrait 1000 seulement et les autres élèves s'afficheraient avec 0/20.
+    const { data, error: fetchError } = await fetchAllRows(() =>
+      supabase.from("grades").select(GRADE_COLUMNS).eq("academic_year", academicYear).order("id"),
+    );
 
     if (fetchError) {
       console.error("Chargement des notes impossible:", fetchError);

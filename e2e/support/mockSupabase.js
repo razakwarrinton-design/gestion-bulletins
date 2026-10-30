@@ -72,7 +72,10 @@ export async function mockSupabase(context, { role = 'admin', data = buildData()
       if (table === 'user_profiles') return json(wantsObject ? profile : [profile]);
       const rows = data[table] ?? [];
       if (wantsObject) return rows[0] ? json(rows[0]) : json({ message: 'no rows' }, 406);
-      return json(rows);
+      // comme PostgREST : `.range()` arrive en offset/limit, et le serveur plafonne à 1000 lignes par réponse
+      const offset = Number(url.searchParams.get('offset')) || 0;
+      const limit = Math.min(Number(url.searchParams.get('limit')) || 1000, 1000);
+      return json(rows.slice(offset, offset + limit));
     }
     unexpected.push(url.href);
     return json({});

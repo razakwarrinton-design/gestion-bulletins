@@ -11,7 +11,14 @@ vi.mock('../config/supabase', () => ({
   supabase: {
     from: () => ({
       select: () => ({
-        eq: async () => (selectError ? { data: null, error: selectError } : { data: rows, error: null }),
+        eq: () => ({
+          order: () => ({
+            // comme PostgREST : au plus 1000 lignes par réponse, quelle que soit l'étendue demandée
+            range: async (from, to) => (selectError
+              ? { data: null, error: selectError }
+              : { data: rows.slice(from, Math.min(to + 1, from + 1000)), error: null }),
+          }),
+        }),
       }),
       upsert: (payload) => ({
         select: () => ({
@@ -51,6 +58,13 @@ describe('useGrades', () => {
   it('charge les notes de l\'année avec le bonus', async () => {
     const { result } = await loaded();
     expect(result.current.getGrade(1, 1, '1')).toMatchObject({ studentId: 1, subjectId: 1, bonus: 1, teacherName: 'M. Kodjo' });
+  });
+
+  it("charge toutes les notes quand il y en a plus de 1000 (sinon des élèves s'affichent avec 0/20)", async () => {
+    rows = Array.from({ length: 2640 }, (_, i) => ({ ...stored, id: `g${i}`, student_id: i + 1 }));
+    const { result } = renderHook(() => useGrades('2025-2026'));
+    await waitFor(() => expect(result.current.grades).toHaveLength(2640));
+    expect(result.current.getGrade(2640, 1, '1')).toMatchObject({ studentId: 2640, value: 15 });
   });
 
   it('enregistre le bonus et renvoie un succès', async () => {
