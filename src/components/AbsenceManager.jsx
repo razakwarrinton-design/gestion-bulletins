@@ -168,13 +168,13 @@ export default function AbsenceManager({ classes, students, subjects, currentUse
             </div>
 
             {/* KPIs */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 {[
                     { label: 'Absences', value: totalAbsents, icon: <UserX className="w-5 h-5" />, color: '#dc2626', bg: '#fef2f2' },
                     { label: 'Retards', value: totalRetards, icon: <Clock className="w-5 h-5" />, color: '#d97706', bg: '#fffbeb' },
                     { label: 'Non justifiés', value: totalInjust, icon: <AlertTriangle className="w-5 h-5" />, color: '#7c3aed', bg: '#f5f3ff' },
                 ].map((k, i) => (
-                    <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center gap-3">
+                    <div key={i} className="bg-white border border-gray-100 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3 text-center sm:text-left min-w-0">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                             style={{ background: k.bg, color: k.color }}>
                             {k.icon}
@@ -195,7 +195,7 @@ export default function AbsenceManager({ classes, students, subjects, currentUse
                     { key: 'stats', icon: <UserX className="w-4 h-4" />, label: 'Par élève' },
                 ].map(tab => (
                     <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === tab.key ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        className={`flex-1 min-w-0 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${activeTab === tab.key ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                             }`}>
                         {tab.icon} {tab.label}
                     </button>
@@ -206,9 +206,9 @@ export default function AbsenceManager({ classes, students, subjects, currentUse
             {activeTab === 'saisie' && (
                 <div className="space-y-4">
                     {/* Filtres du formulaire */}
-                    <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
+                    <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 space-y-4">
                         <h3 className="font-bold text-gray-800 text-sm">📋 Paramètres de la saisie</h3>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Classe *</label>
                                 <select value={formClass} onChange={e => setFormClass(e.target.value)}

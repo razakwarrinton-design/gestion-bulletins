@@ -289,7 +289,7 @@ const BulletinApp = () => {
                 />
 
                 {/* ── Scrollable content ──────────────────────────────────────────── */}
-                <main className="flex-1 overflow-y-auto p-5">
+                <main className="flex-1 overflow-y-auto p-2 sm:p-5">
 
                     {showPrintPreview && (
                         <BulletinTemplatePicker
@@ -321,7 +321,7 @@ const BulletinApp = () => {
                     )}
 
                     {/* ── Views ─────────────────────────────────────────────────────── */}
-                    <div className="bg-white rounded-2xl shadow-sm p-6 min-h-full" style={{ border: '1px solid #EFF6FF' }}>
+                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 min-h-full" style={{ border: '1px solid #EFF6FF' }}>
                         <ErrorBoundary resetKey={currentView}>
                         <Suspense fallback={<Spinner text="Chargement..." />}>
                         <AppViews currentView={currentView} ctx={{

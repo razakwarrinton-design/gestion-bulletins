@@ -8,7 +8,7 @@ const Topbar = ({
     mobileMenuOpen, setMobileMenuOpen, visibleNavItems, currentView,
     currentYear, isDark, toggleDark, currentUser, onLogout, notifications, onNavigate,
 }) => (
-<header className="bg-white flex items-center gap-3 px-5 py-2.5 flex-shrink-0"
+<header className="bg-white flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 flex-shrink-0"
     style={{ borderBottom: '1px solid #EFF6FF' }}>
 
     {/* Mobile burger */}

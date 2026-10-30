@@ -60,7 +60,7 @@ export default function SyncStatus() {
   }
 
   return (
-    <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium ${
+    <div className={`flex items-center sm:space-x-1 px-2 sm:px-3 py-1 rounded-full text-sm font-medium flex-shrink-0 ${
       isConnected && !usesFallback
         ? 'bg-green-100 text-green-800'
         : 'bg-yellow-100 text-yellow-800'
@@ -68,12 +68,12 @@ export default function SyncStatus() {
       {isConnected && !usesFallback ? (
         <>
           <Wifi className="w-4 h-4" />
-          <span>Cloud</span>
+          <span className="hidden sm:inline">Cloud</span>
         </>
       ) : (
         <>
           <WifiOff className="w-4 h-4" />
-          <span>Local</span>
+          <span className="hidden sm:inline">Local</span>
         </>
       )}
     </div>

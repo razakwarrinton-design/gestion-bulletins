@@ -54,11 +54,11 @@ export default function StudentsList({
         <table className="min-w-full">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Nom</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Prénom</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Classe</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Nom</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Prénom</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Classe</th>
               {currentUser?.role === 'admin' && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
               )}
             </tr>
           </thead>
@@ -72,15 +72,15 @@ export default function StudentsList({
             ) : (
               filtered.map(student => (
                 <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">{student.lastName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{student.firstName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-2 sm:px-6 py-4 sm:whitespace-nowrap font-medium break-words">{student.lastName}</td>
+                  <td className="px-2 sm:px-6 py-4 sm:whitespace-nowrap break-words">{student.firstName}</td>
+                  <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
                     <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
                       {classes.find(c => c.id === student.classId)?.name || '—'}
                     </span>
                   </td>
                   {currentUser?.role === 'admin' && (
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 sm:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-3">
                         <button
                           onClick={() => editStudent(student)}
